@@ -1,12 +1,15 @@
 "use strict";
 
-/*
-* TODO:
-* Comments to JSDOC3
-* */
-
+/**
+ * JSONRPC namespace.
+ * @namespace
+ */
 var JSONRPC=JSONRPC || {};
 
+/**
+ * Class representing the base for the client filters.
+ * @class
+ */
 JSONRPC.ClientFilterBase=class
 {
 	constructor()
@@ -19,7 +22,7 @@ JSONRPC.ClientFilterBase=class
 	 * - add extra request object keys;
 	 * - translate or encode output params into the expected server request object format.
 	 * objFilterParams allows for reference return for multiple params. It contains:
-	 * @param array arrRequest.
+	 * @param {object} objRequest.
 	 */
 	beforeJSONEncode(objFilterParams)
 	{
@@ -31,9 +34,9 @@ JSONRPC.ClientFilterBase=class
 	 * - encrypt, encode or otherwise prepare the JSON request string into the expected server input format;
 	 * - log raw output.
 	 * objFilterParams allows for reference return for multiple params. It contains:
-	 * @param string strJSONRequest.
-	 * @param string strEndpointURL.
-	 * @param string arrHTTPHeaders.
+	 * @param {string} strJSONRequest.
+	 * @param {string} strEndpointURL.
+	 * @param {array} arrHTTPHeaders.
 	 */
 	afterJSONEncode(objFilterParams)
 	{
@@ -43,7 +46,7 @@ JSONRPC.ClientFilterBase=class
 	/**
 	 * First plugin to make a request will be the last one. The respective plugin MUST set bCalled to true.
 	 * objFilterParams allows for reference return for multiple params. It contains:
-	 * @return mixed. The RAW string output of the server or false on error (or can throw).
+	 * @returns {*}. The RAW string output of the server or false on error (or can throw).
 	 */
 	makeRequest(objFilterParams)
 	{
@@ -55,7 +58,7 @@ JSONRPC.ClientFilterBase=class
 	 * - decrypt, decode or otherwise prepare the JSON response into the expected JSON-RPC client format;
 	 * - log raw input.
 	 * objFilterParams allows for reference return for multiple params. It contains:
-	 * @param string strJSONResponse.
+	 * @param {string} strJSONResponse.
 	 */
 	beforeJSONDecode(objFilterParams)
 	{
@@ -67,7 +70,7 @@ JSONRPC.ClientFilterBase=class
 	 * - add extra response object keys;
 	 * - translate or decode response params into the expected JSON-RPC client response object format.
 	 * objFilterParams allows for reference return for multiple params. It contains:
-	 * @param array arrResponse.
+	 * @param {object} objResponse.
 	 */
 	afterJSONDecode(objFilterParams)
 	{
@@ -79,7 +82,7 @@ JSONRPC.ClientFilterBase=class
 	 * The first plugin to throw an exception will be the last one.
 	 * If there are no filter plugins registered or none of the plugins have thrown an exception,
 	 * then JSONRPC_client will throw the original JSONRPC_Exception.
-	 * @param Error exception.
+	 * @param {error} exception.
 	 */
 	exceptionCatch(exception)
 	{

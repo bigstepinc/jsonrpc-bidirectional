@@ -1,14 +1,22 @@
 "use strict";
 
-/*
-* TODO:
-* Comments to JSDOC3
-* */
-
+/**
+ * JSONRPC namespace.
+ * @namespace
+ */
 var JSONRPC=JSONRPC || {};
 
+/**
+ * Class representing the JSONRPC Exceptions.
+ * @class
+ * @extends Error
+ */
 JSONRPC.JSONRPC_Exception=class extends Error
 {
+	/**
+	 * @param {string} strMessage.
+	 * @param {number} nCode.
+	 */
 	constructor(strMessage, nCode)
 	{
 		super(strMessage);

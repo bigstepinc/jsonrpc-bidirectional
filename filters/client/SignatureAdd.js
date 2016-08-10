@@ -1,14 +1,22 @@
 "use strict";
 
-/*
-* TODO:
-* Comments to JSDOC3
-* */
-
+/**
+ * JSONRPC_Filter_Client namespace.
+ * @namespace
+ */
 var JSONRPC_Filter_Client=JSONRPC_Filter_Client || {};
 
+/**
+ * SignatureAdd plugin.
+ * @class
+ * @extends JSONRPC.ClientFilterBase
+ */
 JSONRPC_Filter_Client.SignatureAdd=class extends JSONRPC.ClientFilterBase
 {
+	/**
+	 * @param {string} strAPIKey.
+	 * @param {array} arrExtraURLVariables.
+	 */
 	constructor(strAPIKey, arrExtraURLVariables)
 	{
 		super();
@@ -18,10 +26,15 @@ JSONRPC_Filter_Client.SignatureAdd=class extends JSONRPC.ClientFilterBase
 		this.strKeyMetaData=JSONRPC_Filter_Client.SignatureAdd.getKeyMetaData(strAPIKey);
 	}
 
-	static getKeyMetaData(key)
+	/**
+	 * @static
+	 * @param {string} strKey.
+	 * @returns {string}
+	 */
+	static getKeyMetaData(strKey)
 	{
 		var strMeta=null;
-		var arrAPIKey=key.split(":", 2);
+		var arrAPIKey=strKey.split(":", 2);
 
 		if(arrAPIKey.length!=1)
 		{
@@ -31,13 +44,25 @@ JSONRPC_Filter_Client.SignatureAdd=class extends JSONRPC.ClientFilterBase
 		return strMeta;
 	}
 
+	/**
+	 * objFilterParams allows for reference return for multiple params. It contains:
+	 * @param {object} objRequest.
+	 */
 	beforeJSONEncode(objFilterParams)
 	{
-		// Not setting expires to allow HTTP caching AND because the browser machine's UTC time is wrong for a lot of users
-		// (unknowingly users are setting the wrong timezone with the wrong UTC time, while the local time *appears* to be correct).
+		/*
+		Not setting expires to allow HTTP caching AND because the browser machine's UTC time is wrong for a lot of users
+		Unknowingly users are setting the wrong timezone with the wrong UTC time, while the local time *appears* to be correct
+		*/
 		objFilterParams.objRequest["expires"]=parseInt((new Date().getTime())+86400);
 	}
 
+	/**
+	 * objFilterParams allows for reference return for multiple params. It contains:
+	 * @param {string} strJSONRequest.
+	 * @param {string} strEndpointURL.
+	 * @param {array} arrHTTPHeaders.
+	 */
 	afterJSONEncode(objFilterParams)
 	{
 		var strVerifyHash=CryptoJS.HmacSHA256(objFilterParams.strJSONRequest, this.strAPIKey);

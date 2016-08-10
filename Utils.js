@@ -1,12 +1,15 @@
 "use strict";
 
-/*
-* TODO:
-* Comments to JSDOC3
-* */
-
+/**
+ * JSONRPC namespace.
+ * @namespace
+ */
 var JSONRPC=JSONRPC || {};
 
+/**
+ * Utils class.
+ * @class
+ */
 JSONRPC.Utils=class
 {
     constructor()
@@ -14,6 +17,11 @@ JSONRPC.Utils=class
 
     }
 
+    /**
+     * @static
+     * @param {string} strJSON.
+     * @returns {string}
+     */
     static JSONFormat(strJSON)
     {
         var strTabCharacter="  ";

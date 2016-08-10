@@ -1,20 +1,23 @@
 "use strict";
 
-/*
-* TODO:
-* Comments to JSDOC3
-* */
-
+/**
+ * JSONRPC namespace.
+ * @namespace
+ */
 var JSONRPC=JSONRPC || {};
 
+/**
+ * Class representing the JSONRPC Client.
+ * @class
+ */
 JSONRPC.Client=class
 {
 	/**
 	 * Helps decouple initialization in constructor from main thread.
 	 * Specifically added to enable use of XHR.withCredentials for cross-site requests.
-	 * @param strJSONRPCRouterURL
-	 * @param fnReadyCallback
-	 * @param bWithCredentials
+	 * @param {string} strJSONRPCRouterURL.
+	 * @param {callback} fnReadyCallback.
+	 * @param {boolean} bWithCredentials.
 	 */
 	constructor(strJSONRPCRouterURL, fnReadyCallback, bWithCredentials)
 	{
@@ -52,9 +55,8 @@ JSONRPC.Client=class
 
 	/**
 	 * This is the function used to set the HTTP credentials.
-	 *
-	 * @param strUsername
-	 * @param strPassword
+	 * @param {string} strUsername.
+	 * @param {string} strPassword.
 	 */
 	setHTTPCredentials(strUsername, strPassword)
 	{
@@ -66,7 +68,9 @@ JSONRPC.Client=class
 	 * If first element of arrParams is a function, it must be a callback for
 	 * making an asynchronous call. The callback will be called with a single response param,
 	 * which may be either an Error object (or an Error object subclass) or the actual response.
-	 * @protected.
+	 * @protected
+	 * @param {string} strFunctionName.
+	 * @param {array} arrParams.
 	 */
 	_rpc(strFunctionName, arrParams)
 	{
@@ -134,9 +138,6 @@ JSONRPC.Client=class
 				{
 					if(xmlhttp.status!=200)
 					{
-						// console.log(xmlhttp.statusText);
-						// console.log(xmlhttp.responseText);
-
 						bErrorMode=true;
 					}
 					strResult=xmlhttp.responseText;
@@ -161,7 +162,6 @@ JSONRPC.Client=class
 						var mxResponse;
 						try
 						{
-							// console.log(typeof processRAWResponse);
 							mxResponse=_self.processRAWResponse(strResult, bErrorMode);
 						}
 						catch(error)
@@ -202,6 +202,8 @@ JSONRPC.Client=class
 
 	/**
 	 * Decodes a JSON response, returns the result or throws the Error.
+	 * @param {string} strResult.
+	 * @param {boolean} bErrorMode.
 	 */
 	processRAWResponse(strResult, bErrorMode)
 	{
@@ -248,6 +250,7 @@ JSONRPC.Client=class
 
 	/**
 	 * Adds a plugin.
+	 * @param {object} objFilterPlugin.
 	 */
 	addFilterPlugin(objFilterPlugin)
 	{
@@ -259,6 +262,7 @@ JSONRPC.Client=class
 
 	/**
 	 * Removes a plugin.
+	 * @param {object} objFilterPlugin.
 	 */
 	removeFilterPlugin(objFilterPlugin)
 	{
@@ -284,7 +288,7 @@ JSONRPC.Client=class
 	}
 
 	/**
-	 *
+	 * @param {string} strFunctionName.
 	 */
 	rpcReflectionFunction(strFunctionName)
 	{
@@ -292,7 +296,7 @@ JSONRPC.Client=class
 	}
 
 	/**
-	 *
+	 * @param {array} arrFunctionNames.
 	 */
 	rpcReflectionFunctions(arrFunctionNames)
 	{
