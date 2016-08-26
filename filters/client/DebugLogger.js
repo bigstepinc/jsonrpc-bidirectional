@@ -21,9 +21,9 @@ JSONRPC_Filter_Client.DebugLogger=class extends JSONRPC.ClientFilterBase
 	/**
 	 * Prints the request in JSON format.
 	 * objFilterParams allows for reference return for multiple params. It contains:
-	 * @param {string} strJSONRequest.
-	 * @param {string} strEndpointURL.
-	 * @param {array} arrHTTPHeaders.
+	 * @param {string} strJSONRequest
+	 * @param {string} strEndpointURL
+	 * @param {array} arrHTTPHeaders
 	 */
 	afterJSONEncode(objFilterParams)
 	{
@@ -33,7 +33,7 @@ JSONRPC_Filter_Client.DebugLogger=class extends JSONRPC.ClientFilterBase
 	/**
 	 * Prints the response in JSON format.
 	 * objFilterParams allows for reference return for multiple params. It contains:
-	 * @param {string} strJSONResponse.
+	 * @param {string} strJSONResponse
 	 */
 	beforeJSONDecode(objFilterParams)
 	{

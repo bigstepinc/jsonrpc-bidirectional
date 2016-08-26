@@ -15,9 +15,9 @@ JSONRPC.Client=class
 	/**
 	 * Helps decouple initialization in constructor from main thread.
 	 * Specifically added to enable use of XHR.withCredentials for cross-site requests.
-	 * @param {string} strJSONRPCRouterURL.
-	 * @param {callback} fnReadyCallback.
-	 * @param {boolean} bWithCredentials.
+	 * @param {string} strJSONRPCRouterURL
+	 * @param {callback} fnReadyCallback
+	 * @param {boolean} bWithCredentials
 	 */
 	constructor(strJSONRPCRouterURL, fnReadyCallback, bWithCredentials)
 	{
@@ -55,8 +55,8 @@ JSONRPC.Client=class
 
 	/**
 	 * This is the function used to set the HTTP credentials.
-	 * @param {string} strUsername.
-	 * @param {string} strPassword.
+	 * @param {string} strUsername
+	 * @param {string} strPassword
 	 */
 	setHTTPCredentials(strUsername, strPassword)
 	{
@@ -69,8 +69,8 @@ JSONRPC.Client=class
 	 * making an asynchronous call. The callback will be called with a single response param,
 	 * which may be either an Error object (or an Error object subclass) or the actual response.
 	 * @protected
-	 * @param {string} strFunctionName.
-	 * @param {array} arrParams.
+	 * @param {string} strFunctionName
+	 * @param {array} arrParams
 	 */
 	_rpc(strFunctionName, arrParams)
 	{
@@ -202,8 +202,8 @@ JSONRPC.Client=class
 
 	/**
 	 * Decodes a JSON response, returns the result or throws the Error.
-	 * @param {string} strResult.
-	 * @param {boolean} bErrorMode.
+	 * @param {string} strResult
+	 * @param {boolean} bErrorMode
 	 */
 	processRAWResponse(strResult, bErrorMode)
 	{
@@ -250,7 +250,7 @@ JSONRPC.Client=class
 
 	/**
 	 * Adds a plugin.
-	 * @param {object} objFilterPlugin.
+	 * @param {object} objFilterPlugin
 	 */
 	addFilterPlugin(objFilterPlugin)
 	{
@@ -262,7 +262,7 @@ JSONRPC.Client=class
 
 	/**
 	 * Removes a plugin.
-	 * @param {object} objFilterPlugin.
+	 * @param {object} objFilterPlugin
 	 */
 	removeFilterPlugin(objFilterPlugin)
 	{
@@ -288,7 +288,7 @@ JSONRPC.Client=class
 	}
 
 	/**
-	 * @param {string} strFunctionName.
+	 * @param {string} strFunctionName
 	 */
 	rpcReflectionFunction(strFunctionName)
 	{
@@ -296,7 +296,7 @@ JSONRPC.Client=class
 	}
 
 	/**
-	 * @param {array} arrFunctionNames.
+	 * @param {array} arrFunctionNames
 	 */
 	rpcReflectionFunctions(arrFunctionNames)
 	{
@@ -336,25 +336,25 @@ JSONRPC.Client=class
 
 /**
  * JSON-RPC server endpoint URL
- * @protected.
+ * @protected
  */
 JSONRPC.Client.prototype._strJSONRPCRouterURL=null;
 
 /**
  * Flag to keep cookies for CORS requests.
- * @public.
+ * @public
  */
 JSONRPC.Client.prototype.bWithCredentials=false;
 
 /**
  * Filter plugins which extend JSONRPC_server_filter_plugin_base.
- * @protected.
+ * @protected
  */
 JSONRPC.Client.prototype._arrFilterPlugins=null;
 
 /**
  * JSON-RPC protocol call ID.
- * @protected.
+ * @protected
  */
 JSONRPC.Client.prototype._nCallID=0;
 

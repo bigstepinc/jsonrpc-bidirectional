@@ -14,8 +14,8 @@ var JSONRPC=JSONRPC || {};
 JSONRPC.JSONRPC_Exception=class extends Error
 {
 	/**
-	 * @param {string} strMessage.
-	 * @param {number} nCode.
+	 * @param {string} strMessage
+	 * @param {number} nCode
 	 */
 	constructor(strMessage, nCode)
 	{

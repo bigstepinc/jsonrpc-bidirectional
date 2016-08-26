@@ -14,8 +14,8 @@ var JSONRPC_Filter_Client=JSONRPC_Filter_Client || {};
 JSONRPC_Filter_Client.SignatureAdd=class extends JSONRPC.ClientFilterBase
 {
 	/**
-	 * @param {string} strAPIKey.
-	 * @param {array} arrExtraURLVariables.
+	 * @param {string} strAPIKey
+	 * @param {array} arrExtraURLVariables
 	 */
 	constructor(strAPIKey, arrExtraURLVariables)
 	{
@@ -28,7 +28,7 @@ JSONRPC_Filter_Client.SignatureAdd=class extends JSONRPC.ClientFilterBase
 
 	/**
 	 * @static
-	 * @param {string} strKey.
+	 * @param {string} strKey
 	 * @returns {string}
 	 */
 	static getKeyMetaData(strKey)
@@ -46,7 +46,7 @@ JSONRPC_Filter_Client.SignatureAdd=class extends JSONRPC.ClientFilterBase
 
 	/**
 	 * objFilterParams allows for reference return for multiple params. It contains:
-	 * @param {object} objRequest.
+	 * @param {object} objRequest
 	 */
 	beforeJSONEncode(objFilterParams)
 	{
@@ -59,9 +59,9 @@ JSONRPC_Filter_Client.SignatureAdd=class extends JSONRPC.ClientFilterBase
 
 	/**
 	 * objFilterParams allows for reference return for multiple params. It contains:
-	 * @param {string} strJSONRequest.
-	 * @param {string} strEndpointURL.
-	 * @param {array} arrHTTPHeaders.
+	 * @param {string} strJSONRequest
+	 * @param {string} strEndpointURL
+	 * @param {array} arrHTTPHeaders
 	 */
 	afterJSONEncode(objFilterParams)
 	{

@@ -19,7 +19,7 @@ JSONRPC.Utils=class
 
     /**
      * @static
-     * @param {string} strJSON.
+     * @param {string} strJSON
      * @returns {string}
      */
     static JSONFormat(strJSON)
