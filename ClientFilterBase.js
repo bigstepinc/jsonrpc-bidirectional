@@ -12,11 +12,6 @@ var JSONRPC=JSONRPC || {};
  */
 JSONRPC.ClientFilterBase=class
 {
-	constructor()
-	{
-
-	}
-
 	/**
 	 * Should be used to
 	 * - add extra request object keys;

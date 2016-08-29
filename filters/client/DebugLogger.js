@@ -13,11 +13,6 @@ var JSONRPC_Filter_Client=JSONRPC_Filter_Client || {};
  */
 JSONRPC_Filter_Client.DebugLogger=class extends JSONRPC.ClientFilterBase
 {
-	constructor()
-	{
-		super();
-	}
-
 	/**
 	 * Prints the request in JSON format.
 	 * objFilterParams allows for reference return for multiple params. It contains:

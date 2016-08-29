@@ -13,11 +13,6 @@ var JSONRPC_Filter_Client=JSONRPC_Filter_Client || {};
  */
 JSONRPC_Filter_Client.PrettyBrowserConsoleErrors=class extends JSONRPC.ClientFilterBase
 {
-	constructor()
-	{
-		super();
-	}
-
 	/**
   	 * Catches the exception and prints it.
   	 * @param {error} exception

@@ -12,11 +12,6 @@ var JSONRPC=JSONRPC || {};
  */
 JSONRPC.Utils=class
 {
-	constructor()
-	{
-
-	}
-
 	/**
 	 * @static
 	 * @param {string} strJSON
