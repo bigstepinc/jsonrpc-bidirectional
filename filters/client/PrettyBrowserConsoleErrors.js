@@ -26,4 +26,3 @@ JSONRPC_Filter_Client.PrettyBrowserConsoleErrors=class extends JSONRPC.ClientFil
 		}
 	}
 };
-
