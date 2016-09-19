@@ -150,7 +150,7 @@ JSONRPC.Client=class
 						strResult=JSON.stringify({
 							"jsonrpc": JSONRPC.Client.JSONRPC_VERSION,
 							"error": {
-								"code": JSONRPC.JSONRPC_Exception.NETWORK_ERROR,
+								"code": JSONRPC.Exception.NETWORK_ERROR,
 								"message": "Network error. The internet connection may have failed."
 							},
 							"id": null
@@ -221,7 +221,7 @@ JSONRPC.Client=class
 			}
 			catch(error)
 			{
-				throw new JSONRPC.JSONRPC_Exception("JSON parsing failed. RAW response: "+objFilterParams.strResult, JSONRPC.JSONRPC_Exception.PARSE_ERROR);
+				throw new JSONRPC.Exception("JSON parsing failed. RAW response: "+objFilterParams.strResult, JSONRPC.Exception.PARSE_ERROR);
 			}
 
 			delete objFilterParams.strResult;
@@ -233,11 +233,11 @@ JSONRPC.Client=class
 			objResponse=objFilterParams.objResponse;
 
 			if((typeof objResponse!="object") || (bErrorMode && !objResponse.hasOwnProperty("error")))
-				throw new JSONRPC.JSONRPC_Exception(JSON.stringify("Invalid response structure. RAW response: "+strResult), JSONRPC.JSONRPC_Exception.PARSE_ERROR);
+				throw new JSONRPC.Exception(JSON.stringify("Invalid response structure. RAW response: "+strResult), JSONRPC.Exception.PARSE_ERROR);
 			else if(objResponse.hasOwnProperty("result") && !objResponse.hasOwnProperty("error") && !bErrorMode)
 				return objResponse.result;
 
-			throw new JSONRPC.JSONRPC_Exception(objResponse.error.message, objResponse.error.code);
+			throw new JSONRPC.Exception(objResponse.error.message, objResponse.error.code);
 		}
 		catch(error)
 		{

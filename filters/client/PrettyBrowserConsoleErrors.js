@@ -19,7 +19,7 @@ JSONRPC_Filter_Client.PrettyBrowserConsoleErrors=class extends JSONRPC.ClientFil
 	 */
 	exceptionCatch(exception)
 	{
-		if(exception instanceof JSONRPC.JSONRPC_Exception)
+		if(exception instanceof JSONRPC.Exception)
 		{
 			console.log("%c" + exception, "color: red");
 			console.log("%c JSONRPC_Exception: " + JSON.stringify(exception, null, 4), "color: red")
