@@ -14,8 +14,8 @@ var JSONRPC=JSONRPC || {};
 JSONRPC.Exception=class extends Error
 {
 	/**
-	 * @param {string} strMessage
-	 * @param {number} nCode
+	 * @param {String} strMessage
+	 * @param {Number} nCode
 	 */
 	constructor(strMessage, nCode)
 	{
@@ -90,4 +90,4 @@ JSONRPC.Exception.INTERNAL_ERROR=-32603;
  */
 JSONRPC.Exception.INVALID_RETURN_TYPE=-32604;
 
-//-32000 to -32099 Server error. Reserved for implementation-defined server-errors.
+// -32000 to -32099 Server error. Reserved for implementation-defined server-errors.

@@ -4,8 +4,8 @@
  * JSONRPC.Filter.Client namespace.
  * @namespace
  */
-var JSONRPC = JSONRPC || {};
-JSONRPC.Filter = JSONRPC.Filter || {};
+var JSONRPC=JSONRPC || {};
+JSONRPC.Filter=JSONRPC.Filter || {};
 JSONRPC.Filter.Client=JSONRPC.Filter.Client || {};
 
 /**
@@ -16,27 +16,27 @@ JSONRPC.Filter.Client=JSONRPC.Filter.Client || {};
 JSONRPC.Filter.Client.SignatureAdd=class extends JSONRPC.ClientFilterBase
 {
 	/**
-	 * @param {string} strAPIKey
-	 * @param {array} arrExtraURLVariables
+	 * @param {String} strAPIKey
+	 * @param {Array} arrExtraURLletiables
 	 */
-	constructor(strAPIKey, arrExtraURLVariables)
+	constructor(strAPIKey, arrExtraURLletiables)
 	{
 		super();
 
 		this.strAPIKey=strAPIKey;
-		this._arrExtraURLVariables=arrExtraURLVariables;
+		this._arrExtraURLletiables=arrExtraURLletiables;
 		this.strKeyMetaData=JSONRPC.Filter.Client.SignatureAdd.getKeyMetaData(strAPIKey);
 	}
 
 	/**
 	 * @static
-	 * @param {string} strKey
-	 * @returns {string}
+	 * @param {String} strKey
+	 * @returns {String}
 	 */
 	static getKeyMetaData(strKey)
 	{
-		var strMeta=null;
-		var arrAPIKey=strKey.split(":", 2);
+		let strMeta=null;
+		let arrAPIKey=strKey.split(":", 2);
 
 		if(arrAPIKey.length!=1)
 		{
@@ -47,8 +47,8 @@ JSONRPC.Filter.Client.SignatureAdd=class extends JSONRPC.ClientFilterBase
 	}
 
 	/**
-	 * objFilterParams allows for reference return for multiple params. It contains:
-	 * @param {object} objRequest
+	 * @param {Object} objFilterParams - It allows for reference return for multiple params. It contains:
+	 * {Object} objRequest
 	 */
 	beforeJSONEncode(objFilterParams)
 	{
@@ -60,14 +60,14 @@ JSONRPC.Filter.Client.SignatureAdd=class extends JSONRPC.ClientFilterBase
 	}
 
 	/**
-	 * objFilterParams allows for reference return for multiple params. It contains:
-	 * @param {string} strJSONRequest
-	 * @param {string} strEndpointURL
-	 * @param {array} arrHTTPHeaders
+	 * @param {Object} objFilterParams - It allows for reference return for multiple params. It contains:
+	 * {String} strJSONRequest
+	 * {String} strEndpointURL
+	 * {Array} arrHTTPHeaders
 	 */
 	afterJSONEncode(objFilterParams)
 	{
-		var strVerifyHash=CryptoJS.HmacSHA256(objFilterParams.strJSONRequest, this.strAPIKey);
+		let strVerifyHash=CryptoJS.HmacSHA256(objFilterParams.strJSONRequest, this.strAPIKey);
 
 		if(this.strKeyMetaData!==null)
 			strVerifyHash=this.strKeyMetaData+":"+strVerifyHash;
@@ -83,7 +83,7 @@ JSONRPC.Filter.Client.SignatureAdd=class extends JSONRPC.ClientFilterBase
 		if(objFilterParams.strEndpointURL.charAt(objFilterParams.strEndpointURL.length-1)=='&')
 			objFilterParams.strEndpointURL=objFilterParams.strEndpointURL.slice(0, -1);
 
-		for(var strVarName in this._arrExtraURLVariables)
-			objFilterParams.strEndpointURL+="&"+strVarName+"="+this._arrExtraURLVariables[strVarName];
+		for(let strletName in this._arrExtraURLletiables)
+			objFilterParams.strEndpointURL+="&"+strletName+"="+this._arrExtraURLletiables[strletName];
 	}
 };

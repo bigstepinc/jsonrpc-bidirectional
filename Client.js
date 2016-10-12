@@ -15,13 +15,12 @@ JSONRPC.Client=class
 	/**
 	 * Helps decouple initialization in constructor from main thread.
 	 * Specifically added to enable use of XHR.withCredentials for cross-site requests.
-	 * @param {string} strJSONRPCRouterURL
-	 * @param {callback} fnReadyCallback
-	 * @param {boolean} bWithCredentials
+	 * @param {String} strJSONRPCRouterURL
+	 * @param {Function} fnReadyCallback
+	 * @param {Boolean} bWithCredentials
 	 */
 	constructor(strJSONRPCRouterURL, fnReadyCallback, bWithCredentials)
 	{
-		// Allows prototype inheritance.
 		if(typeof strJSONRPCRouterURL!=="undefined")
 		{
 			if(typeof bWithCredentials==="undefined")
@@ -37,7 +36,7 @@ JSONRPC.Client=class
 			this._arrFilterPlugins=[];
 			this._strJSONRPCRouterURL=strJSONRPCRouterURL;
 
-			if(fnReadyCallback && typeof fnReadyCallback!="function")
+			if(fnReadyCallback && typeof fnReadyCallback!=="function")
 				throw new Error("fnReadyCallback must be of type Function.");
 
 			if(fnReadyCallback)
@@ -55,13 +54,13 @@ JSONRPC.Client=class
 
 	/**
 	 * This is the function used to set the HTTP credentials.
-	 * @param {string} strUsername
-	 * @param {string} strPassword
+	 * @param {String} strUsername
+	 * @param {String} strPassword
 	 */
 	setHTTPCredentials(strUsername, strPassword)
 	{
-		this._strHTTPUser = strUsername;
-		this._strHTTPPassword = strPassword;
+		this._strHTTPUser=strUsername;
+		this._strHTTPPassword=strPassword;
 	}
 
 	/**
@@ -69,16 +68,16 @@ JSONRPC.Client=class
 	 * making an asynchronous call. The callback will be called with a single response param,
 	 * which may be either an Error object (or an Error object subclass) or the actual response.
 	 * @protected
-	 * @param {string} strFunctionName
-	 * @param {array} arrParams
+	 * @param {String} strFunctionName
+	 * @param {Array} arrParams
 	 */
 	_rpc(strFunctionName, arrParams)
 	{
-		var objFilterParams={};
+		let objFilterParams={};
 
-		var bAsynchronous=false;
-		var fnAsynchronous;
-		if(arrParams.length && (typeof arrParams[0]=="function"))
+		let bAsynchronous=false;
+		let fnAsynchronous;
+		if(arrParams.length && (typeof arrParams[0]==="function"))
 		{
 			fnAsynchronous=arrParams.shift();
 			bAsynchronous=true;
@@ -92,7 +91,7 @@ JSONRPC.Client=class
 			"jsonrpc": JSONRPC.Client.JSONRPC_VERSION
 		};
 
-		for(var i=0; i<this._arrFilterPlugins.length; i++)
+		for(let i=0; i<this._arrFilterPlugins.length; i++)
 			this._arrFilterPlugins[i].beforeJSONEncode(objFilterParams, bAsynchronous);
 
 		objFilterParams.strJSONRequest=JSON.stringify(objFilterParams.objRequest, null, "\t");
@@ -102,18 +101,18 @@ JSONRPC.Client=class
 			"Content-type": "application/json"
 		};
 
-		if(this._strHTTPUser!=null && this._strHTTPPassword!=null)
-			objFilterParams.objHTTPHeaders["Authorization"] = "Basic " + this._strHTTPUser + ":" + this._strHTTPPassword;
+		if(this._strHTTPUser!==null && this._strHTTPPassword!==null)
+			objFilterParams.objHTTPHeaders["Authorization"]="Basic "+this._strHTTPUser+":"+this._strHTTPPassword;
 
-		for(i=0; i<this._arrFilterPlugins.length; i++)
+		for(let i=0; i<this._arrFilterPlugins.length; i++)
 			this._arrFilterPlugins[i].afterJSONEncode(objFilterParams);
 
-		var bErrorMode=false;
-		var strResult=null;
+		let bErrorMode=false;
+		let strResult=null;
 		objFilterParams.bCalled=false;
 		objFilterParams.bAsynchronous=bAsynchronous;
 		objFilterParams.fnAsynchronous=fnAsynchronous;
-		for(i=0; i<this._arrFilterPlugins.length; i++)
+		for(let i=0; i<this._arrFilterPlugins.length; i++)
 		{
 			strResult=this._arrFilterPlugins[i].makeRequest(objFilterParams);
 			if(objFilterParams.bCalled)
@@ -128,9 +127,7 @@ JSONRPC.Client=class
 
 		if(!objFilterParams.bCalled)
 		{
-			var xmlhttp=new XMLHttpRequest();
-
-			var _self=this;
+			let xmlhttp=new XMLHttpRequest();
 
 			xmlhttp.onreadystatechange=function(){
 				// DONE, the operation is complete.
@@ -159,10 +156,10 @@ JSONRPC.Client=class
 
 					if(bAsynchronous)
 					{
-						var mxResponse;
+						let mxResponse;
 						try
 						{
-							mxResponse=_self.processRAWResponse(strResult, bErrorMode);
+							mxResponse=this.processRAWResponse(strResult, bErrorMode);
 						}
 						catch(error)
 						{
@@ -185,11 +182,11 @@ JSONRPC.Client=class
 			{
 				// In order to force the browser to send cookies for XHR we must set withCredentials.
 				// xmlhttp.withCredentials must be set AFTER XMLHttpRequest.open, as per W3C spec. Internet Explorer 10 and 11 will issue a SCRIPT_ERROR.
-				if(typeof xmlhttp.withCredentials=="boolean" || xmlhttp.hasOwnProperty("withCredentials"))
+				if(typeof xmlhttp.withCredentials==="boolean" || xmlhttp.hasOwnProperty("withCredentials"))
 					xmlhttp.withCredentials=this.bWithCredentials;
 			}
 
-			for(var strHeaderName in objFilterParams.objHTTPHeaders)
+			for(let strHeaderName in objFilterParams.objHTTPHeaders)
 				if(objFilterParams.objHTTPHeaders.hasOwnProperty(strHeaderName))
 					xmlhttp.setRequestHeader(strHeaderName, objFilterParams.objHTTPHeaders[strHeaderName]);
 
@@ -202,14 +199,14 @@ JSONRPC.Client=class
 
 	/**
 	 * Decodes a JSON response, returns the result or throws the Error.
-	 * @param {string} strResult
-	 * @param {boolean} bErrorMode
+	 * @param {String} strResult
+	 * @param {Boolean} bErrorMode
 	 */
 	processRAWResponse(strResult, bErrorMode)
 	{
 		try
 		{
-			var objFilterParams={};
+			let objFilterParams={};
 
 			objFilterParams.strResult=strResult;
 			for(let i=0; i<this._arrFilterPlugins.length; i++)
@@ -232,7 +229,7 @@ JSONRPC.Client=class
 			// Maybe it wasn't an object before calling filters, so maybe it wasn't passed by reference.
 			objResponse=objFilterParams.objResponse;
 
-			if((typeof objResponse!="object") || (bErrorMode && !objResponse.hasOwnProperty("error")))
+			if((typeof objResponse!=="object") || (bErrorMode && !objResponse.hasOwnProperty("error")))
 				throw new JSONRPC.Exception(JSON.stringify("Invalid response structure. RAW response: "+strResult), JSONRPC.Exception.PARSE_ERROR);
 			else if(objResponse.hasOwnProperty("result") && !objResponse.hasOwnProperty("error") && !bErrorMode)
 				return objResponse.result;
@@ -250,7 +247,7 @@ JSONRPC.Client=class
 
 	/**
 	 * Adds a plugin.
-	 * @param {object} objFilterPlugin
+	 * @param {Object} objFilterPlugin
 	 */
 	addFilterPlugin(objFilterPlugin)
 	{
@@ -262,11 +259,11 @@ JSONRPC.Client=class
 
 	/**
 	 * Removes a plugin.
-	 * @param {object} objFilterPlugin
+	 * @param {Object} objFilterPlugin
 	 */
 	removeFilterPlugin(objFilterPlugin)
 	{
-		var nIndex=null;
+		let nIndex=null;
 		for(let i=0; i<this._arrFilterPlugins.length; i++)
 			if(this._arrFilterPlugins[i].constructor===objFilterPlugin.constructor)
 			{
@@ -284,23 +281,23 @@ JSONRPC.Client=class
 	 */
 	rpcFunctions()
 	{
-		return this._rpc("rpc.functions", [].slice.call(arguments));
+		return this._rpc("rpc.functions", ...arguments);
 	}
 
 	/**
-	 * @param {string} strFunctionName
+	 * @param {String} strFunctionName
 	 */
 	rpcReflectionFunction(strFunctionName)
 	{
-		return this._rpc("rpc.reflectionFunction", [].slice.call(arguments));
+		return this._rpc("rpc.reflectionFunction", ...arguments);
 	}
 
 	/**
-	 * @param {array} arrFunctionNames
+	 * @param {Array} arrFunctionNames
 	 */
 	rpcReflectionFunctions(arrFunctionNames)
 	{
-		return this._rpc("rpc.reflectionFunctions", [].slice.call(arguments));
+		return this._rpc("rpc.reflectionFunctions", ...arguments);
 	}
 
 	/**
@@ -308,7 +305,7 @@ JSONRPC.Client=class
 	 */
 	rpcAllowedCrossSiteXHRSubdomains()
 	{
-		return this._rpc("rpc.allowedCrossSiteXHRSubdomains", [].slice.call(arguments));
+		return this._rpc("rpc.allowedCrossSiteXHRSubdomains", ...arguments);
 	}
 
 	/**

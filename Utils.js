@@ -14,17 +14,17 @@ JSONRPC.Utils=class
 {
 	/**
 	 * @static
-	 * @param {string} strJSON
-	 * @returns {string}
+	 * @param {String} strJSON
+	 * @returns {String}
 	 */
 	static JSONFormat(strJSON)
 	{
-		var strTabCharacter="  ";
-		var strNewJSON="";
-		var nIndentLevel=0;
-		var bInString=false;
+		let strTabCharacter="  ";
+		let strNewJSON="";
+		let nIndentLevel=0;
+		let bInString=false;
 
-		var nLength=strJSON.length;
+		let nLength=strJSON.length;
 
 		for(let nCharacterPosition=0; nCharacterPosition<nLength; nCharacterPosition++)
 		{
