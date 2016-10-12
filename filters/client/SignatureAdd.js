@@ -1,17 +1,19 @@
 "use strict";
 
 /**
- * JSONRPC_Filter_Client namespace.
+ * JSONRPC.Filter.Client namespace.
  * @namespace
  */
-var JSONRPC_Filter_Client=JSONRPC_Filter_Client || {};
+var JSONRPC = JSONRPC || {};
+JSONRPC.Filter = JSONRPC.Filter || {};
+JSONRPC.Filter.Client=JSONRPC.Filter.Client || {};
 
 /**
  * SignatureAdd plugin.
  * @class
  * @extends JSONRPC.ClientFilterBase
  */
-JSONRPC_Filter_Client.SignatureAdd=class extends JSONRPC.ClientFilterBase
+JSONRPC.Filter.Client.SignatureAdd=class extends JSONRPC.ClientFilterBase
 {
 	/**
 	 * @param {string} strAPIKey
@@ -23,7 +25,7 @@ JSONRPC_Filter_Client.SignatureAdd=class extends JSONRPC.ClientFilterBase
 
 		this.strAPIKey=strAPIKey;
 		this._arrExtraURLVariables=arrExtraURLVariables;
-		this.strKeyMetaData=JSONRPC_Filter_Client.SignatureAdd.getKeyMetaData(strAPIKey);
+		this.strKeyMetaData=JSONRPC.Filter.Client.SignatureAdd.getKeyMetaData(strAPIKey);
 	}
 
 	/**

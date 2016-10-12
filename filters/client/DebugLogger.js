@@ -1,17 +1,19 @@
 "use strict";
 
 /**
- * JSONRPC_Filter_Client namespace.
+ * JSONRPC.Filter.Client namespace.
  * @namespace
  */
-var JSONRPC_Filter_Client=JSONRPC_Filter_Client || {};
+var JSONRPC = JSONRPC || {};
+JSONRPC.Filter = JSONRPC.Filter || {};
+JSONRPC.Filter.Client=JSONRPC.Filter.Client || {};
 
 /**
  * DebugLogger plugin.
  * @class
  * @extends JSONRPC.ClientFilterBase
  */
-JSONRPC_Filter_Client.DebugLogger=class extends JSONRPC.ClientFilterBase
+JSONRPC.Filter.Client.DebugLogger=class extends JSONRPC.ClientFilterBase
 {
 	/**
 	 * Prints the request in JSON format.
