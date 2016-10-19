@@ -129,7 +129,7 @@ JSONRPC.Client=class
 		{
 			let xmlhttp=new XMLHttpRequest();
 
-			xmlhttp.onreadystatechange=function(){
+			xmlhttp.onreadystatechange=()=>{
 				// DONE, the operation is complete.
 				if(xmlhttp.readyState==4)
 				{
