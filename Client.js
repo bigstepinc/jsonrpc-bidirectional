@@ -77,7 +77,7 @@ JSONRPC.Client=class
 
 		let bAsynchronous=false;
 		let fnAsynchronous;
-		if(arrParams.length && (typeof arrParams[0]==="function"))
+		if(arrParams.length && typeof arrParams[0]==="function")
 		{
 			fnAsynchronous=arrParams.shift();
 			bAsynchronous=true;
@@ -281,7 +281,7 @@ JSONRPC.Client=class
 	 */
 	rpcFunctions()
 	{
-		return this._rpc("rpc.functions", ...arguments);
+		return this._rpc("rpc.functions", [].slice.call(arguments));
 	}
 
 	/**
@@ -289,7 +289,7 @@ JSONRPC.Client=class
 	 */
 	rpcReflectionFunction(strFunctionName)
 	{
-		return this._rpc("rpc.reflectionFunction", ...arguments);
+		return this._rpc("rpc.reflectionFunction", [].slice.call(arguments));
 	}
 
 	/**
@@ -297,7 +297,7 @@ JSONRPC.Client=class
 	 */
 	rpcReflectionFunctions(arrFunctionNames)
 	{
-		return this._rpc("rpc.reflectionFunctions", ...arguments);
+		return this._rpc("rpc.reflectionFunctions", [].slice.call(arguments));
 	}
 
 	/**
@@ -305,7 +305,7 @@ JSONRPC.Client=class
 	 */
 	rpcAllowedCrossSiteXHRSubdomains()
 	{
-		return this._rpc("rpc.allowedCrossSiteXHRSubdomains", ...arguments);
+		return this._rpc("rpc.allowedCrossSiteXHRSubdomains", [].slice.call(arguments));
 	}
 
 	/**
@@ -316,7 +316,7 @@ JSONRPC.Client=class
 		if(this._objConsoleLoggerPlugin)
 			this.addFilterPlugin(this._objConsoleLoggerPlugin);
 		else
-			this._objConsoleLoggerPlugin=this.addFilterPlugin(new DebugLogger());
+			this._objConsoleLoggerPlugin=this.addFilterPlugin(new JSONRPC.Filter.Client.DebugLogger());
 	}
 
 	/**
