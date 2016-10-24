@@ -17,14 +17,14 @@ JSONRPC.Filter.Client.SignatureAdd=class extends JSONRPC.ClientFilterBase
 {
 	/**
 	 * @param {String} strAPIKey
-	 * @param {Array} arrExtraURLletiables
+	 * @param {Array} arrExtraURLVariables
 	 */
-	constructor(strAPIKey, arrExtraURLletiables)
+	constructor(strAPIKey, arrExtraURLVariables)
 	{
 		super();
 
 		this.strAPIKey=strAPIKey;
-		this._arrExtraURLletiables=arrExtraURLletiables;
+		this._arrExtraURLVariables=arrExtraURLVariables;
 		this.strKeyMetaData=JSONRPC.Filter.Client.SignatureAdd.getKeyMetaData(strAPIKey);
 	}
 
@@ -36,7 +36,7 @@ JSONRPC.Filter.Client.SignatureAdd=class extends JSONRPC.ClientFilterBase
 	static getKeyMetaData(strKey)
 	{
 		let strMeta=null;
-		let arrAPIKey=strKey.split(":", 2);
+		const arrAPIKey=strKey.split(":", 2);
 
 		if(arrAPIKey.length!=1)
 		{
@@ -53,9 +53,9 @@ JSONRPC.Filter.Client.SignatureAdd=class extends JSONRPC.ClientFilterBase
 	beforeJSONEncode(objFilterParams)
 	{
 		/*
-		Not setting expires to allow HTTP caching AND because the browser machine's UTC time is wrong for a lot of users
-		Unknowingly users are setting the wrong timezone with the wrong UTC time, while the local time *appears* to be correct
-		*/
+		 Not setting expires to allow HTTP caching AND because the browser machine's UTC time is wrong for a lot of users.
+		 Unknowingly users are setting the wrong timezone with the wrong UTC time, while the local time *appears* to be correct.
+		 */
 		objFilterParams.objRequest["expires"]=parseInt((new Date().getTime())+86400);
 	}
 
@@ -83,7 +83,7 @@ JSONRPC.Filter.Client.SignatureAdd=class extends JSONRPC.ClientFilterBase
 		if(objFilterParams.strEndpointURL.charAt(objFilterParams.strEndpointURL.length-1)=='&')
 			objFilterParams.strEndpointURL=objFilterParams.strEndpointURL.slice(0, -1);
 
-		for(let strletName in this._arrExtraURLletiables)
-			objFilterParams.strEndpointURL+="&"+strletName+"="+this._arrExtraURLletiables[strletName];
+		for(let strName in this._arrExtraURLVariables)
+			objFilterParams.strEndpointURL+="&"+strName+"="+this._arrExtraURLVariables[strName];
 	}
 };

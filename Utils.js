@@ -19,16 +19,16 @@ JSONRPC.Utils=class
 	 */
 	static JSONFormat(strJSON)
 	{
-		let strTabCharacter="  ";
+		const strTabCharacter="  ";
 		let strNewJSON="";
 		let nIndentLevel=0;
 		let bInString=false;
 
-		let nLength=strJSON.length;
+		const nLength=strJSON.length;
 
 		for(let nCharacterPosition=0; nCharacterPosition<nLength; nCharacterPosition++)
 		{
-			let strCharacter=strJSON[nCharacterPosition];
+			const strCharacter=strJSON[nCharacterPosition];
 			switch(strCharacter)
 			{
 				case "{":

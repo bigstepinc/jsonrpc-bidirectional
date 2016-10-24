@@ -73,7 +73,7 @@ JSONRPC.Client=class
 	 */
 	_rpc(strFunctionName, arrParams)
 	{
-		let objFilterParams={};
+		const objFilterParams={};
 
 		let bAsynchronous=false;
 		let fnAsynchronous;
@@ -127,7 +127,7 @@ JSONRPC.Client=class
 
 		if(!objFilterParams.bCalled)
 		{
-			let xmlhttp=new XMLHttpRequest();
+			const xmlhttp=new XMLHttpRequest();
 
 			xmlhttp.onreadystatechange=()=>{
 				// DONE, the operation is complete.
@@ -206,15 +206,16 @@ JSONRPC.Client=class
 	{
 		try
 		{
-			let objFilterParams={};
+			const objFilterParams={};
 
 			objFilterParams.strResult=strResult;
 			for(let i=0; i<this._arrFilterPlugins.length; i++)
 				this._arrFilterPlugins[i].beforeJSONDecode(objFilterParams);
 
+			let objResponse;
 			try
 			{
-				var objResponse=JSON.parse(objFilterParams.strResult);
+				objResponse=JSON.parse(objFilterParams.strResult);
 			}
 			catch(error)
 			{
