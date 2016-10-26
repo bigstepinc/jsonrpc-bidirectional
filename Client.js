@@ -21,14 +21,9 @@ JSONRPC.Client=class
 	 */
 	constructor(strJSONRPCRouterURL, fnReadyCallback, bWithCredentials)
 	{
-		if(typeof strJSONRPCRouterURL!=="undefined")
+		if(strJSONRPCRouterURL!==undefined)
 		{
-			if(typeof bWithCredentials==="undefined")
-				this.bWithCredentials=false;
-			else
-				this.bWithCredentials=!!bWithCredentials;
-
-			if(typeof bWithCredentials==="undefined")
+			if(bWithCredentials===undefined)
 				this.bWithCredentials=false;
 			else
 				this.bWithCredentials=!!bWithCredentials;
@@ -37,17 +32,15 @@ JSONRPC.Client=class
 			this._strJSONRPCRouterURL=strJSONRPCRouterURL;
 
 			if(fnReadyCallback && typeof fnReadyCallback!=="function")
-				throw new Error("fnReadyCallback must be of type Function.");
+				throw new Error("fnReadyCallback must be of type function.");
 
 			if(fnReadyCallback)
 			{
 				// Faking asynchronous loading.
-				setTimeout(
-					function(){
-						fnReadyCallback();
-					},
-					1
-				);
+				setTimeout(()=>{
+					fnReadyCallback();
+				},
+				1);
 			}
 		}
 	}
@@ -139,10 +132,7 @@ JSONRPC.Client=class
 					}
 					strResult=xmlhttp.responseText;
 
-					if(
-						parseInt(xmlhttp.status)===0
-					// && !String(strResult).length
-					)
+					if(parseInt(xmlhttp.status)===0)
 					{
 						strResult=JSON.stringify({
 							"jsonrpc": JSONRPC.Client.JSONRPC_VERSION,
@@ -187,8 +177,12 @@ JSONRPC.Client=class
 			}
 
 			for(let strHeaderName in objFilterParams.objHTTPHeaders)
+			{
 				if(objFilterParams.objHTTPHeaders.hasOwnProperty(strHeaderName))
+				{
 					xmlhttp.setRequestHeader(strHeaderName, objFilterParams.objHTTPHeaders[strHeaderName]);
+				}
+			}
 
 			xmlhttp.send(objFilterParams.strJSONRequest);
 		}
@@ -198,7 +192,7 @@ JSONRPC.Client=class
 	}
 
 	/**
-	 * Decodes a JSON response, returns the result or throws the Error.
+	 * Decodes a JSON response, returns the result or throws an Error.
 	 * @param {String} strResult
 	 * @param {Boolean} bErrorMode
 	 */
@@ -253,8 +247,13 @@ JSONRPC.Client=class
 	addFilterPlugin(objFilterPlugin)
 	{
 		for(let i=0; i<this._arrFilterPlugins.length; i++)
+		{
 			if(this._arrFilterPlugins[i].constructor===objFilterPlugin.constructor)
+			{
 				throw new Error("Multiple instances of the same filter are not allowed.");
+			}
+		}
+
 		this._arrFilterPlugins.push(objFilterPlugin);
 	}
 
@@ -265,14 +264,20 @@ JSONRPC.Client=class
 	removeFilterPlugin(objFilterPlugin)
 	{
 		let nIndex=null;
+
 		for(let i=0; i<this._arrFilterPlugins.length; i++)
+		{
 			if(this._arrFilterPlugins[i].constructor===objFilterPlugin.constructor)
 			{
 				nIndex=i;
 				break;
 			}
+		}
+
 		if(nIndex===null)
+		{
 			throw new Error("Failed to remove filter plugin object, maybe plugin is not registered.");
+		}
 
 		this._arrFilterPlugins.splice(nIndex, 1);
 	}
