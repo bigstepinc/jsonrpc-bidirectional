@@ -84,30 +84,30 @@ JSONRPC.Client=class
 			"jsonrpc": JSONRPC.Client.JSONRPC_VERSION
 		};
 
-		for(let i=0; i<this._arrFilterPlugins.length; i++)
-			this._arrFilterPlugins[i].beforeJSONEncode(objFilterParams, bAsynchronous);
+		for(let i=0; i<this.arrFilterPlugins.length; i++)
+			this.arrFilterPlugins[i].beforeJSONEncode(objFilterParams, bAsynchronous);
 
 		objFilterParams.strJSONRequest=JSON.stringify(objFilterParams.objRequest, null, "\t");
 		delete objFilterParams.objRequest;
-		objFilterParams.strEndpointURL=this._strJSONRPCRouterURL;
+		objFilterParams.strEndpointURL=this.strJSONRPCRouterURL;
 		objFilterParams.objHTTPHeaders={
 			"Content-type": "application/json"
 		};
 
-		if(this._strHTTPUser!==null && this._strHTTPPassword!==null)
-			objFilterParams.objHTTPHeaders["Authorization"]="Basic "+this._strHTTPUser+":"+this._strHTTPPassword;
+		if(this.strHTTPUser!==null && this.strHTTPPassword!==null)
+			objFilterParams.objHTTPHeaders["Authorization"]="Basic "+this.strHTTPUser+":"+this.strHTTPPassword;
 
-		for(let i=0; i<this._arrFilterPlugins.length; i++)
-			this._arrFilterPlugins[i].afterJSONEncode(objFilterParams);
+		for(let i=0; i<this.arrFilterPlugins.length; i++)
+			this.arrFilterPlugins[i].afterJSONEncode(objFilterParams);
 
 		let bErrorMode=false;
 		let strResult=null;
 		objFilterParams.bCalled=false;
 		objFilterParams.bAsynchronous=bAsynchronous;
 		objFilterParams.fnAsynchronous=fnAsynchronous;
-		for(let i=0; i<this._arrFilterPlugins.length; i++)
+		for(let i=0; i<this.arrFilterPlugins.length; i++)
 		{
-			strResult=this._arrFilterPlugins[i].makeRequest(objFilterParams);
+			strResult=this.arrFilterPlugins[i].makeRequest(objFilterParams);
 			if(objFilterParams.bCalled)
 			{
 				if(bAsynchronous && strResult!==null)
@@ -203,8 +203,8 @@ JSONRPC.Client=class
 			const objFilterParams={};
 
 			objFilterParams.strResult=strResult;
-			for(let i=0; i<this._arrFilterPlugins.length; i++)
-				this._arrFilterPlugins[i].beforeJSONDecode(objFilterParams);
+			for(let i=0; i<this.arrFilterPlugins.length; i++)
+				this.arrFilterPlugins[i].beforeJSONDecode(objFilterParams);
 
 			let objResponse;
 			try
@@ -218,8 +218,8 @@ JSONRPC.Client=class
 
 			delete objFilterParams.strResult;
 			objFilterParams.objResponse=objResponse;
-			for(let i=0; i<this._arrFilterPlugins.length; i++)
-				this._arrFilterPlugins[i].afterJSONDecode(objFilterParams);
+			for(let i=0; i<this.arrFilterPlugins.length; i++)
+				this.arrFilterPlugins[i].afterJSONDecode(objFilterParams);
 
 			// Maybe it wasn't an object before calling filters, so maybe it wasn't passed by reference.
 			objResponse=objFilterParams.objResponse;
@@ -233,8 +233,8 @@ JSONRPC.Client=class
 		}
 		catch(error)
 		{
-			for (let i=this._arrFilterPlugins.length-1; i>=0; i--)
-				this._arrFilterPlugins[i].exceptionCatch(error);
+			for (let i=this.arrFilterPlugins.length-1; i>=0; i--)
+				this.arrFilterPlugins[i].exceptionCatch(error);
 
 			throw error;
 		}
@@ -246,15 +246,15 @@ JSONRPC.Client=class
 	 */
 	addFilterPlugin(objFilterPlugin)
 	{
-		for(let i=0; i<this._arrFilterPlugins.length; i++)
+		for(let i=0; i<this.arrFilterPlugins.length; i++)
 		{
-			if(this._arrFilterPlugins[i].constructor===objFilterPlugin.constructor)
+			if(this.arrFilterPlugins[i].constructor===objFilterPlugin.constructor)
 			{
 				throw new Error("Multiple instances of the same filter are not allowed.");
 			}
 		}
 
-		this._arrFilterPlugins.push(objFilterPlugin);
+		this.arrFilterPlugins.push(objFilterPlugin);
 	}
 
 	/**
@@ -265,9 +265,9 @@ JSONRPC.Client=class
 	{
 		let nIndex=null;
 
-		for(let i=0; i<this._arrFilterPlugins.length; i++)
+		for(let i=0; i<this.arrFilterPlugins.length; i++)
 		{
-			if(this._arrFilterPlugins[i].constructor===objFilterPlugin.constructor)
+			if(this.arrFilterPlugins[i].constructor===objFilterPlugin.constructor)
 			{
 				nIndex=i;
 				break;
@@ -279,7 +279,7 @@ JSONRPC.Client=class
 			throw new Error("Failed to remove filter plugin object, maybe plugin is not registered.");
 		}
 
-		this._arrFilterPlugins.splice(nIndex, 1);
+		this.arrFilterPlugins.splice(nIndex, 1);
 	}
 
 	/**
@@ -335,36 +335,79 @@ JSONRPC.Client=class
 		else
 			throw new Error("Failed to remove ConsoleLogger plugin object, maybe plugin is not registered.");
 	}
+
+	/**
+	 * JSON-RPC server endpoint URL.
+	 *
+	 * @returns {String|null} _strJSONRPCRouterURL
+	 */
+	get strJSONRPCRouterURL()
+	{
+		return this._strJSONRPCRouterURL || null;
+	}
+
+	/**
+	 * Flag to keep cookies for CORS requests.
+	 *
+	 * @returns {Boolean} _bWithCredentials
+	 */
+	get bWithCredentials()
+	{
+		return this._bWithCredentials || false;
+	}
+
+	/**
+	 * @param {Boolean} bWithCredentials
+	 */
+	set bWithCredentials(bWithCredentials)
+	{
+		this._bWithCredentials=bWithCredentials;
+	}
+
+	/**
+	 * Filter plugins which extend JSONRPC.ClientFilterBase.
+	 *
+	 * @returns {Array|null} _arrFilterPlugins
+	 */
+	get arrFilterPlugins()
+	{
+		return this._arrFilterPlugins || null;
+	}
+
+	/**
+	 * JSON-RPC protocol call ID.
+	 *
+	 * @returns {Number|0} _nCallID
+	 */
+	get nCallID()
+	{
+		return this._nCallID || 0;
+	}
+
+	/**
+	 * The user name part of HTTP credentials used for authentication plugins.
+	 *
+	 * @returns {String|null} _strHTTPUser
+	 */
+	get strHTTPUser()
+	{
+		return this._strHTTPUser || null;
+	}
+
+	/**
+	 * The user password part of HTTP credentials used for authentication plugins.
+	 * @returns {String|null} _strHTTPPassword
+	 */
+	get strHTTPPassword()
+	{
+		return this._strHTTPPassword || null;
+	}
+
+	/**
+	 * @returns {String}
+	 */
+	static get JSONRPC_VERSION()
+	{
+		return "2.0";
+	}
 };
-
-/**
- * JSON-RPC server endpoint URL
- * @protected
- */
-JSONRPC.Client.prototype._strJSONRPCRouterURL=null;
-
-/**
- * Flag to keep cookies for CORS requests.
- * @public
- */
-JSONRPC.Client.prototype.bWithCredentials=false;
-
-/**
- * Filter plugins which extend JSONRPC_server_filter_plugin_base.
- * @protected
- */
-JSONRPC.Client.prototype._arrFilterPlugins=null;
-
-/**
- * JSON-RPC protocol call ID.
- * @protected
- */
-JSONRPC.Client.prototype._nCallID=0;
-
-/**
- * HTTP credentials used for authentication plugins
- */
-JSONRPC.Client.prototype._strHTTPUser=null;
-JSONRPC.Client.prototype._strHTTPPassword=null;
-
-JSONRPC.Client.JSONRPC_VERSION="2.0";

@@ -21,73 +21,136 @@ JSONRPC.Exception=class extends Error
 	{
 		super(strMessage);
 
-		this.message=strMessage;
-		this.nCode=nCode;
+		this._strMessage=strMessage;
+		this._nCode=nCode;
 	}
+
+	/**
+	 * @returns {String|null} _strMessage
+	 */
+	get strMessage()
+	{
+		return this._strMessage || null;
+	}
+
+	/**
+	 * @returns {Number|null} _nCode
+	 */
+	get nCode()
+	{
+		return this._nCode || null;
+	}
+
+	/**
+	 * Bad credentials (user, password, signing hash, account does not exist, etc.).
+	 * Not part of JSON-RPC 2.0 spec.
+	 *
+	 * @returns {Number}
+	 */
+	static get NOT_AUTHENTICATED()
+	{
+		return -1;
+	}
+
+	/**
+	 * The authenticated user is not authorized to make any or some requests.
+	 * Not part of JSON-RPC 2.0 spec.
+	 *
+	 * @returns {Number}
+	 */
+	static get NOT_AUTHORIZED()
+	{
+		return -2;
+	}
+
+	/**
+	 * The request has expired. The requester must create or obtain a new request.
+	 * Not part of JSON-RPC 2.0 spec.
+	 *
+	 * @returns {Number}
+	 */
+	static get REQUEST_EXPIRED()
+	{
+		return -3;
+	}
+
+	/**
+	 * Did not receive a proper response from the server.
+	 * On HTTP, a HTTP response code was not received.
+	 * Not part of JSON-RPC 2.0 spec.
+	 *
+	 * @returns {Number}
+	 */
+	static get NETWORK_ERROR()
+	{
+		return -4;
+	}
+
+	/**
+	 * Parse error.
+	 * Invalid JSON was received by the server.
+	 * An error occurred on the server while parsing the JSON text.
+	 *
+	 * @returns {Number}
+	 */
+	static get PARSE_ERROR()
+	{
+		return 32700;
+	}
+
+	/**
+	 * Invalid Request.
+	 * The JSON sent is not a valid Request object.
+	 *
+	 * @returns {Number}
+	 */
+	static get INVALID_REQUEST()
+	{
+		return 32600;
+	}
+
+	/**
+	 * Method not found.
+	 * The method does not exist / is not available.
+	 *
+	 * @returns {Number}
+	 */
+	static get METHOD_NOT_FOUND()
+	{
+		return 32601;
+	}
+
+	/**
+	 * Invalid params.
+	 * Invalid method parameter(s).
+	 *
+	 * @returns {Number}
+	 */
+	static get INVALID_PARAMS()
+	{
+		return 32602;
+	}
+
+	/**
+	 * Internal error.
+	 * Internal JSON-RPC error.
+	 *
+	 * @returns {Number}
+	 */
+	static get INTERNAL_ERROR()
+	{
+		return 32603;
+	}
+
+	/**
+	 * Invalid method return type.
+	 *
+	 * @returns {Number}
+	 */
+	static get INVALID_RETURN_TYPE()
+	{
+		return -32604;
+	}
+
+	// -32000 to -32099 Server error. Reserved for implementation-defined server-errors.
 };
-
-JSONRPC.Exception.prototype.message=null;
-JSONRPC.Exception.prototype.nCode=null;
-
-/**
- * Bad credentials (user, password, signing hash, account does not exist, etc.).
- * Not part of JSON-RPC 2.0 spec.
- */
-JSONRPC.Exception.NOT_AUTHENTICATED=-1;
-
-/**
- * The authenticated user is not authorized to make any or some requests.
- * Not part of JSON-RPC 2.0 spec.
- */
-JSONRPC.Exception.NOT_AUTHORIZED=-2;
-
-/**
- * The request has expired. The requester must create or obtain a new request.
- * Not part of JSON-RPC 2.0 spec.
- */
-JSONRPC.Exception.REQUEST_EXPIRED=-3;
-
-/**
- * Did not receive a proper response from the server.
- * On HTTP, a HTTP response code was not received.
- * Not part of JSON-RPC 2.0 spec.
- */
-JSONRPC.Exception.NETWORK_ERROR=-4;
-
-/**
- * Parse error.
- * Invalid JSON was received by the server.
- * An error occurred on the server while parsing the JSON text.
- */
-JSONRPC.Exception.PARSE_ERROR=-32700;
-
-/**
- * Invalid Request.
- * The JSON sent is not a valid Request object.
- */
-JSONRPC.Exception.INVALID_REQUEST=-32600;
-
-/**
- * Method not found.
- * The method does not exist / is not available.
- */
-JSONRPC.Exception.METHOD_NOT_FOUND=-32601;
-
-/**
- * Invalid params.
- * Invalid method parameter(s).
- */
-JSONRPC.Exception.INVALID_PARAMS=-32602;
-
-/**
- * Internal error.
- * Internal JSON-RPC error.
- */
-JSONRPC.Exception.INTERNAL_ERROR=-32603;
-
-/**
- * Invalid method return type.
- */
-JSONRPC.Exception.INVALID_RETURN_TYPE=-32604;
-
-// -32000 to -32099 Server error. Reserved for implementation-defined server-errors.
