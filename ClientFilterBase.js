@@ -1,16 +1,11 @@
 "use strict";
 
 /**
- * JSONRPC namespace.
- * @namespace
- */
-var JSONRPC=JSONRPC || {};
-
-/**
  * Class representing the base for the client filters.
  * @class
  */
-JSONRPC.ClientFilterBase=class
+module.exports=
+class ClientFilterBase
 {
 	/**
 	 * Should be used to

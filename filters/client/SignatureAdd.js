@@ -1,19 +1,17 @@
 "use strict";
 
-/**
- * JSONRPC.Filter.Client namespace.
- * @namespace
- */
-var JSONRPC=JSONRPC || {};
-JSONRPC.Filter=JSONRPC.Filter || {};
-JSONRPC.Filter.Client=JSONRPC.Filter.Client || {};
+const JSONRPC={};
+JSONRPC.ClientFilterBase=require("../../ClientFilterBase");
+
+const HMAC_SHA256=require("crypto-js/hmac-sha256");
 
 /**
  * SignatureAdd plugin.
  * @class
  * @extends JSONRPC.ClientFilterBase
  */
-JSONRPC.Filter.Client.SignatureAdd=class extends JSONRPC.ClientFilterBase
+module.exports=
+class SignatureAdd extends JSONRPC.ClientFilterBase
 {
 	/**
 	 * @param {String} strAPIKey
@@ -25,7 +23,7 @@ JSONRPC.Filter.Client.SignatureAdd=class extends JSONRPC.ClientFilterBase
 
 		this.strAPIKey=strAPIKey;
 		this._arrExtraURLVariables=arrExtraURLVariables;
-		this.strKeyMetaData=JSONRPC.Filter.Client.SignatureAdd.getKeyMetaData(strAPIKey);
+		this.strKeyMetaData=SignatureAdd.getKeyMetaData(strAPIKey);
 	}
 
 	/**
@@ -67,10 +65,10 @@ JSONRPC.Filter.Client.SignatureAdd=class extends JSONRPC.ClientFilterBase
 	 */
 	afterJSONEncode(objFilterParams)
 	{
-		let strVerifyHash=CryptoJS.HmacSHA256(objFilterParams.strJSONRequest, this.strAPIKey);
+		let strVerifyHash=HMAC_SHA256(objFilterParams.strJSONRequest, this.strAPIKey);
 
 		if(this.strKeyMetaData!==null)
-			strVerifyHash=this.strKeyMetaData+":"+strVerifyHash;
+			strVerifyHash = this.strKeyMetaData + ":" + strVerifyHash;
 
 		if(objFilterParams.strEndpointURL.indexOf("?")>-1)
 			objFilterParams.strEndpointURL+="&";

@@ -1,16 +1,11 @@
 "use strict";
 
 /**
- * JSONRPC namespace.
- * @namespace
- */
-var JSONRPC=JSONRPC || {};
-
-/**
  * Utils class.
  * @class
  */
-JSONRPC.Utils=class
+module.exports=	
+class Utils
 {
 	/**
 	 * @static

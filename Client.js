@@ -1,20 +1,20 @@
 "use strict";
 
-/**
- * JSONRPC namespace.
- * @namespace
- */
-var JSONRPC=JSONRPC || {};
+const JSONRPC={};
+JSONRPC.Exception=require("./Exception");
+
+const fetch=require("node-fetch");
+const Request=fetch.Request;
+const Headers=fetch.Headers;
 
 /**
  * Class representing the JSONRPC Client.
  * @class
  */
-JSONRPC.Client=class
+module.exports=
+class Client
 {
 	/**
-	 * Helps decouple initialization in constructor from main thread.
-	 * Specifically added to enable use of XHR.withCredentials for cross-site requests.
 	 * @param {String} strJSONRPCRouterURL
 	 * @param {Function} fnReadyCallback
 	 * @param {Boolean} bWithCredentials
@@ -30,6 +30,7 @@ JSONRPC.Client=class
 
 			this._arrFilterPlugins=[];
 			this._strJSONRPCRouterURL=strJSONRPCRouterURL;
+			this._nCallID=0;
 
 			if(fnReadyCallback && typeof fnReadyCallback!=="function")
 				throw new Error("fnReadyCallback must be of type function.");
@@ -38,9 +39,9 @@ JSONRPC.Client=class
 			{
 				// Faking asynchronous loading.
 				setTimeout(()=>{
-					fnReadyCallback();
-				},
-				1);
+						fnReadyCallback();
+					},
+					1);
 			}
 		}
 	}
@@ -64,7 +65,7 @@ JSONRPC.Client=class
 	 * @param {String} strFunctionName
 	 * @param {Array} arrParams
 	 */
-	_rpc(strFunctionName, arrParams)
+	async _rpc(strFunctionName, arrParams)
 	{
 		const objFilterParams={};
 
@@ -81,7 +82,7 @@ JSONRPC.Client=class
 			"params": arrParams,
 
 			"id": ++this._nCallID,
-			"jsonrpc": JSONRPC.Client.JSONRPC_VERSION
+			"jsonrpc": Client.JSONRPC_VERSION
 		};
 
 		for(let i=0; i<this.arrFilterPlugins.length; i++)
@@ -111,84 +112,66 @@ JSONRPC.Client=class
 			if(objFilterParams.bCalled)
 			{
 				if(bAsynchronous && strResult!==null)
-					throw new Error("Plugin set return value to non-null for an asynchronous request.");
+				{
+					return strResult;
+				}
+
 				break;
 			}
-			if(strResult!==null)
+			else if(strResult!==null)
+			{
 				throw new Error("Plugin set return value to non-null while leaving bCalled===false.");
+			}
 		}
 
 		if(!objFilterParams.bCalled)
 		{
-			const xmlhttp=new XMLHttpRequest();
-
-			xmlhttp.onreadystatechange=()=>{
-				// DONE, the operation is complete.
-				if(xmlhttp.readyState==4)
-				{
-					if(xmlhttp.status!=200)
-					{
-						bErrorMode=true;
-					}
-					strResult=xmlhttp.responseText;
-
-					if(parseInt(xmlhttp.status)===0)
-					{
-						strResult=JSON.stringify({
-							"jsonrpc": JSONRPC.Client.JSONRPC_VERSION,
-							"error": {
-								"code": JSONRPC.Exception.NETWORK_ERROR,
-								"message": "Network error. The internet connection may have failed."
-							},
-							"id": null
-						});
-					}
-
-					if(bAsynchronous)
-					{
-						let mxResponse;
-						try
-						{
-							mxResponse=this.processRAWResponse(strResult, bErrorMode);
-						}
-						catch(error)
-						{
-							mxResponse=error;
-						}
-						fnAsynchronous(mxResponse);
-					}
-				}
-			};
-
-			xmlhttp.open(
-				"post",
+			const request=new Request(
 				objFilterParams.strEndpointURL,
-				!!bAsynchronous
+				{
+					method: "POST",
+					mode: "cors",
+					headers: new Headers(objFilterParams.objHTTPHeaders),
+					body: objFilterParams.strJSONRequest,
+					cache: "no-cache",
+					credentials: "include"
+				}
 			);
 
+			const response=await fetch(request);
+			let strResult=await response.text();
 
-			// Setting withCredentials for synchronous requests is deprecated by W3C and already throws an error in many browsers.
-			if(bAsynchronous)
+			if(response.status!=200)
 			{
-				// In order to force the browser to send cookies for XHR we must set withCredentials.
-				// xmlhttp.withCredentials must be set AFTER XMLHttpRequest.open, as per W3C spec. Internet Explorer 10 and 11 will issue a SCRIPT_ERROR.
-				if(typeof xmlhttp.withCredentials==="boolean" || xmlhttp.hasOwnProperty("withCredentials"))
-					xmlhttp.withCredentials=this.bWithCredentials;
-			}
-
-			for(let strHeaderName in objFilterParams.objHTTPHeaders)
-			{
-				if(objFilterParams.objHTTPHeaders.hasOwnProperty(strHeaderName))
+				bErrorMode=true;
+				if(parseInt(response.status)===0)
 				{
-					xmlhttp.setRequestHeader(strHeaderName, objFilterParams.objHTTPHeaders[strHeaderName]);
+					strResult=JSON.stringify({
+						"jsonrpc": Client.JSONRPC_VERSION,
+						"error": {
+							"code": JSONRPC.Exception.NETWORK_ERROR,
+							"message": "Network error. The internet connection may have failed."
+						},
+						"id": null
+					});
 				}
 			}
 
-			xmlhttp.send(objFilterParams.strJSONRequest);
+			if(bAsynchronous)
+			{
+				await this.processRAWResponse(strResult, bErrorMode)
+					.catch((error) => {
+						fnAsynchronous(error);
+					})
+					.then((mxResult)=> {
+						fnAsynchronous(mxResult);
+					});
+			}
+			else
+			{
+				return this.processRAWResponse(strResult, bErrorMode);
+			}
 		}
-
-		if(!bAsynchronous)
-			return this.processRAWResponse(strResult, bErrorMode);
 	}
 
 	/**
@@ -196,7 +179,7 @@ JSONRPC.Client=class
 	 * @param {String} strResult
 	 * @param {Boolean} bErrorMode
 	 */
-	processRAWResponse(strResult, bErrorMode)
+	async processRAWResponse(strResult, bErrorMode)
 	{
 		try
 		{

@@ -1,17 +1,12 @@
 "use strict";
 
 /**
- * JSONRPC namespace.
- * @namespace
- */
-var JSONRPC=JSONRPC || {};
-
-/**
  * Class representing the JSONRPC Exceptions.
  * @class
  * @extends Error
  */
-JSONRPC.Exception=class extends Error
+module.exports=
+class Exception extends Error
 {
 	/**
 	 * @param {String} strMessage

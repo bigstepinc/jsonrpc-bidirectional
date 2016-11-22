@@ -1,23 +1,19 @@
 "use strict";
 
-/**
- * JSONRPC.Filter.Client namespace.
- * @namespace
- */
-var JSONRPC=JSONRPC || {};
-JSONRPC.Filter=JSONRPC.Filter || {};
-JSONRPC.Filter.Client=JSONRPC.Filter.Client || {};
+const JSONRPC={};
+JSONRPC.ClientFilterBase=require("../../ClientFilterBase");
 
 /**
  * PrettyBrowserConsoleErrors plugin.
  * @class
  * @extends JSONRPC.ClientFilterBase
  */
-JSONRPC.Filter.Client.PrettyBrowserConsoleErrors=class extends JSONRPC.ClientFilterBase
+module.exports=
+class PrettyBrowserConsoleErrors extends JSONRPC.ClientFilterBase
 {
 	/**
-  	 * Catches the exception and prints it.
-  	 * @param {error} exception
+	 * Catches the exception and prints it.
+	 * @param {error} exception
 	 */
 	exceptionCatch(exception)
 	{
