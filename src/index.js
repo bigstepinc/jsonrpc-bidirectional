@@ -1,3 +1,6 @@
+require("babel-core/register");
+require("babel-polyfill");
+
 const obj={};
 obj.JSONRPC={};
 
