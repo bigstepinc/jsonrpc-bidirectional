@@ -16,24 +16,8 @@ class Exception extends Error
 	{
 		super(strMessage);
 
-		this._strMessage=strMessage;
-		this._nCode=nCode;
-	}
-
-	/**
-	 * @returns {String|null} _strMessage
-	 */
-	get strMessage()
-	{
-		return this._strMessage || null;
-	}
-
-	/**
-	 * @returns {Number|null} _nCode
-	 */
-	get nCode()
-	{
-		return this._nCode || null;
+		this.strMessage=strMessage;
+		this.nCode=nCode;
 	}
 
 	/**
