@@ -3,6 +3,7 @@
   "description": "JavaScriptES7 JSONRPC Client",
   "version": "1.0.0",
   "scripts": {
+    "transpile": "babel src --out-dir src",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
