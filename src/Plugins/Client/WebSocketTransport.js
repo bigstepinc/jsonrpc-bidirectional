@@ -58,6 +58,8 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 					console.error("RAW remote message: "+strResponse);
 					console.log("Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request.");
 					this.webSocket.close(1, "Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request.");
+
+					return;
 				}
 
 				if(objResponse.params)
