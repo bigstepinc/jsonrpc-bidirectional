@@ -88,6 +88,7 @@ class Client
 		for(let i=0; i<this.arrFilterPlugins.length; i++)
 			this.arrFilterPlugins[i].beforeJSONEncode(objFilterParams, bAsynchronous);
 
+		objFilterParams.nCallID=this._nCallID;
 		objFilterParams.strJSONRequest=JSON.stringify(objFilterParams.objRequest, null, "\t");
 		delete objFilterParams.objRequest;
 		objFilterParams.strEndpointURL=this.strJSONRPCRouterURL;
