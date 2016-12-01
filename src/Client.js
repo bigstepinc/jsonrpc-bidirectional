@@ -38,10 +38,12 @@ class Client
 			if(fnReadyCallback)
 			{
 				// Faking asynchronous loading.
-				setTimeout(()=>{
+				setTimeout(
+					()=>{
 						fnReadyCallback();
 					},
-					1);
+					1
+				);
 			}
 		}
 	}
@@ -153,7 +155,7 @@ class Client
 							"code": JSONRPC.Exception.NETWORK_ERROR,
 							"message": "Network error. The internet connection may have failed."
 						},
-						"id": null
+						"id": objFilterParams.nCallID
 					});
 				}
 			}
