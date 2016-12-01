@@ -1,0 +1,8 @@
+{
+    "compilerOptions": {
+        "target": "ES7"
+    },
+	"files": [
+        "src/"
+    ]
+}

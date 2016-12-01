@@ -25,7 +25,8 @@
   },
   "dependencies": {
     "crypto-js": "^3.1.8",
-    "node-fetch": "^1.6.3"
+    "node-fetch": "^1.6.3",
+    "ws": "^1.1.1"
   },
   "devDependencies": {
     "babel-cli": "^6.18.0",

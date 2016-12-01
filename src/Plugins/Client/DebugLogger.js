@@ -1,16 +1,16 @@
 "use strict";
 
 const JSONRPC={};
-JSONRPC.ClientFilterBase=require("../../ClientFilterBase");
+JSONRPC.ClientPluginBase=require("../../ClientPluginBase");
 JSONRPC.Utils=require("../../Utils");
 
 /**
  * DebugLogger plugin.
  * @class
- * @extends JSONRPC.ClientFilterBase
+ * @extends JSONRPC.ClientPluginBase
  */
 module.exports=
-class DebugLogger extends JSONRPC.ClientFilterBase
+class DebugLogger extends JSONRPC.ClientPluginBase
 {
 	/**
 	 * Prints the request in JSON format.

@@ -1,15 +1,15 @@
 "use strict";
 
 const JSONRPC={};
-JSONRPC.ClientFilterBase=require("../../ClientFilterBase");
+JSONRPC.ClientPluginBase=require("../../ClientPluginBase");
 
 /**
  * PrettyBrowserConsoleErrors plugin.
  * @class
- * @extends JSONRPC.ClientFilterBase
+ * @extends JSONRPC.ClientPluginBase
  */
 module.exports=
-class PrettyBrowserConsoleErrors extends JSONRPC.ClientFilterBase
+class PrettyBrowserConsoleErrors extends JSONRPC.ClientPluginBase
 {
 	/**
 	 * Catches the exception and prints it.

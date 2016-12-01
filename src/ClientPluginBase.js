@@ -5,7 +5,7 @@
  * @class
  */
 module.exports=
-class ClientFilterBase
+class ClientPluginBase
 {
 	/**
 	 * Should be used to

@@ -1,17 +1,17 @@
 "use strict";
 
 const JSONRPC={};
-JSONRPC.ClientFilterBase=require("../../ClientFilterBase");
+JSONRPC.ClientPluginBase=require("../../ClientPluginBase");
 
 const HMAC_SHA256=require("crypto-js/hmac-sha256");
 
 /**
  * SignatureAdd plugin.
  * @class
- * @extends JSONRPC.ClientFilterBase
+ * @extends JSONRPC.ClientPluginBase
  */
 module.exports=
-class SignatureAdd extends JSONRPC.ClientFilterBase
+class SignatureAdd extends JSONRPC.ClientPluginBase
 {
 	/**
 	 * @param {String} strAPIKey

@@ -351,7 +351,7 @@ class Client
 	}
 
 	/**
-	 * Filter plugins which extend JSONRPC.ClientFilterBase.
+	 * Filter plugins which extend JSONRPC.ClientPluginBase.
 	 *
 	 * @returns {Array|null} _arrFilterPlugins
 	 */
