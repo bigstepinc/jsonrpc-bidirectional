@@ -108,7 +108,7 @@ class Client
 		objFilterParams.fnAsynchronous=fnAsynchronous;
 		for(let i=0; i<this.arrFilterPlugins.length; i++)
 		{
-			strResult=this.arrFilterPlugins[i].makeRequest(objFilterParams);
+			strResult=await this.arrFilterPlugins[i].makeRequest(objFilterParams);
 			if(objFilterParams.bCalled)
 			{
 				if(bAsynchronous && strResult!==null)
