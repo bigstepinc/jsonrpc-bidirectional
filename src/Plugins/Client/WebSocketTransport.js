@@ -1,9 +1,11 @@
-const ClientPluginBase=require("../../ClientPluginBase");
+const JSONRPC={};
+JSONRPC.ClientPluginBase=require("../../ClientPluginBase");
+
 const assert=require("assert");
 const WebSocket=require("ws");
 
 module.export=
-class WebSocketTransport extends ClientPluginBase
+class WebSocketTransport extends JSONRPC.ClientPluginBase
 {
 	/**
 	 * @param {WebSocket} webSocket
