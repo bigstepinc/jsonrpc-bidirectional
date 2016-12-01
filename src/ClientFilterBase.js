@@ -38,7 +38,7 @@ class ClientFilterBase
 	 * @param {Object} objFilterParams - It allows for reference return for multiple params.
 	 * @returns {*}. The RAW string output of the server or false on error (or can throw)
 	 */
-	makeRequest(objFilterParams)
+	async makeRequest(objFilterParams)
 	{
 		return null;
 	}
