@@ -24,16 +24,22 @@ class Client
 		if(strJSONRPCRouterURL!==undefined)
 		{
 			if(bWithCredentials===undefined)
+			{
 				this.bWithCredentials=false;
+			}
 			else
+			{
 				this.bWithCredentials=!!bWithCredentials;
+			}
 
 			this._arrFilterPlugins=[];
 			this._strJSONRPCRouterURL=strJSONRPCRouterURL;
 			this._nCallID=0;
 
 			if(fnReadyCallback && typeof fnReadyCallback!=="function")
+			{
 				throw new Error("fnReadyCallback must be of type function.");
+			}
 
 			if(fnReadyCallback)
 			{
@@ -88,7 +94,9 @@ class Client
 		};
 
 		for(let i=0; i<this.arrFilterPlugins.length; i++)
+		{
 			this.arrFilterPlugins[i].beforeJSONEncode(objFilterParams, bAsynchronous);
+		}
 
 		objFilterParams.nCallID=this._nCallID;
 		objFilterParams.strJSONRequest=JSON.stringify(objFilterParams.objRequest, null, "\t");
@@ -99,10 +107,14 @@ class Client
 		};
 
 		if(this.strHTTPUser!==null && this.strHTTPPassword!==null)
+		{
 			objFilterParams.objHTTPHeaders["Authorization"]="Basic "+this.strHTTPUser+":"+this.strHTTPPassword;
+		}
 
 		for(let i=0; i<this.arrFilterPlugins.length; i++)
+		{
 			this.arrFilterPlugins[i].afterJSONEncode(objFilterParams);
+		}
 
 		let bErrorMode=false;
 		let strResult=null;
@@ -144,10 +156,10 @@ class Client
 			const response=await fetch(request);
 			let strResult=await response.text();
 
-			if(response.status!=200)
+			if(response.status!==200)
 			{
 				bErrorMode=true;
-				if(parseInt(response.status)===0)
+				if(parseInt(response.status, 10)===0)
 				{
 					strResult=JSON.stringify({
 						"jsonrpc": Client.JSONRPC_VERSION,
@@ -190,7 +202,9 @@ class Client
 
 			objFilterParams.strResult=strResult;
 			for(let i=0; i<this.arrFilterPlugins.length; i++)
+			{
 				this.arrFilterPlugins[i].beforeJSONDecode(objFilterParams);
+			}
 
 			let objResponse;
 			try
@@ -205,22 +219,30 @@ class Client
 			delete objFilterParams.strResult;
 			objFilterParams.objResponse=objResponse;
 			for(let i=0; i<this.arrFilterPlugins.length; i++)
+			{
 				this.arrFilterPlugins[i].afterJSONDecode(objFilterParams);
+			}
 
 			// Maybe it wasn't an object before calling filters, so maybe it wasn't passed by reference.
 			objResponse=objFilterParams.objResponse;
 
 			if((typeof objResponse!=="object") || (bErrorMode && !objResponse.hasOwnProperty("error")))
+			{
 				throw new JSONRPC.Exception(JSON.stringify("Invalid response structure. RAW response: "+strResult), JSONRPC.Exception.PARSE_ERROR);
+			}
 			else if(objResponse.hasOwnProperty("result") && !objResponse.hasOwnProperty("error") && !bErrorMode)
+			{
 				return objResponse.result;
+			}
 
 			throw new JSONRPC.Exception(objResponse.error.message, objResponse.error.code);
 		}
 		catch(error)
 		{
 			for (let i=this.arrFilterPlugins.length-1; i>=0; i--)
+			{
 				this.arrFilterPlugins[i].exceptionCatch(error);
+			}
 
 			throw error;
 		}
@@ -305,10 +327,12 @@ class Client
 	 */
 	enableLogging()
 	{
-		if(this._objConsoleLoggerPlugin)
-			this.addFilterPlugin(this._objConsoleLoggerPlugin);
-		else
-			this._objConsoleLoggerPlugin=this.addFilterPlugin(new JSONRPC.Filter.Client.DebugLogger());
+		if(!this._objConsoleLoggerPlugin)
+		{
+			this._objConsoleLoggerPlugin=new JSONRPC.Filter.Client.DebugLogger();
+		}
+		
+		this.addFilterPlugin(this._objConsoleLoggerPlugin);
 	}
 
 	/**
@@ -317,9 +341,13 @@ class Client
 	disableLogging()
 	{
 		if(this._objConsoleLoggerPlugin)
+		{
 			this.removeFilterPlugin(this._objConsoleLoggerPlugin);
+		}
 		else
+		{
 			throw new Error("Failed to remove ConsoleLogger plugin object, maybe plugin is not registered.");
+		}
 	}
 
 	/**
