@@ -1,5 +1,3 @@
-"use strict";
-
 const JSONRPC={};
 JSONRPC.Exception=require("./Exception");
 
@@ -250,32 +248,32 @@ class Client
 
 	/**
 	 * Adds a plugin.
-	 * @param {Object} objFilterPlugin
+	 * @param {Object} plugin
 	 */
-	addFilterPlugin(objFilterPlugin)
+	addPlugin(plugin)
 	{
 		for(let i=0; i<this.arrFilterPlugins.length; i++)
 		{
-			if(this.arrFilterPlugins[i].constructor===objFilterPlugin.constructor)
+			if(this.arrFilterPlugins[i].constructor===plugin.constructor)
 			{
 				throw new Error("Multiple instances of the same filter are not allowed.");
 			}
 		}
 
-		this.arrFilterPlugins.push(objFilterPlugin);
+		this.arrFilterPlugins.push(plugin);
 	}
 
 	/**
 	 * Removes a plugin.
-	 * @param {Object} objFilterPlugin
+	 * @param {Object} plugin
 	 */
-	removeFilterPlugin(objFilterPlugin)
+	removePlugin(plugin)
 	{
 		let nIndex=null;
 
 		for(let i=0; i<this.arrFilterPlugins.length; i++)
 		{
-			if(this.arrFilterPlugins[i].constructor===objFilterPlugin.constructor)
+			if(this.arrFilterPlugins[i].constructor===plugin.constructor)
 			{
 				nIndex=i;
 				break;
@@ -327,12 +325,12 @@ class Client
 	 */
 	enableLogging()
 	{
-		if(!this._objConsoleLoggerPlugin)
+		if(!this._consoleLoggerPlugin)
 		{
-			this._objConsoleLoggerPlugin=new JSONRPC.Filter.Client.DebugLogger();
+			this._consoleLoggerPlugin=new JSONRPC.Filter.Client.DebugLogger();
 		}
 		
-		this.addFilterPlugin(this._objConsoleLoggerPlugin);
+		this.addPlugin(this._consoleLoggerPlugin);
 	}
 
 	/**
@@ -340,9 +338,9 @@ class Client
 	 */
 	disableLogging()
 	{
-		if(this._objConsoleLoggerPlugin)
+		if(this._consoleLoggerPlugin)
 		{
-			this.removeFilterPlugin(this._objConsoleLoggerPlugin);
+			this.removePlugin(this._consoleLoggerPlugin);
 		}
 		else
 		{
