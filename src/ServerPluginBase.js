@@ -44,7 +44,7 @@ class ServerPluginBase
 	 * 
 	 * @param {JSONRPC.IncomingRequest} jsonrpcRequest
 	 */
-	async response(jsonrpcRequest)
+	async result(jsonrpcRequest)
 	{
 		// jsonrpcRequest.callResult contains what the function call returned. 
 	}
@@ -58,5 +58,20 @@ class ServerPluginBase
 	async exceptionCatch(jsonrpcRequest)
 	{
 		// jsonrpcRequest.callResult contains a subclass instance of Error.
+	}
+
+
+	/**
+	 * This is called with the actual response object.
+	 * 
+	 * objResponse is a standard JSONRPC 2.0 response object.
+	 * 
+	 * @param {Object} objResponse
+	 */
+	async response(objResponse)
+	{
+		// Gives a chance to modify the server response object before sending it out.
+
+		// Normally, this allows extending the protocol.
 	}
 };

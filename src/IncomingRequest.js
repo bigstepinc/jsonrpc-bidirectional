@@ -1,7 +1,11 @@
 const assert = require("assert");
 
+const http = require("http");
+
 const JSONRPC = {};
 JSONRPC.EndpointBase = require("./EndpointBase");
+JSONRPC.Exception = require("./Exception");
+JSONRPC.Server = require("./Server");
 
 
 module.exports=
@@ -17,6 +21,8 @@ class IncomingRequest
 
 		this._mxResult=null;
 		this._bMethodCalled=false;
+
+		this._httpRequest=null;
 
 		Object.seal(this);
 	}
@@ -61,6 +67,26 @@ class IncomingRequest
 
 
 	/**
+	 * @return {http.IncomingMessage|null}
+	 */
+	get httpRequest()
+	{
+		return this._httpRequest;
+	}
+
+
+	/**
+	 * @param {http.IncomingMessage} httpRequest
+	 */
+	set httpRequest(httpRequest)
+	{
+		assert(httpRequest instanceof http.IncomingMessage);
+
+		this._httpRequest=httpRequest;
+	}
+
+
+	/**
 	 * @return {String|null}
 	 */
 	get body()
@@ -97,6 +123,24 @@ class IncomingRequest
 		assert(typeof objRequest === "object" || Array.isArray(objRequest));
 
 		this._requestObject=objRequest;
+	}
+
+
+	/**
+	 * JSON-RPC 2.0 specification:
+	 * An identifier established by the Client that MUST contain a String, Number, or NULL value if included.
+	 * If it is not included it is assumed to be a notification.
+	 * The value SHOULD normally not be Null and Numbers SHOULD NOT contain fractional parts.
+	 * 
+	 * @return {boolean}
+	 */
+	get isNotification()
+	{
+		return (
+			this._requestObject !== null
+			&& typeof this._requestObject === "object" 
+			&& !this.requestObject.hasOwnProperty("id")
+		);
 	}
 
 
@@ -155,5 +199,38 @@ class IncomingRequest
 	{
 		this.isMethodCalled=true;
 		this._mxResult=mxResult;
+	}
+
+
+	/**
+	 * @return {Object}
+	 */
+	toResponseObject()
+	{
+		let objResponse={id: null};
+
+		if(this.callResult instanceof Error)
+		{
+			objResponse.error={
+				message: this.callResult.message,
+				code: (this.callResult instanceof JSONRPC.Exception) ? this.callResult.code : 0
+			};
+		}
+		else
+		{
+			objResponse.result = this.callResult; 
+		}
+
+		if(
+			this._requestObject !== null
+			&& typeof this._requestObject === "object" 
+			&& this._requestObject.hasOwnProperty("id")
+		)
+		{
+			objResponse.id = this._requestObject.id;
+		}
+		objResponse.jsonrpc = JSONRPC.Server.JSONRPC_VERSION;
+
+		return objResponse;
 	}
 };

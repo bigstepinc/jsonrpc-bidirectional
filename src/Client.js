@@ -5,6 +5,8 @@ const fetch=require("node-fetch");
 const Request=fetch.Request;
 const Headers=fetch.Headers;
 
+const assert=require("assert");
+
 /**
  * Class representing the JSONRPC Client.
  * @class
@@ -73,6 +75,8 @@ class Client
 	 */
 	async _rpc(strFunctionName, arrParams)
 	{
+		assert(Array.isArray(arrParams), "arrParams must be an Array.");
+
 		const objFilterParams={};
 
 		let bAsynchronous=false;
@@ -91,9 +95,9 @@ class Client
 			"jsonrpc": Client.JSONRPC_VERSION
 		};
 
-		for(let i=0; i<this.arrFilterPlugins.length; i++)
+		for(let i=0; i<this._arrPlugins.length; i++)
 		{
-			this.arrFilterPlugins[i].beforeJSONEncode(objFilterParams, bAsynchronous);
+			this._arrPlugins[i].beforeJSONEncode(objFilterParams, bAsynchronous);
 		}
 
 		objFilterParams.nCallID=this._nCallID;
@@ -109,9 +113,9 @@ class Client
 			objFilterParams.objHTTPHeaders["Authorization"]="Basic "+this.strHTTPUser+":"+this.strHTTPPassword;
 		}
 
-		for(let i=0; i<this.arrFilterPlugins.length; i++)
+		for(let i=0; i<this._arrPlugins.length; i++)
 		{
-			this.arrFilterPlugins[i].afterJSONEncode(objFilterParams);
+			this._arrPlugins[i].afterJSONEncode(objFilterParams);
 		}
 
 		let bErrorMode=false;
@@ -119,9 +123,9 @@ class Client
 		objFilterParams.bCalled=false;
 		objFilterParams.bAsynchronous=bAsynchronous;
 		objFilterParams.fnAsynchronous=fnAsynchronous;
-		for(let i=0; i<this.arrFilterPlugins.length; i++)
+		for(let i=0; i<this._arrPlugins.length; i++)
 		{
-			strResult=await this.arrFilterPlugins[i].makeRequest(objFilterParams);
+			strResult=await this._arrPlugins[i].makeRequest(objFilterParams);
 			if(objFilterParams.bCalled)
 			{
 				if(bAsynchronous && strResult!==null)
@@ -199,9 +203,9 @@ class Client
 			const objFilterParams={};
 
 			objFilterParams.strResult=strResult;
-			for(let i=0; i<this.arrFilterPlugins.length; i++)
+			for(let i=0; i<this._arrPlugins.length; i++)
 			{
-				this.arrFilterPlugins[i].beforeJSONDecode(objFilterParams);
+				this._arrPlugins[i].beforeJSONDecode(objFilterParams);
 			}
 
 			let objResponse;
@@ -216,9 +220,9 @@ class Client
 
 			delete objFilterParams.strResult;
 			objFilterParams.objResponse=objResponse;
-			for(let i=0; i<this.arrFilterPlugins.length; i++)
+			for(let i=0; i<this._arrPlugins.length; i++)
 			{
-				this.arrFilterPlugins[i].afterJSONDecode(objFilterParams);
+				this._arrPlugins[i].afterJSONDecode(objFilterParams);
 			}
 
 			// Maybe it wasn't an object before calling filters, so maybe it wasn't passed by reference.
@@ -237,14 +241,15 @@ class Client
 		}
 		catch(error)
 		{
-			for (let i=this.arrFilterPlugins.length-1; i>=0; i--)
+			for (let i=this._arrPlugins.length-1; i>=0; i--)
 			{
-				this.arrFilterPlugins[i].exceptionCatch(error);
+				this._arrPlugins[i].exceptionCatch(error);
 			}
 
 			throw error;
 		}
 	}
+
 
 	/**
 	 * Adds a plugin.
@@ -252,16 +257,14 @@ class Client
 	 */
 	addPlugin(plugin)
 	{
-		for(let i=0; i<this.arrFilterPlugins.length; i++)
+		if(this._arrPlugins.includes(plugin))
 		{
-			if(this.arrFilterPlugins[i].constructor===plugin.constructor)
-			{
-				throw new Error("Multiple instances of the same filter are not allowed.");
-			}
+			return;
 		}
 
-		this.arrFilterPlugins.push(plugin);
+		this._arrPlugins.push(plugin);
 	}
+
 
 	/**
 	 * Removes a plugin.
@@ -269,24 +272,14 @@ class Client
 	 */
 	removePlugin(plugin)
 	{
-		let nIndex=null;
-
-		for(let i=0; i<this.arrFilterPlugins.length; i++)
+		if(!this._arrPlugins.includes(plugin))
 		{
-			if(this.arrFilterPlugins[i].constructor===plugin.constructor)
-			{
-				nIndex=i;
-				break;
-			}
+			return;
 		}
 
-		if(nIndex===null)
-		{
-			throw new Error("Failed to remove filter plugin object, maybe plugin is not registered.");
-		}
-
-		this.arrFilterPlugins.splice(nIndex, 1);
+		this._arrPlugins.splice(this._arrPlugins.findIndex(plugin), 1);
 	}
+
 
 	/**
 	 *
@@ -381,7 +374,7 @@ class Client
 	 *
 	 * @returns {Array|null} _arrFilterPlugins
 	 */
-	get arrFilterPlugins()
+	get _arrPlugins()
 	{
 		return this._arrFilterPlugins || null;
 	}

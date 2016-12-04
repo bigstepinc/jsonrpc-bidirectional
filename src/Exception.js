@@ -20,6 +20,16 @@ class Exception extends Error
 		this.nCode=nCode;
 	}
 
+
+	/**
+	 * @return {number}
+	 */
+	get code()
+	{
+		return this.nCode;
+	}
+
+
 	/**
 	 * Bad credentials (user, password, signing hash, account does not exist, etc.).
 	 * Not part of JSON-RPC 2.0 spec.

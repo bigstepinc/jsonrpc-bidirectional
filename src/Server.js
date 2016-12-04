@@ -11,34 +11,63 @@ class Server
 	constructor()
 	{
 		this._arrPlugins=[];
-		//this._httpServers=[];
+		this._objEndpoints={};
 
 		Object.seal(this);
 	}
 
 
-	/*attachHTTPServer(httpServer)
+	/**
+	 * @param {http.Server} httpServer
+	 */
+	async attachToHTTPServer(httpServer)
 	{
-		if(this._httpServers.includes(httpServer))
-		{
-			return;
-		}
-
-		this._httpServers.push(httpServer);
-
-		this._httpServer.on(
+		httpServer.on(
 			"request",
-			async (httpRequest, httpResponse) => {
-				// Default.
-				httpResponse.statusCode = 500;
+			async (httpRequest, httpResponse) => 
+			{
+				if(httpRequest.url === "/favicon.ico")
+				{
+					httpResponse.statusCode=404;
+					httpResponse.end();
+					return;
+				}
 
-				const jsonrpcRequest=await this.processHTTPRequest(httpRequest, httpResponse);
-				await this.processRequest(jsonrpcRequest);
+				try
+				{
+					// Default.
+					httpResponse.statusCode = 500;
+
+					const jsonrpcRequest=await this.processHTTPRequest(httpRequest, httpResponse);
+					const objResponse=await this.processRequest(jsonrpcRequest);
+
+					if(jsonrpcRequest.callResult instanceof Error)
+					{
+						httpResponse.statusCode = 500; // Internal Server Error
+					}
+					else if(jsonrpcRequest.isNotification)
+					{
+						httpResponse.statusCode = 204; // No Content
+					}
+					else
+					{
+						httpResponse.statusCode = 200; // Ok
+					}
+
+					if(!jsonrpcRequest.isNotification)
+					{
+						httpResponse.write(JSON.stringify(objResponse, undefined, "\t"));
+					}
+				}
+				catch(error)
+				{
+					console.log(error);
+				}
 
 				httpResponse.end();
 			}
 		);
-	}*/
+	}
 
 
 	/**
@@ -82,33 +111,41 @@ class Server
 	}
 
 
-	exposeExceptionClass(strClassName)
+	/**
+	 * Adds a plugin.
+	 * @param {Object} plugin
+	 */
+	addPlugin(plugin)
 	{
+		if(this._arrPlugins.includes(plugin))
+		{
+			return;
+		}
+
+		this._arrPlugins.push(plugin);
 	}
 
 
-	hideExceptionClass(strClassName)
+	/**
+	 * Removes a plugin.
+	 * @param {Object} plugin
+	 */
+	removePlugin(plugin)
 	{
-	}
+		if(!this._arrPlugins.includes(plugin))
+		{
+			return;
+		}
 
-
-	get exposeAllExceptionClasses()
-	{
-	}
-
-
-	set exposeAllExceptionClasses(bAllowAllExceptionClasses)
-	{
-	}
-
-
-	addPlugin()
-	{
-	}
-
-
-	removePlugin()
-	{
+		this._arrPlugins.splice(
+			this._arrPlugins.findIndex(
+				(element)=>
+				{
+					return plugin===element;
+				}
+			), 
+			1
+		);
 	}
 
 
@@ -129,16 +166,20 @@ class Server
 			{
 				let fnReject;
 				let fnResolve;
-				const promiseWaitForData=new Promise((_fnResolve, _fnReject)=>{
-					fnReject=_fnReject;
-					fnResolve=_fnResolve;
-				});
+				const promiseWaitForData=new Promise(
+					(_fnResolve, _fnReject) =>
+					{
+						fnReject=_fnReject;
+						fnResolve=_fnResolve;
+					}
+				);
 
 				let arrBody = [];
 
 				httpRequest.on(
 					"data", 
-					(chunk)=>{
+					(chunk)=>
+					{
 						arrBody.push(chunk);
 					}
 				);
@@ -148,7 +189,8 @@ class Server
 
 				httpRequest.on(
 					"end",
-					() => {
+					() => 
+					{
 						fnResolve(Buffer.concat(arrBody).toString());
 					}
 				);
@@ -181,7 +223,11 @@ class Server
 
 
 	/**
+	 * Returns the response object or null if in notification mode.
+	 * 
 	 * @param {JSONRPC.IncomingRequest} jsonrpcRequest
+	 * 
+	 * @return {Object|null}
 	 */
 	async processRequest(jsonrpcRequest)
 	{
@@ -244,7 +290,20 @@ class Server
 
 				for(let plugin of this._arrPlugins)
 				{
-					plugin.afterJSONDecode(jsonrpcRequest);
+					await plugin.afterJSONDecode(jsonrpcRequest);
+				}
+
+
+				if(!jsonrpcRequest.isAuthenticated)
+				{
+					console.log(this._arrPlugins);
+					throw new JSONRPC.Exception("Not authenticated.", JSONRPC.Exception.NOT_AUTHENTICATED);
+				}
+
+				if(!jsonrpcRequest.isAuthorized)
+				{
+					console.log(this._arrPlugins);
+					throw new JSONRPC.Exception("Not authorized.", JSONRPC.Exception.NOT_AUTHORIZED);
 				}
 
 
@@ -263,9 +322,9 @@ class Server
 				
 				if(!jsonrpcRequest.isMethodCalled)
 				{
-					if(!(typeof jsonrpcRequest.endpoint[jsonrpcRequest.requestObject.method] !== "function"))
+					if(typeof jsonrpcRequest.endpoint[jsonrpcRequest.requestObject.method] !== "function")
 					{
-						throw new JSONRPC.Exception("Method not found on endpoint.", JSONRPC.Exception.METHOD_NOT_FOUND);
+						throw new JSONRPC.Exception("Method "+JSON.stringify(jsonrpcRequest.requestObject.method)+" not found on endpoint "+JSON.stringify(jsonrpcRequest.endpoint.path)+".", JSONRPC.Exception.METHOD_NOT_FOUND);
 					}
 
 					jsonrpcRequest.callResult=await jsonrpcRequest.endpoint[jsonrpcRequest.requestObject.method].apply(jsonrpcRequest.endpoint, jsonrpcRequest.requestObject.params);
@@ -274,7 +333,6 @@ class Server
 		}
 		catch(error)
 		{
-			console.log(jsonrpcRequest);
 			jsonrpcRequest.callResult=error;
 		}
 
@@ -283,13 +341,23 @@ class Server
 		{
 			if(jsonrpcRequest.callResult instanceof Error)
 			{
-				plugin.exceptionCatch(jsonrpcRequest);
+				await plugin.exceptionCatch(jsonrpcRequest);
 			}
 			else
 			{
-				plugin.result(jsonrpcRequest);
+				await plugin.result(jsonrpcRequest);
 			}
 		}
+
+
+		let objResponse=jsonrpcRequest.toResponseObject();
+
+		for(let plugin of this._arrPlugins)
+		{
+			await plugin.response(objResponse);
+		}
+
+		return objResponse;
 	}
 
 

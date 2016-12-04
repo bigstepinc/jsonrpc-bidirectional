@@ -1,5 +1,6 @@
 const url = require("url");
 
+const assert = require("assert");
 
 /**
  * This class is suposed to be extended by JSONRPC endpoints.
@@ -18,6 +19,10 @@ class EndpointBase
 	 */
 	constructor(strName, strPath, objReflection)
 	{
+		assert.strictEqual(typeof strName, "string");
+		assert.strictEqual(typeof strPath, "string");
+		assert.strictEqual(typeof objReflection, "object");
+
 		this._strName=strName;
 		this._strPath=EndpointBase.normalizePath(strPath);
 		this._objReflection=objReflection;
