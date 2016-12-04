@@ -1,12 +1,17 @@
-const obj={};
-obj.JSONRPC={};
+const objExports={};
+objExports.JSONRPC={};
 
-obj.JSONRPC.Client=require("./src/Client");
-obj.JSONRPC.ClientPluginBase=require("./src/ClientPluginBase");
-obj.JSONRPC.Exception=require("./src/Exception");
-obj.JSONRPC.Utils=require("./src/Utils.js");
+objExports.JSONRPC.Client=require("./src/Client");
+objExports.JSONRPC.ClientPluginBase=require("./src/ClientPluginBase");
 
-obj.JSONRPC.Filter=obj.JSONRPC.Filter || {};
-obj.JSONRPC.Filter.Client=require("./src/Plugins/Client/index");
+objExports.JSONRPC.Utils=require("./src/Utils.js");
+objExports.JSONRPC.Exception=require("./src/Exception");
 
-module.exports=obj;
+objExports.JSONRPC.EndpointBase=require("./src/EndpointBase.js");
+objExports.JSONRPC.Server=require("./src/Server.js");
+
+objExports.JSONRPC.Plugins=objExports.JSONRPC.Plugins || {};
+objExports.JSONRPC.Plugins.Client=require("./src/Plugins/Client/index");
+objExports.JSONRPC.Plugins.Server=require("./src/Plugins/Server/index");
+
+module.exports=objExports;

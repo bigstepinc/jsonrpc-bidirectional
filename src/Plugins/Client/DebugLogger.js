@@ -1,8 +1,5 @@
-"use strict";
-
 const JSONRPC={};
 JSONRPC.ClientPluginBase=require("../../ClientPluginBase");
-JSONRPC.Utils=require("../../Utils");
 
 /**
  * DebugLogger plugin.
@@ -21,7 +18,7 @@ class DebugLogger extends JSONRPC.ClientPluginBase
 	 */
 	afterJSONEncode(objFilterParams)
 	{
-		console.log("Sent request at "+new Date()+"\n"+JSONRPC.Utils.JSONFormat(objFilterParams.strJSONRequest)+"\n");
+		console.log("Sent request at "+new Date()+"\n"+objFilterParams.strJSONRequest+"\n");
 	}
 
 	/**
@@ -31,6 +28,6 @@ class DebugLogger extends JSONRPC.ClientPluginBase
 	 */
 	beforeJSONDecode(objFilterParams)
 	{
-		console.log("Received response at "+new Date()+"\n"+JSONRPC.Utils.JSONFormat(objFilterParams.strResult)+"\n");
+		console.log("Received response at "+new Date()+"\n"+objFilterParams.strResult+"\n");
 	}
 };

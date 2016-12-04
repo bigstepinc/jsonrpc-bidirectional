@@ -74,7 +74,7 @@ class Exception extends Error
 	 */
 	static get PARSE_ERROR()
 	{
-		return 32700;
+		return -32700;
 	}
 
 	/**
@@ -85,7 +85,7 @@ class Exception extends Error
 	 */
 	static get INVALID_REQUEST()
 	{
-		return 32600;
+		return -32600;
 	}
 
 	/**
@@ -96,7 +96,7 @@ class Exception extends Error
 	 */
 	static get METHOD_NOT_FOUND()
 	{
-		return 32601;
+		return -32601;
 	}
 
 	/**
@@ -107,7 +107,7 @@ class Exception extends Error
 	 */
 	static get INVALID_PARAMS()
 	{
-		return 32602;
+		return -32602;
 	}
 
 	/**
@@ -118,17 +118,7 @@ class Exception extends Error
 	 */
 	static get INTERNAL_ERROR()
 	{
-		return 32603;
-	}
-
-	/**
-	 * Invalid method return type.
-	 *
-	 * @returns {Number}
-	 */
-	static get INVALID_RETURN_TYPE()
-	{
-		return -32604;
+		return -32603;
 	}
 
 	// -32000 to -32099 Server error. Reserved for implementation-defined server-errors.

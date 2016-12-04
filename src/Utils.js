@@ -1,4 +1,5 @@
-"use strict";
+const JSONRPC = {};
+JSONRPC.Exception = require("./Exception");
 
 /**
  * Utils class.
@@ -8,68 +9,21 @@ module.exports=
 class Utils
 {
 	/**
-	 * @static
-	 * @param {String} strJSON
-	 * @returns {String}
+	 * @param {string} strJSON
+	 * 
+	 * @return {null|Object|Array|string|boolean|number}
 	 */
-	static JSONFormat(strJSON)
+	static jsonDecodeSafe(strJSON)
 	{
-		const strTabCharacter="  ";
-		let strNewJSON="";
-		let nIndentLevel=0;
-		let bInString=false;
-
-		const nLength=strJSON.length;
-
-		for(let nCharacterPosition=0; nCharacterPosition<nLength; nCharacterPosition++)
+		try
 		{
-			const strCharacter=strJSON[nCharacterPosition];
-			switch(strCharacter)
-			{
-				case "{":
-				case "[":
-					if(!bInString)
-					{
-						nIndentLevel++;
-						strNewJSON+=strCharacter+"\r\n"+strTabCharacter.repeat(nIndentLevel);
-					}
-					else
-						strNewJSON+=strCharacter;
-					break;
-				case "}":
-				case "]":
-					if(!bInString)
-					{
-						nIndentLevel--;
-						strNewJSON+="\r\n"+strTabCharacter.repeat(nIndentLevel)+strCharacter;
-					}
-					else
-						strNewJSON+=strCharacter;
-					break;
-				case ",":
-					if(!bInString)
-						strNewJSON+=",\r\n"+strTabCharacter.repeat(nIndentLevel);
-					else
-						strNewJSON+=strCharacter;
-					break;
-				case ":":
-					if(!bInString)
-						strNewJSON+=": ";
-					else
-						strNewJSON+=strCharacter;
-					break;
-				case "\"":
-					if(nCharacterPosition > 0 && strJSON[nCharacterPosition-1] != "\\")
-						bInString=!bInString;
-				default:
-					strNewJSON+=strCharacter;
-					break;
-			}
+			return JSON.parse(strJSON);
 		}
-
-		if(strNewJSON=="[\r\n  \r\n]")
-			strNewJSON="[]";
-
-		return strNewJSON;
+		catch(error)
+		{
+			// V8 doesn't have a stacktrace for JSON.parse errors.
+			// A re-throw is absolutely necessary to enable debugging.
+			throw new JSONRPC.Exception(error.message, JSONRPC.Exception.PARSE_ERROR);
+		}
 	}
 };

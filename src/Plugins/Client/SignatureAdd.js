@@ -1,5 +1,3 @@
-"use strict";
-
 const JSONRPC={};
 JSONRPC.ClientPluginBase=require("../../ClientPluginBase");
 

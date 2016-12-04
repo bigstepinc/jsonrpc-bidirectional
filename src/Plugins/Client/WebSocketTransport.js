@@ -62,7 +62,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 					return;
 				}
 
-				if(objResponse.params)
+				if(objResponse.method)
 				{
 					// Ignore this, it is a request.
 					// This may be a websocket shared between a Client and a Server for bi-directional RPC.
