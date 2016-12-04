@@ -4,7 +4,7 @@ class ServerPluginBase
 	/**
 	 * Called before JSON parsing of the JSONRPC request.
 	 * 
-	 * @param {JSONRPC.Request} jsonrpcRequest
+	 * @param {JSONRPC.IncomingRequest} jsonrpcRequest
 	 */
 	async beforeJSONDecode(jsonrpcRequest)
 	{
@@ -15,7 +15,7 @@ class ServerPluginBase
 	/**
 	 * Called after JSON parsing of the JSONRPC request.
 	 * 
-	 * @param {JSONRPC.Request} jsonrpcRequest
+	 * @param {JSONRPC.IncomingRequest} jsonrpcRequest
 	 */
 	async afterJSONDecode(jsonrpcRequest)
 	{
@@ -27,7 +27,7 @@ class ServerPluginBase
 	 * If a plugin chooses to actually make the call here, 
 	 * it must set the result in the jsonrpcRequest.callResult property.
 	 * 
-	 * @param {JSONRPC.Request} jsonrpcRequest
+	 * @param {JSONRPC.IncomingRequest} jsonrpcRequest
 	 */
 	async callFunction(jsonrpcRequest)
 	{
@@ -42,7 +42,7 @@ class ServerPluginBase
 	/**
 	 * This is called after a function has been called successfully.
 	 * 
-	 * @param {JSONRPC.Request} jsonrpcRequest
+	 * @param {JSONRPC.IncomingRequest} jsonrpcRequest
 	 */
 	async response(jsonrpcRequest)
 	{
@@ -53,7 +53,7 @@ class ServerPluginBase
 	/**
 	 * This is called if a function was not called successfully.
 	 * 
-	 * @param {JSONRPC.Request} jsonrpcRequest
+	 * @param {JSONRPC.IncomingRequest} jsonrpcRequest
 	 */
 	async exceptionCatch(jsonrpcRequest)
 	{

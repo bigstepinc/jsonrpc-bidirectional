@@ -1,6 +1,6 @@
 const JSONRPC={};
 JSONRPC.Exception=require("./Exception");
-JSONRPC.Request=require("./Request");
+JSONRPC.IncomingRequest=require("./IncomingRequest");
 JSONRPC.Utils=require("./Utils");
 JSONRPC.EndpointBase=require("./EndpointBase");
 
@@ -115,11 +115,11 @@ class Server
 	/**
 	 * Code outside of this function is responsible for calling .end() on httpResponse.
 	 * 
-	 * @return {JSONRPC.Request}
+	 * @return {JSONRPC.IncomingRequest}
 	 */
 	async processHTTPRequest(httpRequest, httpResponse)
 	{
-		const jsonrpcRequest=new JSONRPC.Request();
+		const jsonrpcRequest=new JSONRPC.IncomingRequest();
 
 		try
 		{
@@ -181,7 +181,7 @@ class Server
 
 
 	/**
-	 * @param {JSONRPC.Request} jsonrpcRequest
+	 * @param {JSONRPC.IncomingRequest} jsonrpcRequest
 	 */
 	async processRequest(jsonrpcRequest)
 	{

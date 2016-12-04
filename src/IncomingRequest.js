@@ -5,7 +5,7 @@ JSONRPC.EndpointBase = require("./EndpointBase");
 
 
 module.exports=
-class Request
+class IncomingRequest
 {
 	constructor()
 	{

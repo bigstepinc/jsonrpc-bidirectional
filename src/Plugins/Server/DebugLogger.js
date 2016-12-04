@@ -7,7 +7,7 @@ class DebugLogger extends JSONRPC.ServerPluginBase
 	/**
 	 * Logs the received RAW request to stdout.
 	 * 
-	 * @param {JSONRPC.Request} jsonrpcRequest
+	 * @param {JSONRPC.IncomingRequest} jsonrpcRequest
 	 */
 	beforeJSONDecode(jsonrpcRequest)
 	{
@@ -18,7 +18,7 @@ class DebugLogger extends JSONRPC.ServerPluginBase
 	/**
 	 * Logs the RAW response to stdout.
 	 * 
-	 * @param {JSONRPC.Request} jsonrpcRequest
+	 * @param {JSONRPC.IncomingRequest} jsonrpcRequest
 	 */
 	afterJSONEncode(jsonrpcRequest)
 	{
