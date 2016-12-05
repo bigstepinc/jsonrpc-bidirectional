@@ -57,16 +57,21 @@ class EndpointBase
 
 
 	/**
-	 * @param {string} strPath
+	 * @param {string} strURL
 	 * 
 	 * @returns {string}
 	 */
-	static normalizePath(strPath)
+	static normalizePath(strURL)
 	{
-		strPath = url.parse(strPath).pathname.trim();
+		let strPath = url.parse(strURL).pathname.trim();
 		if(!strPath.length || strPath.substr(-1) !== "/")
 		{
 			strPath += "/";
+		}
+
+		if(strPath.substr(0, 1) !== "/")
+		{
+			strPath = "/" + strPath;
 		}
 
 		return strPath;

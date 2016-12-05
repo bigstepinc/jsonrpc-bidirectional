@@ -4,7 +4,6 @@ JSONRPC.IncomingRequest = require("./IncomingRequest");
 JSONRPC.Utils = require("./Utils");
 JSONRPC.EndpointBase = require("./EndpointBase");
 
-const url = require("url");
 const assert = require("assert");
 
 module.exports =
@@ -23,33 +22,28 @@ class Server
 	 * Any request not under strRootPath will be completely ignored by this JSONRPC.Server.
 	 * An outside handler is required for the ignored paths.
 	 * 
-	 * For paths under strRootPath which do not correspond to an endpoint, this JSONRPC.Server will respond will 404 and a JSONRPC valid body.
+	 * For paths under strRootPath which do not correspond to an endpoint, this JSONRPC.Server will respond with 404 and a JSONRPC valid body.
+	 * 
+	 * Endpoint paths must fall under strRootPath or they will be ignored.
 	 * 
 	 * @param {http.Server} httpServer
 	 * @param {string} strRootPath
 	 */
 	async attachToHTTPServer(httpServer, strRootPath)
 	{
-		assert(typeof strRootPath === "string");
+		assert(typeof strRootPath === "string", typeof strRootPath);
 
-		if(strRootPath.substr(-1) !== "/")
-		{
-			strRootPath += "/";
-		}
+		strRootPath = JSONRPC.EndpointBase.normalizePath(strRootPath);
 
 		httpServer.on(
 			"request",
-			async (httpRequest, httpResponse) => 
-			{
-				if(httpRequest.url)
-				{
-					let strPath = url.parse(httpRequest.url).pathname;
-					if(strPath.substr(-1) !== "/")
-					{
-						strPath += "/";
-					}
+			async (httpRequest, httpResponse) => {
+				const strRequestPath = JSONRPC.EndpointBase.normalizePath(httpRequest.url);
 
-					//strRootPath
+				// Ignore paths which do not fall under strRootPath, or are not strRootPath. 
+				if(strRequestPath.substr(0, strRootPath.length) !== strRootPath)
+				{
+					return;
 				}
 
 				try
@@ -202,8 +196,7 @@ class Server
 
 				httpRequest.on(
 					"data", 
-					(chunk) =>
-					{
+					(chunk) => {
 						arrBody.push(chunk);
 					}
 				);
@@ -213,8 +206,7 @@ class Server
 
 				httpRequest.on(
 					"end",
-					() => 
-					{
+					() => {
 						fnResolve(Buffer.concat(arrBody).toString());
 					}
 				);

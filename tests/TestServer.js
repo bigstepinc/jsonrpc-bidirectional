@@ -25,7 +25,7 @@ class TestServer
 
 		this._jsonrpcServer.registerEndpoint(new TestEndpoint());
 
-		this._jsonrpcServer.attachToHTTPServer(httpServer);
+		this._jsonrpcServer.attachToHTTPServer(httpServer, "/api/");
 
 		httpServer.listen(8324);
 
