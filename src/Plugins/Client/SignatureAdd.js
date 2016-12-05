@@ -66,31 +66,31 @@ class SignatureAdd extends JSONRPC.ClientPluginBase
 		let strVerifyHash = HMAC_SHA256(objFilterParams.strJSONRequest, this.strAPIKey);
 
 		if(this.strKeyMetaData !== null)
-			{
+		{
 			strVerifyHash = this.strKeyMetaData + ":" + strVerifyHash;
 		}
 
 		if(objFilterParams.strEndpointURL.indexOf("?") > -1)
-			{
+		{
 			objFilterParams.strEndpointURL += "&"; 
 		}
 		else
-			{
+		{
 			objFilterParams.strEndpointURL += "?"; 
 		}
 
 		if(objFilterParams.strEndpointURL.indexOf("verify") === -1)
-			{
+		{
 			objFilterParams.strEndpointURL += "verify=" + (strVerifyHash);
 		}
 
 		if(objFilterParams.strEndpointURL.charAt(objFilterParams.strEndpointURL.length - 1) === "&")
-			{
+		{
 			objFilterParams.strEndpointURL = objFilterParams.strEndpointURL.slice(0, -1); 
 		}
 
 		for(let strName in this._arrExtraURLVariables)
-			{
+		{
 			objFilterParams.strEndpointURL += "&" + strName + "=" + this._arrExtraURLVariables[strName]; 
 		}
 	}
