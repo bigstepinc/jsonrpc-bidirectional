@@ -1,8 +1,8 @@
-const obj={};
+const objExports={};
 
-obj.DebugLogger=require("./DebugLogger");
-obj.PrettyBrowserConsoleErrors=require("./PrettyBrowserConsoleErrors");
-obj.SignatureAdd=require("./SignatureAdd");
-obj.WebSocketTransport=require("./WebSocketTransport");
+objExports.DebugLogger=require("./DebugLogger");
+objExports.PrettyBrowserConsoleErrors=require("./PrettyBrowserConsoleErrors");
+objExports.SignatureAdd=require("./SignatureAdd");
+objExports.WebSocketTransport=require("./WebSocketTransport");
 
-module.exports=obj;
+module.exports=objExports;
