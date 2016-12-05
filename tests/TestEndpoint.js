@@ -18,11 +18,13 @@ class TestEndpoint extends JSONRPC.EndpointBase
 	/**
 	 * Hello world?
 	 * 
+	 * @param {string} strReturn
+	 * 
 	 * @returns {string}
 	 */
-	async ping()
+	async ping(strReturn)
 	{
-		return "pong";
+		return strReturn;
 	}
 
 

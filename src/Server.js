@@ -19,10 +19,14 @@ class Server
 
 
 	/**
-	 * Any request not under strRootPath will be completely ignored by this JSONRPC.Server.
-	 * An outside handler is required for the ignored paths.
+	 * It is assumed the httpServer is shared with outside code (other purposes).
+	 * This JSONRPC.Server will only handle URLs under strRootPath.
+	 * Specify "/" as root path to use the httpServer exclusively for a specific instance of this class.
 	 * 
-	 * For paths under strRootPath which do not correspond to an endpoint, this JSONRPC.Server will respond with 404 and a JSONRPC valid body.
+	 * Any request not under strRootPath will be completely ignored by this JSONRPC.Server.
+	 * An outside handler is required for the ignored paths (or the default applies).
+	 * 
+	 * For paths under strRootPath which do not correspond to an endpoint, this JSONRPC.Server will respond with 404 and a JSONRPC valid error body.
 	 * 
 	 * Endpoint paths must fall under strRootPath or they will be ignored.
 	 * 

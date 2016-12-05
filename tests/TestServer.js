@@ -12,13 +12,71 @@ class TestServer
 	constructor()
 	{
 		this._jsonrpcServer = null;
+		this._jsonrpcClient = null;
+		this._authenticationSkipPlugin = null;
+		this._authorizeAllPlugin = null;
 	}
 
 
 	/**
-	 * @returns {http.Server}
+	 * @returns {undefined}
 	 */
-	async fireUp()
+	async runTests()
+	{
+		this._jsonrpcClient = new JSONRPC.Client("http://localhost:8324/api");
+		this._jsonrpcClient.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
+
+		this._authenticationSkipPlugin = new JSONRPC.Plugins.Server.AuthenticationSkip();
+		this._authorizeAllPlugin = new JSONRPC.Plugins.Server.AuthorizeAll();
+
+		
+		await this.triggerConnectionRefused();
+		
+		await this.startServer();
+
+		await this.triggerAuthenticationError();
+		await this.triggerAuthorizationError();
+
+		this._jsonrpcServer.addPlugin(this._authorizeAllPlugin);
+		this._jsonrpcServer.addPlugin(this._authenticationSkipPlugin);
+
+		await this.callRPCMethod();
+
+		await this.callRPCMethodWhichThrowsJSONRPCException();
+		await this.callRPCMethodWhichThrowsSimpleError();
+
+		console.log("Finished all tests!!!");
+	}
+
+
+	/**
+	 * @returns {undefined} 
+	 */
+	async triggerConnectionRefused()
+	{
+		try
+		{
+			assert.throws(await this._jsonrpcClient._rpc("ping", ["pong"]));
+		}
+		catch(error)
+		{
+			if(error.constructor.name !== "FetchError")
+			{
+				throw error;
+			}
+			
+			if(process.execPath)
+			{
+				assert(error.message.includes("ECONNREFUSED"));
+			}
+		}
+	}
+
+
+	/**
+	 * @returns {undefined}
+	 */
+	async startServer()
 	{
 		const httpServer = http.createServer();
 		this._jsonrpcServer = new JSONRPC.Server();
@@ -28,27 +86,19 @@ class TestServer
 		this._jsonrpcServer.attachToHTTPServer(httpServer, "/api/");
 
 		httpServer.listen(8324);
-
-		return httpServer;
 	}
 
 
 	/**
-	 * @returns {JSONRPC.Client}
+	 * @returns {undefined}
 	 */
-	async testCalls()
+	async triggerAuthenticationError()
 	{
-		const client = new JSONRPC.Client("http://localhost:8324/api");
-		client.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
-
-		const authenticationSkipPlugin = new JSONRPC.Plugins.Server.AuthenticationSkip();
-		const authorizeAllPlugin = new JSONRPC.Plugins.Server.AuthorizeAll();
-
-
-		this._jsonrpcServer.addPlugin(authorizeAllPlugin);
+		this._jsonrpcServer.addPlugin(this._authorizeAllPlugin);
+		this._jsonrpcServer.removePlugin(this._authenticationSkipPlugin);
 		try
 		{
-			assert.throws(await client._rpc("ping", []));
+			assert.throws(await this._jsonrpcClient._rpc("ping", []));
 		}
 		catch(error)
 		{
@@ -61,13 +111,19 @@ class TestServer
 			assert.strictEqual(error.code, JSONRPC.Exception.NOT_AUTHENTICATED);
 			assert.strictEqual(error.message, "Not authenticated.");
 		}
+	}
 
 
-		this._jsonrpcServer.removePlugin(authorizeAllPlugin);
-		this._jsonrpcServer.addPlugin(authenticationSkipPlugin);
+	/**
+	 * @returns {undefined} 
+	 */
+	async triggerAuthorizationError()
+	{
+		this._jsonrpcServer.removePlugin(this._authorizeAllPlugin);
+		this._jsonrpcServer.addPlugin(this._authenticationSkipPlugin);
 		try
 		{
-			assert.throws(await client._rpc("ping", []));
+			assert.throws(await this._jsonrpcClient._rpc("ping", []));
 		}
 		catch(error)
 		{
@@ -80,15 +136,26 @@ class TestServer
 			assert.strictEqual(error.code, JSONRPC.Exception.NOT_AUTHORIZED);
 			assert.strictEqual(error.message, "Not authorized.");
 		}
+	}
 
 
-		this._jsonrpcServer.addPlugin(authorizeAllPlugin);
-		console.log(await client._rpc("ping", []));
+	/**
+	 * @returns {undefined}
+	 */
+	async callRPCMethod()
+	{
+		assert.strictEqual("pong", await this._jsonrpcClient._rpc("ping", ["pong"]));
+	}
 
 
+	/**
+	 * @returns {undefined}
+	 */
+	async callRPCMethodWhichThrowsJSONRPCException()
+	{
 		try
 		{
-			assert.throws(await client._rpc("throwJSONRPCException", []));
+			assert.throws(await this._jsonrpcClient._rpc("throwJSONRPCException", []));
 		}
 		catch(error)
 		{
@@ -101,11 +168,17 @@ class TestServer
 			assert.strictEqual(error.code, JSONRPC.Exception.INTERNAL_ERROR);
 			assert.strictEqual(error.message, "JSONRPC.Exception");
 		}
+	}
 
 
+	/**
+	 * @returns {undefined} 
+	 */
+	async callRPCMethodWhichThrowsSimpleError()
+	{
 		try
 		{
-			assert.throws(await client._rpc("throwError", []));
+			assert.throws(await this._jsonrpcClient._rpc("throwError", []));
 		}
 		catch(error)
 		{
@@ -118,8 +191,5 @@ class TestServer
 			assert.strictEqual(error.code, 0);
 			assert.strictEqual(error.message, "Error");
 		}
-
-
-		return client;
 	}
 };

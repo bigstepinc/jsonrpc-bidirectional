@@ -13,10 +13,8 @@ process.on(
 (
 	async () =>
 	{
-		const test = new TestServer();
-		await test.fireUp();
-		await test.testCalls();
-		console.log("Finished all tests!!!");
+		await (new TestServer()).runTests();
+
 		process.exit(0);
 	}
 )();
