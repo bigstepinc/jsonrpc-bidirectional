@@ -1,42 +1,42 @@
-const JSONRPC={};
-JSONRPC.Exception=require("./Exception");
+const JSONRPC = {};
+JSONRPC.Exception = require("./Exception");
 
-const fetch=require("node-fetch");
-const Request=fetch.Request;
-const Headers=fetch.Headers;
+const fetch = require("node-fetch");
+const Request = fetch.Request;
+const Headers = fetch.Headers;
 
-const assert=require("assert");
+const assert = require("assert");
 
 /**
  * Class representing the JSONRPC Client.
  * @class
  */
-module.exports=
+module.exports =
 class Client
 {
 	/**
-	 * @param {String} strJSONRPCRouterURL
+	 * @param {string} strJSONRPCRouterURL
 	 * @param {Function} fnReadyCallback
-	 * @param {Boolean} bWithCredentials
+	 * @param {boolean} bWithCredentials
 	 */
 	constructor(strJSONRPCRouterURL, fnReadyCallback, bWithCredentials)
 	{
-		if(strJSONRPCRouterURL!==undefined)
+		if(strJSONRPCRouterURL !== undefined)
 		{
-			if(bWithCredentials===undefined)
+			if(bWithCredentials === undefined)
 			{
-				this.bWithCredentials=false;
+				this.bWithCredentials = false;
 			}
 			else
 			{
-				this.bWithCredentials=!!bWithCredentials;
+				this.bWithCredentials = !!bWithCredentials;
 			}
 
-			this._arrFilterPlugins=[];
-			this._strJSONRPCRouterURL=strJSONRPCRouterURL;
-			this._nCallID=0;
+			this._arrFilterPlugins = [];
+			this._strJSONRPCRouterURL = strJSONRPCRouterURL;
+			this._nCallID = 0;
 
-			if(fnReadyCallback && typeof fnReadyCallback!=="function")
+			if(fnReadyCallback && typeof fnReadyCallback !== "function")
 			{
 				throw new Error("fnReadyCallback must be of type function.");
 			}
@@ -45,7 +45,8 @@ class Client
 			{
 				// Faking asynchronous loading.
 				setTimeout(
-					()=>{
+					() =>
+{
 						fnReadyCallback();
 					},
 					1
@@ -56,13 +57,13 @@ class Client
 
 	/**
 	 * This is the function used to set the HTTP credentials.
-	 * @param {String} strUsername
-	 * @param {String} strPassword
+	 * @param {string} strUsername
+	 * @param {string} strPassword
 	 */
 	setHTTPCredentials(strUsername, strPassword)
 	{
-		this._strHTTPUser=strUsername;
-		this._strHTTPPassword=strPassword;
+		this._strHTTPUser = strUsername;
+		this._strHTTPPassword = strPassword;
 	}
 
 	/**
@@ -70,24 +71,24 @@ class Client
 	 * making an asynchronous call. The callback will be called with a single response param,
 	 * which may be either an Error object (or an Error object subclass) or the actual response.
 	 * @protected
-	 * @param {String} strFunctionName
+	 * @param {string} strFunctionName
 	 * @param {Array} arrParams
 	 */
 	async _rpc(strFunctionName, arrParams)
 	{
 		assert(Array.isArray(arrParams), "arrParams must be an Array.");
 
-		const objFilterParams={};
+		const objFilterParams = {};
 
-		let bAsynchronous=false;
+		let bAsynchronous = false;
 		let fnAsynchronous;
-		if(arrParams.length && typeof arrParams[0]==="function")
+		if(arrParams.length && typeof arrParams[0] === "function")
 		{
-			fnAsynchronous=arrParams.shift();
-			bAsynchronous=true;
+			fnAsynchronous = arrParams.shift();
+			bAsynchronous = true;
 		}
 
-		objFilterParams.objRequest={
+		objFilterParams.objRequest = {
 			"method": strFunctionName,
 			"params": arrParams,
 
@@ -95,47 +96,47 @@ class Client
 			"jsonrpc": Client.JSONRPC_VERSION
 		};
 
-		for(let i=0; i<this._arrPlugins.length; i++)
+		for(let i = 0; i < this._arrPlugins.length; i++)
 		{
 			this._arrPlugins[i].beforeJSONEncode(objFilterParams, bAsynchronous);
 		}
 
-		objFilterParams.nCallID=this._nCallID;
-		objFilterParams.strJSONRequest=JSON.stringify(objFilterParams.objRequest, null, "\t");
+		objFilterParams.nCallID = this._nCallID;
+		objFilterParams.strJSONRequest = JSON.stringify(objFilterParams.objRequest, null, "\t");
 		delete objFilterParams.objRequest;
-		objFilterParams.strEndpointURL=this.strJSONRPCRouterURL;
-		objFilterParams.objHTTPHeaders={
+		objFilterParams.strEndpointURL = this.strJSONRPCRouterURL;
+		objFilterParams.objHTTPHeaders = {
 			"Content-type": "application/json"
 		};
 
-		if(this.strHTTPUser!==null && this.strHTTPPassword!==null)
+		if(this.strHTTPUser !== null && this.strHTTPPassword !== null)
 		{
-			objFilterParams.objHTTPHeaders["Authorization"]="Basic "+this.strHTTPUser+":"+this.strHTTPPassword;
+			objFilterParams.objHTTPHeaders["Authorization"] = "Basic " + this.strHTTPUser + ":" + this.strHTTPPassword;
 		}
 
-		for(let i=0; i<this._arrPlugins.length; i++)
+		for(let i = 0; i < this._arrPlugins.length; i++)
 		{
 			this._arrPlugins[i].afterJSONEncode(objFilterParams);
 		}
 
-		let bErrorMode=false;
-		let strResult=null;
-		objFilterParams.bCalled=false;
-		objFilterParams.bAsynchronous=bAsynchronous;
-		objFilterParams.fnAsynchronous=fnAsynchronous;
-		for(let i=0; i<this._arrPlugins.length; i++)
+		let bErrorMode = false;
+		let strResult = null;
+		objFilterParams.bCalled = false;
+		objFilterParams.bAsynchronous = bAsynchronous;
+		objFilterParams.fnAsynchronous = fnAsynchronous;
+		for(let i = 0; i < this._arrPlugins.length; i++)
 		{
-			strResult=await this._arrPlugins[i].makeRequest(objFilterParams);
+			strResult = await this._arrPlugins[i].makeRequest(objFilterParams);
 			if(objFilterParams.bCalled)
 			{
-				if(bAsynchronous && strResult!==null)
+				if(bAsynchronous && strResult !== null)
 				{
 					return strResult;
 				}
 
 				break;
 			}
-			else if(strResult!==null)
+			else if(strResult !== null)
 			{
 				throw new Error("Plugin set return value to non-null while leaving bCalled===false.");
 			}
@@ -143,7 +144,7 @@ class Client
 
 		if(!objFilterParams.bCalled)
 		{
-			const request=new Request(
+			const request = new Request(
 				objFilterParams.strEndpointURL,
 				{
 					method: "POST",
@@ -155,15 +156,15 @@ class Client
 				}
 			);
 
-			const response=await fetch(request);
-			let strResult=await response.text();
+			const response = await fetch(request);
+			let strResult = await response.text();
 
-			if(response.status!==200)
+			if(response.status !== 200)
 			{
-				bErrorMode=true;
-				if(parseInt(response.status, 10)===0)
+				bErrorMode = true;
+				if(parseInt(response.status, 10) === 0)
 				{
-					strResult=JSON.stringify({
+					strResult = JSON.stringify({
 						"jsonrpc": Client.JSONRPC_VERSION,
 						"error": {
 							"code": JSONRPC.Exception.NETWORK_ERROR,
@@ -177,10 +178,12 @@ class Client
 			if(bAsynchronous)
 			{
 				await this.processRAWResponse(strResult, bErrorMode)
-					.catch((error) => {
+					.catch((error) => 
+{
 						fnAsynchronous(error);
 					})
-					.then((mxResult)=> {
+					.then((mxResult) => 
+{
 						fnAsynchronous(mxResult);
 					});
 			}
@@ -193,17 +196,17 @@ class Client
 
 	/**
 	 * Decodes a JSON response, returns the result or throws an Error.
-	 * @param {String} strResult
-	 * @param {Boolean} bErrorMode
+	 * @param {string} strResult
+	 * @param {boolean} bErrorMode
 	 */
 	async processRAWResponse(strResult, bErrorMode)
 	{
 		try
 		{
-			const objFilterParams={};
+			const objFilterParams = {};
 
-			objFilterParams.strResult=strResult;
-			for(let i=0; i<this._arrPlugins.length; i++)
+			objFilterParams.strResult = strResult;
+			for(let i = 0; i < this._arrPlugins.length; i++)
 			{
 				this._arrPlugins[i].beforeJSONDecode(objFilterParams);
 			}
@@ -211,26 +214,26 @@ class Client
 			let objResponse;
 			try
 			{
-				objResponse=JSON.parse(objFilterParams.strResult);
+				objResponse = JSON.parse(objFilterParams.strResult);
 			}
 			catch(error)
 			{
-				throw new JSONRPC.Exception("JSON parsing failed. RAW response: "+objFilterParams.strResult, JSONRPC.Exception.PARSE_ERROR);
+				throw new JSONRPC.Exception("JSON parsing failed. RAW response: " + objFilterParams.strResult, JSONRPC.Exception.PARSE_ERROR);
 			}
 
 			delete objFilterParams.strResult;
-			objFilterParams.objResponse=objResponse;
-			for(let i=0; i<this._arrPlugins.length; i++)
+			objFilterParams.objResponse = objResponse;
+			for(let i = 0; i < this._arrPlugins.length; i++)
 			{
 				this._arrPlugins[i].afterJSONDecode(objFilterParams);
 			}
 
 			// Maybe it wasn't an object before calling filters, so maybe it wasn't passed by reference.
-			objResponse=objFilterParams.objResponse;
+			objResponse = objFilterParams.objResponse;
 
-			if((typeof objResponse!=="object") || (bErrorMode && !objResponse.hasOwnProperty("error")))
+			if((typeof objResponse !== "object") || (bErrorMode && !objResponse.hasOwnProperty("error")))
 			{
-				throw new JSONRPC.Exception(JSON.stringify("Invalid response structure. RAW response: "+strResult), JSONRPC.Exception.PARSE_ERROR);
+				throw new JSONRPC.Exception(JSON.stringify("Invalid response structure. RAW response: " + strResult), JSONRPC.Exception.PARSE_ERROR);
 			}
 			else if(objResponse.hasOwnProperty("result") && !objResponse.hasOwnProperty("error") && !bErrorMode)
 			{
@@ -241,7 +244,7 @@ class Client
 		}
 		catch(error)
 		{
-			for (let i=this._arrPlugins.length-1; i>=0; i--)
+			for (let i = this._arrPlugins.length - 1; i >= 0; i--)
 			{
 				this._arrPlugins[i].exceptionCatch(error);
 			}
@@ -290,7 +293,7 @@ class Client
 	}
 
 	/**
-	 * @param {String} strFunctionName
+	 * @param {string} strFunctionName
 	 */
 	rpcReflectionFunction(strFunctionName)
 	{
@@ -320,7 +323,7 @@ class Client
 	{
 		if(!this._consoleLoggerPlugin)
 		{
-			this._consoleLoggerPlugin=new JSONRPC.Filter.Client.DebugLogger();
+			this._consoleLoggerPlugin = new JSONRPC.Filter.Client.DebugLogger();
 		}
 		
 		this.addPlugin(this._consoleLoggerPlugin);
@@ -354,7 +357,7 @@ class Client
 	/**
 	 * Flag to keep cookies for CORS requests.
 	 *
-	 * @returns {Boolean} _bWithCredentials
+	 * @returns {boolean} _bWithCredentials
 	 */
 	get bWithCredentials()
 	{
@@ -362,11 +365,11 @@ class Client
 	}
 
 	/**
-	 * @param {Boolean} bWithCredentials
+	 * @param {boolean} bWithCredentials
 	 */
 	set bWithCredentials(bWithCredentials)
 	{
-		this._bWithCredentials=bWithCredentials;
+		this._bWithCredentials = bWithCredentials;
 	}
 
 	/**
@@ -382,7 +385,7 @@ class Client
 	/**
 	 * JSON-RPC protocol call ID.
 	 *
-	 * @returns {Number|0} _nCallID
+	 * @returns {number|0} _nCallID
 	 */
 	get nCallID()
 	{

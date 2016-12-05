@@ -5,13 +5,13 @@ JSONRPC.Exception = require("./Exception");
  * Utils class.
  * @class
  */
-module.exports=	
+module.exports =	
 class Utils
 {
 	/**
 	 * @param {string} strJSON
 	 * 
-	 * @return {null|Object|Array|string|boolean|number}
+	 * @returns {null|Object|Array|string|boolean|number}
 	 */
 	static jsonDecodeSafe(strJSON)
 	{

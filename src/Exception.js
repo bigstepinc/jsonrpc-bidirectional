@@ -5,24 +5,24 @@
  * @class
  * @extends Error
  */
-module.exports=
+module.exports =
 class Exception extends Error
 {
 	/**
-	 * @param {String} strMessage
-	 * @param {Number} nCode
+	 * @param {string} strMessage
+	 * @param {number} nCode
 	 */
 	constructor(strMessage, nCode)
 	{
 		super(strMessage);
 
-		this.strMessage=strMessage;
-		this.nCode=nCode;
+		this.strMessage = strMessage;
+		this.nCode = nCode;
 	}
 
 
 	/**
-	 * @return {number}
+	 * @returns {number}
 	 */
 	get code()
 	{
@@ -34,7 +34,7 @@ class Exception extends Error
 	 * Bad credentials (user, password, signing hash, account does not exist, etc.).
 	 * Not part of JSON-RPC 2.0 spec.
 	 *
-	 * @returns {Number}
+	 * @returns {number}
 	 */
 	static get NOT_AUTHENTICATED()
 	{
@@ -45,7 +45,7 @@ class Exception extends Error
 	 * The authenticated user is not authorized to make any or some requests.
 	 * Not part of JSON-RPC 2.0 spec.
 	 *
-	 * @returns {Number}
+	 * @returns {number}
 	 */
 	static get NOT_AUTHORIZED()
 	{
@@ -56,7 +56,7 @@ class Exception extends Error
 	 * The request has expired. The requester must create or obtain a new request.
 	 * Not part of JSON-RPC 2.0 spec.
 	 *
-	 * @returns {Number}
+	 * @returns {number}
 	 */
 	static get REQUEST_EXPIRED()
 	{
@@ -68,7 +68,7 @@ class Exception extends Error
 	 * On HTTP, a HTTP response code was not received.
 	 * Not part of JSON-RPC 2.0 spec.
 	 *
-	 * @returns {Number}
+	 * @returns {number}
 	 */
 	static get NETWORK_ERROR()
 	{
@@ -80,7 +80,7 @@ class Exception extends Error
 	 * Invalid JSON was received by the server.
 	 * An error occurred on the server while parsing the JSON text.
 	 *
-	 * @returns {Number}
+	 * @returns {number}
 	 */
 	static get PARSE_ERROR()
 	{
@@ -91,7 +91,7 @@ class Exception extends Error
 	 * Invalid Request.
 	 * The JSON sent is not a valid Request object.
 	 *
-	 * @returns {Number}
+	 * @returns {number}
 	 */
 	static get INVALID_REQUEST()
 	{
@@ -102,7 +102,7 @@ class Exception extends Error
 	 * Method not found.
 	 * The method does not exist / is not available.
 	 *
-	 * @returns {Number}
+	 * @returns {number}
 	 */
 	static get METHOD_NOT_FOUND()
 	{
@@ -113,7 +113,7 @@ class Exception extends Error
 	 * Invalid params.
 	 * Invalid method parameter(s).
 	 *
-	 * @returns {Number}
+	 * @returns {number}
 	 */
 	static get INVALID_PARAMS()
 	{
@@ -124,7 +124,7 @@ class Exception extends Error
 	 * Internal error.
 	 * Internal JSON-RPC error.
 	 *
-	 * @returns {Number}
+	 * @returns {number}
 	 */
 	static get INTERNAL_ERROR()
 	{

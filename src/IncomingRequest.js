@@ -8,28 +8,28 @@ JSONRPC.Exception = require("./Exception");
 JSONRPC.Server = require("./Server");
 
 
-module.exports=
+module.exports =
 class IncomingRequest
 {
 	constructor()
 	{
-		this._bAuthenticated=false;
-		this._bAuthorized=false;
-		this._strBody=null;
-		this._requestObject=null;
-		this._endpoint=null;
+		this._bAuthenticated = false;
+		this._bAuthorized = false;
+		this._strBody = null;
+		this._requestObject = null;
+		this._endpoint = null;
 
-		this._mxResult=null;
-		this._bMethodCalled=false;
+		this._mxResult = null;
+		this._bMethodCalled = false;
 
-		this._httpRequest=null;
+		this._httpRequest = null;
 
 		Object.seal(this);
 	}
 
 
 	/**
-	 * @return {boolean}
+	 * @returns {boolean}
 	 */
 	get isAuthenticated()
 	{
@@ -43,12 +43,12 @@ class IncomingRequest
 	set isAuthenticated(bAuthenticated)
 	{
 		assert(typeof bAuthenticated === "boolean");
-		this._bAuthenticated=bAuthenticated;
+		this._bAuthenticated = bAuthenticated;
 	}
 
 
 	/**
-	 * @return {boolean}
+	 * @returns {boolean}
 	 */
 	get isAuthorized()
 	{
@@ -62,12 +62,12 @@ class IncomingRequest
 	set isAuthorized(bAuthorized)
 	{
 		assert(typeof bAuthorized === "boolean");
-		this._bAuthorized=bAuthorized;
+		this._bAuthorized = bAuthorized;
 	}
 
 
 	/**
-	 * @return {http.IncomingMessage|null}
+	 * @returns {http.IncomingMessage|null}
 	 */
 	get httpRequest()
 	{
@@ -82,12 +82,12 @@ class IncomingRequest
 	{
 		assert(httpRequest instanceof http.IncomingMessage);
 
-		this._httpRequest=httpRequest;
+		this._httpRequest = httpRequest;
 	}
 
 
 	/**
-	 * @return {String|null}
+	 * @returns {String|null}
 	 */
 	get body()
 	{
@@ -96,18 +96,18 @@ class IncomingRequest
 
 
 	/**
-	 * @param {String} strBody
+	 * @param {string} strBody
 	 */
 	set body(strBody)
 	{
 		assert(typeof strBody === "string");
 
-		this._strBody=strBody;
+		this._strBody = strBody;
 	}
 
 
 	/**
-	 * @return {Object|Array|null}
+	 * @returns {Object|Array|null}
 	 */
 	get requestObject()
 	{
@@ -122,7 +122,7 @@ class IncomingRequest
 	{
 		assert(typeof objRequest === "object" || Array.isArray(objRequest));
 
-		this._requestObject=objRequest;
+		this._requestObject = objRequest;
 	}
 
 
@@ -132,7 +132,7 @@ class IncomingRequest
 	 * If it is not included it is assumed to be a notification.
 	 * The value SHOULD normally not be Null and Numbers SHOULD NOT contain fractional parts.
 	 * 
-	 * @return {boolean}
+	 * @returns {boolean}
 	 */
 	get isNotification()
 	{
@@ -145,7 +145,7 @@ class IncomingRequest
 
 
 	/**
-	 * @return {JSONRPC.EndpointBase|null}
+	 * @returns {JSONRPC.EndpointBase|null}
 	 */
 	get endpoint()
 	{
@@ -160,12 +160,12 @@ class IncomingRequest
 	{
 		assert(endpoint instanceof JSONRPC.EndpointBase);
 
-		this._endpoint=endpoint;
+		this._endpoint = endpoint;
 	}
 
 
 	/**
-	 * @return {boolean}
+	 * @returns {boolean}
 	 */
 	get isMethodCalled()
 	{
@@ -179,12 +179,12 @@ class IncomingRequest
 	set isMethodCalled(bMethodCalled)
 	{
 		assert(typeof bMethodCalled === "boolean");
-		this._bMethodCalled=bMethodCalled;
+		this._bMethodCalled = bMethodCalled;
 	}
 
 
 	/**
-	 * @return {number|string|null|Object|Array|Error}
+	 * @returns {number|string|null|Object|Array|Error}
 	 */
 	get callResult()
 	{
@@ -197,21 +197,21 @@ class IncomingRequest
 	 */
 	set callResult(mxResult)
 	{
-		this.isMethodCalled=true;
-		this._mxResult=mxResult;
+		this.isMethodCalled = true;
+		this._mxResult = mxResult;
 	}
 
 
 	/**
-	 * @return {Object}
+	 * @returns {Object}
 	 */
 	toResponseObject()
 	{
-		let objResponse={id: null};
+		let objResponse = {id: null};
 
 		if(this.callResult instanceof Error)
 		{
-			objResponse.error={
+			objResponse.error = {
 				message: this.callResult.message,
 				code: (this.callResult instanceof JSONRPC.Exception) ? this.callResult.code : 0
 			};

@@ -1,36 +1,55 @@
-const JSONRPC={};
-JSONRPC.Exception=require("./Exception");
-JSONRPC.IncomingRequest=require("./IncomingRequest");
-JSONRPC.Utils=require("./Utils");
-JSONRPC.EndpointBase=require("./EndpointBase");
+const JSONRPC = {};
+JSONRPC.Exception = require("./Exception");
+JSONRPC.IncomingRequest = require("./IncomingRequest");
+JSONRPC.Utils = require("./Utils");
+JSONRPC.EndpointBase = require("./EndpointBase");
 
+const url = require("url");
+const assert = require("assert");
 
-module.exports=
+module.exports =
 class Server
 {
 	constructor()
 	{
-		this._arrPlugins=[];
-		this._objEndpoints={};
+		this._arrPlugins = [];
+		this._objEndpoints = {};
 
 		Object.seal(this);
 	}
 
 
 	/**
+	 * Any request not under strRootPath will be completely ignored by this JSONRPC.Server.
+	 * An outside handler is required for the ignored paths.
+	 * 
+	 * For paths under strRootPath which do not correspond to an endpoint, this JSONRPC.Server will respond will 404 and a JSONRPC valid body.
+	 * 
 	 * @param {http.Server} httpServer
+	 * @param {string} strRootPath
 	 */
-	async attachToHTTPServer(httpServer)
+	async attachToHTTPServer(httpServer, strRootPath)
 	{
+		assert(typeof strRootPath === "string");
+
+		if(strRootPath.substr(-1) !== "/")
+		{
+			strRootPath += "/";
+		}
+
 		httpServer.on(
 			"request",
 			async (httpRequest, httpResponse) => 
 			{
-				if(httpRequest.url === "/favicon.ico")
+				if(httpRequest.url)
 				{
-					httpResponse.statusCode=404;
-					httpResponse.end();
-					return;
+					let strPath = url.parse(httpRequest.url).pathname;
+					if(strPath.substr(-1) !== "/")
+					{
+						strPath += "/";
+					}
+
+					//strRootPath
 				}
 
 				try
@@ -38,8 +57,8 @@ class Server
 					// Default.
 					httpResponse.statusCode = 500;
 
-					const jsonrpcRequest=await this.processHTTPRequest(httpRequest, httpResponse);
-					const objResponse=await this.processRequest(jsonrpcRequest);
+					const jsonrpcRequest = await this.processHTTPRequest(httpRequest, httpResponse);
+					const objResponse = await this.processRequest(jsonrpcRequest);
 
 					if(jsonrpcRequest.callResult instanceof Error)
 					{
@@ -79,7 +98,7 @@ class Server
 		{
 			if(this._objEndpoints[endpoint.path] !== endpoint)
 			{
-				throw new Error("Another JSONRPC endpoint is registered at the same path: "+endpoint.path);
+				throw new Error("Another JSONRPC endpoint is registered at the same path: " + endpoint.path);
 			}
 			else
 			{
@@ -88,7 +107,7 @@ class Server
 		}
 		else
 		{
-			this._objEndpoints[endpoint.path]=endpoint;
+			this._objEndpoints[endpoint.path] = endpoint;
 		}
 	}
 
@@ -99,7 +118,7 @@ class Server
 	 * 
 	 * @param {string} strPath
 	 * 
-	 * @return {boolean}
+	 * @returns {boolean}
 	 */
 	unregisterEndpoint(strPath)
 	{
@@ -113,6 +132,7 @@ class Server
 
 	/**
 	 * Adds a plugin.
+	 * 
 	 * @param {Object} plugin
 	 */
 	addPlugin(plugin)
@@ -128,6 +148,7 @@ class Server
 
 	/**
 	 * Removes a plugin.
+	 * 
 	 * @param {Object} plugin
 	 */
 	removePlugin(plugin)
@@ -139,9 +160,9 @@ class Server
 
 		this._arrPlugins.splice(
 			this._arrPlugins.findIndex(
-				(element)=>
+				(element) =>
 				{
-					return plugin===element;
+					return plugin === element;
 				}
 			), 
 			1
@@ -152,25 +173,28 @@ class Server
 	/**
 	 * Code outside of this function is responsible for calling .end() on httpResponse.
 	 * 
-	 * @return {JSONRPC.IncomingRequest}
+	 * @param {http.IncomingMessage} httpRequest
+	 * @param {http.ServerResponse} httpResponse
+	 * 
+	 * @returns {JSONRPC.IncomingRequest}
 	 */
 	async processHTTPRequest(httpRequest, httpResponse)
 	{
-		const jsonrpcRequest=new JSONRPC.IncomingRequest();
+		const jsonrpcRequest = new JSONRPC.IncomingRequest();
 
 		try
 		{
-			jsonrpcRequest.httpRequest=httpRequest;
+			jsonrpcRequest.httpRequest = httpRequest;
 			
 			if(httpRequest.method === "POST")
 			{
 				let fnReject;
 				let fnResolve;
-				const promiseWaitForData=new Promise(
+				const promiseWaitForData = new Promise(
 					(_fnResolve, _fnReject) =>
 					{
-						fnReject=_fnReject;
-						fnResolve=_fnResolve;
+						fnReject = _fnReject;
+						fnResolve = _fnResolve;
 					}
 				);
 
@@ -178,7 +202,7 @@ class Server
 
 				httpRequest.on(
 					"data", 
-					(chunk)=>
+					(chunk) =>
 					{
 						arrBody.push(chunk);
 					}
@@ -199,23 +223,23 @@ class Server
 			}
 			else
 			{
-				jsonrpcRequest.callResult=null;
-				jsonrpcRequest.body="";
+				jsonrpcRequest.callResult = null;
+				jsonrpcRequest.body = "";
 			}
 
 
-			const strPath=JSONRPC.EndpointBase.normalizePath(httpRequest.url);
+			const strPath = JSONRPC.EndpointBase.normalizePath(httpRequest.url);
 
 			if(!this._objEndpoints.hasOwnProperty(strPath))
 			{
-				throw new JSONRPC.Exception("Unknown JSONRPC endpoint "+strPath+".", JSONRPC.Exception.METHOD_NOT_FOUND);
+				throw new JSONRPC.Exception("Unknown JSONRPC endpoint " + strPath + ".", JSONRPC.Exception.METHOD_NOT_FOUND);
 			}
 			jsonrpcRequest.endpoint = this._objEndpoints[strPath];
 		}
 		catch(error)
 		{
 			console.log(error);
-			jsonrpcRequest.callResult=error;
+			jsonrpcRequest.callResult = error;
 		}
 
 		return jsonrpcRequest;
@@ -227,7 +251,7 @@ class Server
 	 * 
 	 * @param {JSONRPC.IncomingRequest} jsonrpcRequest
 	 * 
-	 * @return {Object|null}
+	 * @returns {Object|null}
 	 */
 	async processRequest(jsonrpcRequest)
 	{
@@ -244,7 +268,7 @@ class Server
 
 				if(!jsonrpcRequest.requestObject)
 				{
-					jsonrpcRequest.requestObject=JSONRPC.Utils.jsonDecodeSafe(jsonrpcRequest.body);
+					jsonrpcRequest.requestObject = JSONRPC.Utils.jsonDecodeSafe(jsonrpcRequest.body);
 				}
 
 
@@ -273,7 +297,7 @@ class Server
 				// This member MAY be omitted.
 				if(!jsonrpcRequest.requestObject.hasOwnProperty("params"))
 				{
-					jsonrpcRequest.requestObject.params=[];
+					jsonrpcRequest.requestObject.params = [];
 				}
 				else if(!Array.isArray(jsonrpcRequest.requestObject.params))
 				{
@@ -283,7 +307,7 @@ class Server
 					}
 					else
 					{
-						throw new JSONRPC.Exception("The params property has invalid data type, per JSON-RPC 2.0 specification. Unexpected type: "+(typeof jsonrpcRequest.requestObject.params)+".", JSONRPC.Exception.INVALID_REQUEST);
+						throw new JSONRPC.Exception("The params property has invalid data type, per JSON-RPC 2.0 specification. Unexpected type: " + (typeof jsonrpcRequest.requestObject.params) + ".", JSONRPC.Exception.INVALID_REQUEST);
 					}
 				}
 
@@ -324,16 +348,16 @@ class Server
 				{
 					if(typeof jsonrpcRequest.endpoint[jsonrpcRequest.requestObject.method] !== "function")
 					{
-						throw new JSONRPC.Exception("Method "+JSON.stringify(jsonrpcRequest.requestObject.method)+" not found on endpoint "+JSON.stringify(jsonrpcRequest.endpoint.path)+".", JSONRPC.Exception.METHOD_NOT_FOUND);
+						throw new JSONRPC.Exception("Method " + JSON.stringify(jsonrpcRequest.requestObject.method) + " not found on endpoint " + JSON.stringify(jsonrpcRequest.endpoint.path) + ".", JSONRPC.Exception.METHOD_NOT_FOUND);
 					}
 
-					jsonrpcRequest.callResult=await jsonrpcRequest.endpoint[jsonrpcRequest.requestObject.method].apply(jsonrpcRequest.endpoint, jsonrpcRequest.requestObject.params);
+					jsonrpcRequest.callResult = await jsonrpcRequest.endpoint[jsonrpcRequest.requestObject.method].apply(jsonrpcRequest.endpoint, jsonrpcRequest.requestObject.params);
 				}
 			}
 		}
 		catch(error)
 		{
-			jsonrpcRequest.callResult=error;
+			jsonrpcRequest.callResult = error;
 		}
 
 
@@ -350,7 +374,7 @@ class Server
 		}
 
 
-		let objResponse=jsonrpcRequest.toResponseObject();
+		let objResponse = jsonrpcRequest.toResponseObject();
 
 		for(let plugin of this._arrPlugins)
 		{
@@ -362,7 +386,7 @@ class Server
 
 
 	/**
-	 * @returns {String}
+	 * @returns {string}
 	 */
 	static get JSONRPC_VERSION()
 	{

@@ -12,7 +12,7 @@ module.exports=
 class SignatureAdd extends JSONRPC.ClientPluginBase
 {
 	/**
-	 * @param {String} strAPIKey
+	 * @param {string} strAPIKey
 	 * @param {Array} arrExtraURLVariables
 	 */
 	constructor(strAPIKey, arrExtraURLVariables)
@@ -26,7 +26,7 @@ class SignatureAdd extends JSONRPC.ClientPluginBase
 
 	/**
 	 * @static
-	 * @param {String} strKey
+	 * @param {string} strKey
 	 * @returns {String}
 	 */
 	static getKeyMetaData(strKey)

@@ -9,7 +9,7 @@ const assert = require("assert");
  * Methods defined by subclasses, which are to be exported through RPC, 
  * must each return a single Promise object or simply decorated with async so they are awaitable. 
  */
-module.exports=
+module.exports =
 class EndpointBase
 {
 	/**
@@ -23,14 +23,14 @@ class EndpointBase
 		assert.strictEqual(typeof strPath, "string");
 		assert.strictEqual(typeof objReflection, "object");
 
-		this._strName=strName;
-		this._strPath=EndpointBase.normalizePath(strPath);
-		this._objReflection=objReflection;
+		this._strName = strName;
+		this._strPath = EndpointBase.normalizePath(strPath);
+		this._objReflection = objReflection;
 	}
 
 
 	/**
-	 * @return {string}
+	 * @returns {string}
 	 */
 	get path()
 	{
@@ -39,7 +39,7 @@ class EndpointBase
 
 
 	/**
-	 * @return {string}
+	 * @returns {string}
 	 */
 	get name()
 	{
@@ -48,7 +48,7 @@ class EndpointBase
 
 
 	/**
-	 * @return {Object}
+	 * @returns {Object}
 	 */
 	reflection()
 	{
@@ -59,14 +59,14 @@ class EndpointBase
 	/**
 	 * @param {string} strPath
 	 * 
-	 * @return {string}
+	 * @returns {string}
 	 */
 	static normalizePath(strPath)
 	{
-		strPath=url.parse(strPath).pathname.trim();
+		strPath = url.parse(strPath).pathname.trim();
 		if(!strPath.length || strPath.substr(-1) !== "/")
 		{
-			strPath+="/";
+			strPath += "/";
 		}
 
 		return strPath;

@@ -1,8 +1,8 @@
-const JSONRPC={};
-JSONRPC.Exception=require("../src/Exception");
-JSONRPC.EndpointBase=require("../src/EndpointBase");
+const JSONRPC = {};
+JSONRPC.Exception = require("../src/Exception");
+JSONRPC.EndpointBase = require("../src/EndpointBase");
 
-module.exports=
+module.exports =
 class TestEndpoint extends JSONRPC.EndpointBase 
 {
 	constructor()
@@ -18,7 +18,7 @@ class TestEndpoint extends JSONRPC.EndpointBase
 	/**
 	 * Hello world?
 	 * 
-	 * @return {string}
+	 * @returns {string}
 	 */
 	async ping()
 	{
@@ -29,7 +29,7 @@ class TestEndpoint extends JSONRPC.EndpointBase
 	/**
 	 * Hello world?
 	 * 
-	 * @return {string}
+	 * @returns {string}
 	 */
 	async throwJSONRPCException()
 	{
@@ -40,7 +40,7 @@ class TestEndpoint extends JSONRPC.EndpointBase
 	/**
 	 * Hello world?
 	 * 
-	 * @return {string}
+	 * @returns {string}
 	 */
 	async throwError()
 	{

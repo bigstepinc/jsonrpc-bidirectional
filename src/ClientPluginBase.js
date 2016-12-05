@@ -4,7 +4,7 @@
  * Class representing the base for the client filters.
  * @class
  */
-module.exports=
+module.exports =
 class ClientPluginBase
 {
 	/**

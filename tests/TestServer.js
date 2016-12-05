@@ -1,4 +1,4 @@
-const JSONRPC=require("../index").JSONRPC;
+const JSONRPC = require("../index").JSONRPC;
 
 const http = require("http");
 
@@ -6,22 +6,22 @@ const TestEndpoint = require("./TestEndpoint");
 
 const assert = require("assert");
 
-module.exports=
+module.exports =
 class TestServer
 {
 	constructor()
 	{
-		this._jsonrpcServer=null;
+		this._jsonrpcServer = null;
 	}
 
 
 	/**
-	 * @return {http.Server}
+	 * @returns {http.Server}
 	 */
 	async fireUp()
 	{
-		const httpServer=http.createServer();
-		this._jsonrpcServer=new JSONRPC.Server();
+		const httpServer = http.createServer();
+		this._jsonrpcServer = new JSONRPC.Server();
 
 		this._jsonrpcServer.registerEndpoint(new TestEndpoint());
 
@@ -34,15 +34,15 @@ class TestServer
 
 
 	/**
-	 * @return {JSONRPC.Client}
+	 * @returns {JSONRPC.Client}
 	 */
 	async testCalls()
 	{
-		const client=new JSONRPC.Client("http://localhost:8324/api");
+		const client = new JSONRPC.Client("http://localhost:8324/api");
 		client.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 
-		const authenticationSkipPlugin=new JSONRPC.Plugins.Server.AuthenticationSkip();
-		const authorizeAllPlugin=new JSONRPC.Plugins.Server.AuthorizeAll();
+		const authenticationSkipPlugin = new JSONRPC.Plugins.Server.AuthenticationSkip();
+		const authorizeAllPlugin = new JSONRPC.Plugins.Server.AuthorizeAll();
 
 
 		this._jsonrpcServer.addPlugin(authorizeAllPlugin);
@@ -52,7 +52,7 @@ class TestServer
 		}
 		catch(error)
 		{
-			if(error.constructor.name==="AssertionError")
+			if(error.constructor.name === "AssertionError")
 			{
 				throw error;
 			}
@@ -71,7 +71,7 @@ class TestServer
 		}
 		catch(error)
 		{
-			if(error.constructor.name==="AssertionError")
+			if(error.constructor.name === "AssertionError")
 			{
 				throw error;
 			}
@@ -92,7 +92,7 @@ class TestServer
 		}
 		catch(error)
 		{
-			if(error.constructor.name==="AssertionError")
+			if(error.constructor.name === "AssertionError")
 			{
 				throw error;
 			}
@@ -109,7 +109,7 @@ class TestServer
 		}
 		catch(error)
 		{
-			if(error.constructor.name==="AssertionError")
+			if(error.constructor.name === "AssertionError")
 			{
 				throw error;
 			}

@@ -1,4 +1,4 @@
-const TestServer=require("./TestServer");
+const TestServer = require("./TestServer");
 
 process.on(
 	"unhandledRejection", 
@@ -11,9 +11,9 @@ process.on(
 );
 
 (
-	async ()=>
+	async () =>
 	{
-		const test=new TestServer();
+		const test = new TestServer();
 		await test.fireUp();
 		await test.testCalls();
 		console.log("Finished all tests!!!");
