@@ -1,7 +1,7 @@
-const JSONRPC={};
-JSONRPC.ServerPluginBase=require("../../ServerPluginBase");
+const JSONRPC = {};
+JSONRPC.ServerPluginBase = require("../../ServerPluginBase");
 
-module.exports=
+module.exports =
 class DebugLogger extends JSONRPC.ServerPluginBase
 {
 	/**
@@ -12,7 +12,7 @@ class DebugLogger extends JSONRPC.ServerPluginBase
 	beforeJSONDecode(jsonrpcRequest)
 	{
 		// @TODO: specify selected endpoint?
-		console.log("["+(new Date()).toISOString()+"] Received JSONRPC request: "+jsonrpcRequest.requestBody+"\n");
+		console.log("[" + (new Date()).toISOString() + "] Received JSONRPC request: " + jsonrpcRequest.requestBody + "\n");
 	}
 
 	/**
@@ -23,6 +23,6 @@ class DebugLogger extends JSONRPC.ServerPluginBase
 	afterJSONEncode(jsonrpcRequest)
 	{
 		// @TODO: specify selected endpoint?
-		console.log("["+(new Date()).toISOString()+"] Sending JSONRPC response: "+jsonrpcRequest.responseBody+"\n");
+		console.log("[" + (new Date()).toISOString() + "] Sending JSONRPC response: " + jsonrpcRequest.responseBody + "\n");
 	}
 };

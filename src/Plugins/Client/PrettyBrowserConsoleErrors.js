@@ -1,12 +1,12 @@
-const JSONRPC={};
-JSONRPC.ClientPluginBase=require("../../ClientPluginBase");
+const JSONRPC = {};
+JSONRPC.ClientPluginBase = require("../../ClientPluginBase");
 
 /**
  * PrettyBrowserConsoleErrors plugin.
  * @class
  * @extends JSONRPC.ClientPluginBase
  */
-module.exports=
+module.exports =
 class PrettyBrowserConsoleErrors extends JSONRPC.ClientPluginBase
 {
 	/**
@@ -17,8 +17,8 @@ class PrettyBrowserConsoleErrors extends JSONRPC.ClientPluginBase
 	{
 		if(exception instanceof JSONRPC.Exception)
 		{
-			console.log("%c"+exception, "color: red");
-			console.log("%c JSONRPC_Exception: "+JSON.stringify(exception, null, 4), "color: red")
+			console.log("%c" + exception, "color: red");
+			console.log("%c JSONRPC_Exception: " + JSON.stringify(exception, null, 4), "color: red");
 		}
 	}
 };

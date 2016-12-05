@@ -1,7 +1,7 @@
-const JSONRPC={};
-JSONRPC.ServerPluginBase=require("../../ServerPluginBase");
+const JSONRPC = {};
+JSONRPC.ServerPluginBase = require("../../ServerPluginBase");
 
-module.exports=
+module.exports =
 class AuthenticationSkip extends JSONRPC.ServerPluginBase
 {
 	/**
@@ -9,6 +9,6 @@ class AuthenticationSkip extends JSONRPC.ServerPluginBase
 	 */
 	beforeJSONDecode(jsonrpcRequest)
 	{
-		jsonrpcRequest.isAuthorized=true;
+		jsonrpcRequest.isAuthorized = true;
 	}
 };

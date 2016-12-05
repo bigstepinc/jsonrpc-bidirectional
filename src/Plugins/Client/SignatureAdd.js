@@ -1,14 +1,14 @@
-const JSONRPC={};
-JSONRPC.ClientPluginBase=require("../../ClientPluginBase");
+const JSONRPC = {};
+JSONRPC.ClientPluginBase = require("../../ClientPluginBase");
 
-const HMAC_SHA256=require("crypto-js/hmac-sha256");
+const HMAC_SHA256 = require("crypto-js/hmac-sha256");
 
 /**
  * SignatureAdd plugin.
  * @class
  * @extends JSONRPC.ClientPluginBase
  */
-module.exports=
+module.exports =
 class SignatureAdd extends JSONRPC.ClientPluginBase
 {
 	/**
@@ -19,24 +19,24 @@ class SignatureAdd extends JSONRPC.ClientPluginBase
 	{
 		super();
 
-		this.strAPIKey=strAPIKey;
-		this._arrExtraURLVariables=arrExtraURLVariables;
-		this.strKeyMetaData=SignatureAdd.getKeyMetaData(strAPIKey);
+		this.strAPIKey = strAPIKey;
+		this._arrExtraURLVariables = arrExtraURLVariables;
+		this.strKeyMetaData = SignatureAdd.getKeyMetaData(strAPIKey);
 	}
 
 	/**
 	 * @static
 	 * @param {string} strKey
-	 * @returns {String}
+	 * @returns {string}
 	 */
 	static getKeyMetaData(strKey)
 	{
-		let strMeta=null;
-		const arrAPIKey=strKey.split(":", 2);
+		let strMeta = null;
+		const arrAPIKey = strKey.split(":", 2);
 
-		if(arrAPIKey.length!=1)
+		if(arrAPIKey.length !== 1)
 		{
-			strMeta=arrAPIKey[0];
+			strMeta = arrAPIKey[0];
 		}
 
 		return strMeta;
@@ -52,7 +52,7 @@ class SignatureAdd extends JSONRPC.ClientPluginBase
 		 Not setting expires to allow HTTP caching AND because the browser machine's UTC time is wrong for a lot of users.
 		 Unknowingly users are setting the wrong timezone with the wrong UTC time, while the local time *appears* to be correct.
 		 */
-		objFilterParams.objRequest["expires"]=parseInt((new Date().getTime())+86400);
+		objFilterParams.objRequest["expires"] = parseInt((new Date().getTime()) + 86400, 10);
 	}
 
 	/**
@@ -63,23 +63,35 @@ class SignatureAdd extends JSONRPC.ClientPluginBase
 	 */
 	afterJSONEncode(objFilterParams)
 	{
-		let strVerifyHash=HMAC_SHA256(objFilterParams.strJSONRequest, this.strAPIKey);
+		let strVerifyHash = HMAC_SHA256(objFilterParams.strJSONRequest, this.strAPIKey);
 
-		if(this.strKeyMetaData!==null)
+		if(this.strKeyMetaData !== null)
+			{
 			strVerifyHash = this.strKeyMetaData + ":" + strVerifyHash;
+		}
 
-		if(objFilterParams.strEndpointURL.indexOf("?")>-1)
-			objFilterParams.strEndpointURL+="&";
+		if(objFilterParams.strEndpointURL.indexOf("?") > -1)
+			{
+			objFilterParams.strEndpointURL += "&"; 
+		}
 		else
-			objFilterParams.strEndpointURL+="?";
+			{
+			objFilterParams.strEndpointURL += "?"; 
+		}
 
-		if(objFilterParams.strEndpointURL.indexOf("verify")==-1)
-			objFilterParams.strEndpointURL+="verify="+(strVerifyHash);
+		if(objFilterParams.strEndpointURL.indexOf("verify") === -1)
+			{
+			objFilterParams.strEndpointURL += "verify=" + (strVerifyHash);
+		}
 
-		if(objFilterParams.strEndpointURL.charAt(objFilterParams.strEndpointURL.length-1)=='&')
-			objFilterParams.strEndpointURL=objFilterParams.strEndpointURL.slice(0, -1);
+		if(objFilterParams.strEndpointURL.charAt(objFilterParams.strEndpointURL.length - 1) === "&")
+			{
+			objFilterParams.strEndpointURL = objFilterParams.strEndpointURL.slice(0, -1); 
+		}
 
 		for(let strName in this._arrExtraURLVariables)
-			objFilterParams.strEndpointURL+="&"+strName+"="+this._arrExtraURLVariables[strName];
+			{
+			objFilterParams.strEndpointURL += "&" + strName + "=" + this._arrExtraURLVariables[strName]; 
+		}
 	}
 };
