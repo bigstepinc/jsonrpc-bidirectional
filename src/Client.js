@@ -45,8 +45,7 @@ class Client
 			{
 				// Faking asynchronous loading.
 				setTimeout(
-					() =>
-{
+					() => {
 						fnReadyCallback();
 					},
 					1
@@ -57,6 +56,7 @@ class Client
 
 	/**
 	 * This is the function used to set the HTTP credentials.
+	 * 
 	 * @param {string} strUsername
 	 * @param {string} strPassword
 	 */
@@ -70,6 +70,7 @@ class Client
 	 * If first element of arrParams is a function, it must be a callback for
 	 * making an asynchronous call. The callback will be called with a single response param,
 	 * which may be either an Error object (or an Error object subclass) or the actual response.
+	 * 
 	 * @protected
 	 * @param {string} strFunctionName
 	 * @param {Array} arrParams
