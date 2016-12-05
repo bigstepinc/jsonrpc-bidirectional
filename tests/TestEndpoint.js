@@ -12,6 +12,8 @@ class TestEndpoint extends JSONRPC.EndpointBase
 			/*strPath*/ "/api", 
 			/*objReflection*/ {}
 		);
+
+		Object.seal(this);
 	}
 
 

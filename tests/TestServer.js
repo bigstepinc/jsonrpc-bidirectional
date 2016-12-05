@@ -15,6 +15,8 @@ class TestServer
 		this._jsonrpcClient = null;
 		this._authenticationSkipPlugin = null;
 		this._authorizeAllPlugin = null;
+
+		Object.seal(this);
 	}
 
 

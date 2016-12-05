@@ -8,6 +8,12 @@ JSONRPC.Exception = require("./Exception");
 module.exports =	
 class Utils
 {
+	constructor()
+	{
+		Object.seal(this);
+	}
+
+
 	/**
 	 * @param {string} strJSON
 	 * 

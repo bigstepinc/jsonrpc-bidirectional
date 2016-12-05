@@ -18,6 +18,8 @@ class Exception extends Error
 
 		this.strMessage = strMessage;
 		this.nCode = nCode;
+
+		Object.seal(this);
 	}
 
 
