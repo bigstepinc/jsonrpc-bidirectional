@@ -67,6 +67,7 @@ class TestServer
 			
 			if(process.execPath)
 			{
+				// nodejs specific error.
 				assert(error.message.includes("ECONNREFUSED"));
 			}
 		}
