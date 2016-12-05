@@ -5,7 +5,7 @@
   "scripts": {
     "transpile": "babel src --out-dir src",
     "test": "node --harmony_async_await tests/main.js",
-    "lint": "eslint src tests --quiet --fix"
+    "lint": "eslint src tests --quiet"
   },
   "repository": {
     "type": "git",
