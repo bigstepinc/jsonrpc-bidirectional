@@ -85,12 +85,12 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 	 */
 	async makeRequest(objFilterParams)
 	{
-		objFilterParams.bCalled = true;
-
 		if(this.webSocket.readyState !== WebSocket.OPEN)
 		{
 			throw new Error("WebSocket not connected.");
 		}
+
+		objFilterParams.bCalled = true;
 
 		assert(typeof objFilterParams.nCallID === "number");
 		

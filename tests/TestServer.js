@@ -60,7 +60,7 @@ class TestServer
 	{
 		try
 		{
-			assert.throws(await this._jsonrpcClient._rpc("ping", ["pong"]));
+			assert.throws(await this._jsonrpcClient.rpc("ping", ["pong"]));
 		}
 		catch(error)
 		{
@@ -103,7 +103,7 @@ class TestServer
 		this._jsonrpcServer.removePlugin(this._authenticationSkipPlugin);
 		try
 		{
-			assert.throws(await this._jsonrpcClient._rpc("ping", []));
+			assert.throws(await this._jsonrpcClient.rpc("ping", []));
 		}
 		catch(error)
 		{
@@ -128,7 +128,7 @@ class TestServer
 		this._jsonrpcServer.addPlugin(this._authenticationSkipPlugin);
 		try
 		{
-			assert.throws(await this._jsonrpcClient._rpc("ping", []));
+			assert.throws(await this._jsonrpcClient.rpc("ping", []));
 		}
 		catch(error)
 		{
@@ -149,8 +149,8 @@ class TestServer
 	 */
 	async callRPCMethod()
 	{
-		const strParam = "pong_" + (this._jsonrpcClient.nCallID + 1);
-		assert.strictEqual(strParam, await this._jsonrpcClient._rpc("ping", [strParam]));
+		const strParam = "pong_" + (JSONRPC.Client.callID);
+		assert.strictEqual(strParam, await this._jsonrpcClient.rpc("ping", [strParam]));
 	}
 
 
@@ -161,7 +161,7 @@ class TestServer
 	{
 		try
 		{
-			assert.throws(await this._jsonrpcClient._rpc("throwJSONRPCException", []));
+			assert.throws(await this._jsonrpcClient.rpc("throwJSONRPCException", []));
 		}
 		catch(error)
 		{
@@ -184,7 +184,7 @@ class TestServer
 	{
 		try
 		{
-			assert.throws(await this._jsonrpcClient._rpc("throwError", []));
+			assert.throws(await this._jsonrpcClient.rpc("throwError", []));
 		}
 		catch(error)
 		{
@@ -193,7 +193,7 @@ class TestServer
 				throw error;
 			}
 			
-			assert(error instanceof JSONRPC.Exception);
+			assert(error instanceof JSONRPC.Exception, error.constructor.name);
 			assert.strictEqual(error.code, 0);
 			assert.strictEqual(error.message, "Error");
 		}
@@ -220,7 +220,7 @@ class TestServer
 		// http://smallvoid.com/article/winnt-tcpip-max-limit.html
 		// https://blog.jayway.com/2015/04/13/600k-concurrent-websocket-connections-on-aws-using-node-js/
 		// http://stackoverflow.com/questions/17033631/node-js-maxing-out-at-1000-concurrent-connections
-		for(let i = 0; i < 800; i++)
+		for(let i = 0; i < 700; i++)
 		{
 			arrPromises.push(arrMethods[Math.round(Math.random() * (arrMethods.length - 1))].apply(this, []));
 		}

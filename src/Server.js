@@ -78,7 +78,7 @@ class Server
 				}
 				catch(error)
 				{
-					console.log(error);
+					console.error(error);
 				}
 
 				httpResponse.end();
@@ -234,7 +234,7 @@ class Server
 		}
 		catch(error)
 		{
-			console.log(error);
+			console.error(error);
 			jsonrpcRequest.callResult = error;
 		}
 
@@ -316,13 +316,11 @@ class Server
 
 				if(!jsonrpcRequest.isAuthenticated)
 				{
-					console.log(this._arrPlugins);
 					throw new JSONRPC.Exception("Not authenticated.", JSONRPC.Exception.NOT_AUTHENTICATED);
 				}
 
 				if(!jsonrpcRequest.isAuthorized)
 				{
-					console.log(this._arrPlugins);
 					throw new JSONRPC.Exception("Not authorized.", JSONRPC.Exception.NOT_AUTHORIZED);
 				}
 
