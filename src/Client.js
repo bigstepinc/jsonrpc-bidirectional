@@ -21,7 +21,6 @@ class Client
 	{
 		this._arrFilterPlugins = [];
 		this._strJSONRPCRouterURL = strJSONRPCRouterURL;
-		this._nCallID = 0;
 	}
 
 	/**
@@ -47,12 +46,12 @@ class Client
 		assert(Array.isArray(arrParams), "arrParams must be an Array.");
 
 		const objFilterParams = {};
-
+		
 		objFilterParams.objRequest = {
 			"method": strFunctionName,
 			"params": arrParams,
 
-			"id": ++this._nCallID,
+			"id": Client.callID++,
 			"jsonrpc": Client.JSONRPC_VERSION
 		};
 
@@ -61,7 +60,7 @@ class Client
 			this._arrPlugins[i].beforeJSONEncode(objFilterParams);
 		}
 
-		objFilterParams.nCallID = this._nCallID;
+		objFilterParams.nCallID = Client.nCallID;
 		objFilterParams.strJSONRequest = JSON.stringify(objFilterParams.objRequest, null, "\t");
 		delete objFilterParams.objRequest;
 		objFilterParams.strEndpointURL = this.strJSONRPCRouterURL;
@@ -328,11 +327,16 @@ class Client
 	/**
 	 * JSON-RPC protocol call ID.
 	 *
-	 * @returns {number|0} _nCallID
+	 * @returns {number|0} Client._nCallID
 	 */
-	get nCallID()
+	static get callID()
 	{
-		return this._nCallID || 0;
+		return Client._nCallID || 0;
+	}
+
+	static set callID(dummy)
+	{
+		Client._nCallID = (Client._nCallID || 0) + 1;
 	}
 
 	/**
