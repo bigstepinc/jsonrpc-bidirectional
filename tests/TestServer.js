@@ -193,7 +193,7 @@ class TestServer
 				throw error;
 			}
 			
-			assert(error instanceof JSONRPC.Exception);
+			assert(error instanceof JSONRPC.Exception, error.constructor.name);
 			assert.strictEqual(error.code, 0);
 			assert.strictEqual(error.message, "Error");
 		}

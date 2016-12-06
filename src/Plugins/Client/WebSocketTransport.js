@@ -21,24 +21,21 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 
 		this.webSocket.on(
 			"close", 
-			(code, message) => 
-{
+			(code, message) => {
 				this.rejectAllPromises(new Error("WebSocket closed. Code: " + JSON.stringify(code) + ". Message: " + JSON.stringify(message) + "."));
 			}
 		);
 		
 		this.webSocket.on(
 			"error",
-			(error) => 
-{
+			(error) => {
 				this.rejectAllPromises(error);
 			}
 		);
 
 		this.webSocket.on(
 			"message", 
-			(strResponse) => 
-{
+			(strResponse) => {
 				let objResponse;
 
 				try
@@ -88,20 +85,19 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 	 */
 	async makeRequest(objFilterParams)
 	{
-		objFilterParams.bCalled = true;
-
 		if(this.webSocket.readyState !== WebSocket.OPEN)
 		{
 			throw new Error("WebSocket not connected.");
 		}
+
+		objFilterParams.bCalled = true;
 
 		assert(typeof objFilterParams.nCallID === "number");
 		
 		this._objWebSocketRequestsPromises[objFilterParams.nCallID] = {
 			unixtimeMilliseconds: (new Date()).getTime()
 		};
-		this._objWebSocketRequestsPromises[objFilterParams.nCallID].promise = new Promise((fnResolve, fnReject) => 
-{
+		this._objWebSocketRequestsPromises[objFilterParams.nCallID].promise = new Promise((fnResolve, fnReject) => {
 			this._objWebSocketRequestsPromises[objFilterParams.nCallID].fnResolve = fnResolve;
 			this._objWebSocketRequestsPromises[objFilterParams.nCallID].fnReject = fnReject;
 		});
