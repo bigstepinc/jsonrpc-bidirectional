@@ -333,9 +333,9 @@ class Client
 	 */
 	static get callID()
 	{
-		if(!Client._nCallID)
+		if(Client._nCallID === undefined)
 		{
-			Client._nCallID = 0;
+			Client._nCallID = 1;
 		}
 
 		return Client._nCallID;
