@@ -1,7 +1,5 @@
 const assert = require("assert");
 
-const http = require("http");
-
 const JSONRPC = {};
 JSONRPC.EndpointBase = require("./EndpointBase");
 JSONRPC.Exception = require("./Exception");
@@ -21,8 +19,6 @@ class IncomingRequest
 
 		this._mxResult = null;
 		this._bMethodCalled = false;
-
-		this._httpRequest = null;
 
 		Object.seal(this);
 	}
@@ -63,26 +59,6 @@ class IncomingRequest
 	{
 		assert(typeof bAuthorized === "boolean");
 		this._bAuthorized = bAuthorized;
-	}
-
-
-	/**
-	 * @returns {http.IncomingMessage|null}
-	 */
-	get httpRequest()
-	{
-		return this._httpRequest;
-	}
-
-
-	/**
-	 * @param {http.IncomingMessage} httpRequest
-	 */
-	set httpRequest(httpRequest)
-	{
-		assert(httpRequest instanceof http.IncomingMessage);
-
-		this._httpRequest = httpRequest;
 	}
 
 

@@ -182,15 +182,12 @@ class Server
 
 		try
 		{
-			jsonrpcRequest.httpRequest = httpRequest;
-			
 			if(httpRequest.method === "POST")
 			{
 				let fnReject;
 				let fnResolve;
 				const promiseWaitForData = new Promise(
-					(_fnResolve, _fnReject) =>
-					{
+					(_fnResolve, _fnReject) => {
 						fnReject = _fnReject;
 						fnResolve = _fnResolve;
 					}
@@ -225,6 +222,38 @@ class Server
 
 
 			const strPath = JSONRPC.EndpointBase.normalizePath(httpRequest.url);
+
+			if(!this._objEndpoints.hasOwnProperty(strPath))
+			{
+				throw new JSONRPC.Exception("Unknown JSONRPC endpoint " + strPath + ".", JSONRPC.Exception.METHOD_NOT_FOUND);
+			}
+			jsonrpcRequest.endpoint = this._objEndpoints[strPath];
+		}
+		catch(error)
+		{
+			console.error(error);
+			jsonrpcRequest.callResult = error;
+		}
+
+		return jsonrpcRequest;
+	}
+
+
+	/**
+	 * @param {http.IncomingMessage} strMessage
+	 * @param {ws.WebSocket} webSocket
+	 * 
+	 * @returns {JSONRPC.IncomingRequest}
+	 */
+	async processWebSocketRequest(strMessage, webSocket)
+	{
+		const jsonrpcRequest = new JSONRPC.IncomingRequest();
+
+		try
+		{
+			jsonrpcRequest.body = await strMessage;
+
+			const strPath = JSONRPC.EndpointBase.normalizePath(webSocket.address);
 
 			if(!this._objEndpoints.hasOwnProperty(strPath))
 			{
