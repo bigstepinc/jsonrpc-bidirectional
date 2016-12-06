@@ -1,6 +1,9 @@
 const JSONRPC = {};
 JSONRPC.Exception = require("./Exception");
 
+JSONRPC.Plugins = {};
+JSONRPC.Plugins.Client = require("./Plugins/Client/index");
+
 const fetch = require("node-fetch");
 const Request = fetch.Request;
 const Headers = fetch.Headers;
@@ -63,14 +66,14 @@ class Client
 		objFilterParams.nCallID = Client.nCallID;
 		objFilterParams.strJSONRequest = JSON.stringify(objFilterParams.objRequest, null, "\t");
 		delete objFilterParams.objRequest;
-		objFilterParams.strEndpointURL = this.strJSONRPCRouterURL;
+		objFilterParams.strEndpointURL = this.jsonrpcRouterURL;
 		objFilterParams.objHTTPHeaders = {
 			"Content-type": "application/json"
 		};
 
-		if(this.strHTTPUser !== null && this.strHTTPPassword !== null)
+		if(this.httpUser !== null && this.httpPassword !== null)
 		{
-			objFilterParams.objHTTPHeaders["Authorization"] = "Basic " + this.strHTTPUser + ":" + this.strHTTPPassword;
+			objFilterParams.objHTTPHeaders["Authorization"] = "Basic " + this.httpUser + ":" + this.httpPassword;
 		}
 
 		for(let i = 0; i < this._arrPlugins.length; i++)
@@ -265,7 +268,7 @@ class Client
 	{
 		if(!this._consoleLoggerPlugin)
 		{
-			this._consoleLoggerPlugin = new JSONRPC.Filter.Client.DebugLogger();
+			this._consoleLoggerPlugin = new JSONRPC.Plugins.Client.DebugLogger();
 		}
 		
 		this.addPlugin(this._consoleLoggerPlugin);
@@ -289,29 +292,11 @@ class Client
 	/**
 	 * JSON-RPC server endpoint URL.
 	 *
-	 * @returns {String|null} _strJSONRPCRouterURL
+	 * @returns {string|null} _strJSONRPCRouterURL
 	 */
-	get strJSONRPCRouterURL()
+	get jsonrpcRouterURL()
 	{
 		return this._strJSONRPCRouterURL || null;
-	}
-
-	/**
-	 * Flag to keep cookies for CORS requests.
-	 *
-	 * @returns {boolean} _bWithCredentials
-	 */
-	get bWithCredentials()
-	{
-		return this._bWithCredentials || false;
-	}
-
-	/**
-	 * @param {boolean} bWithCredentials
-	 */
-	set bWithCredentials(bWithCredentials)
-	{
-		this._bWithCredentials = bWithCredentials;
 	}
 
 	/**
@@ -342,24 +327,24 @@ class Client
 	/**
 	 * The user name part of HTTP credentials used for authentication plugins.
 	 *
-	 * @returns {String|null} _strHTTPUser
+	 * @returns {string|null} _strHTTPUser
 	 */
-	get strHTTPUser()
+	get httpUser()
 	{
 		return this._strHTTPUser || null;
 	}
 
 	/**
 	 * The user password part of HTTP credentials used for authentication plugins.
-	 * @returns {String|null} _strHTTPPassword
+	 * @returns {string|null} _strHTTPPassword
 	 */
-	get strHTTPPassword()
+	get httpPassword()
 	{
 		return this._strHTTPPassword || null;
 	}
 
 	/**
-	 * @returns {String}
+	 * @returns {string}
 	 */
 	static get JSONRPC_VERSION()
 	{
