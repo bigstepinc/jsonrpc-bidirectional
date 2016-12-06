@@ -1,5 +1,6 @@
 const JSONRPC = {};
 JSONRPC.ClientPluginBase = require("../../ClientPluginBase");
+JSONRPC.Exception = require("../../Exception");
 
 /**
  * PrettyBrowserConsoleErrors plugin.
