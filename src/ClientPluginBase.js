@@ -1,5 +1,3 @@
-"use strict";
-
 /**
  * Class representing the base for the client filters.
  * @class
