@@ -47,6 +47,8 @@ class TestServer
 		await this.callRPCMethodWhichThrowsJSONRPCException();
 		await this.callRPCMethodWhichThrowsSimpleError();
 
+		await this.manyCallsInParallel();
+
 		console.log("Finished all tests!!!");
 	}
 
@@ -147,7 +149,8 @@ class TestServer
 	 */
 	async callRPCMethod()
 	{
-		assert.strictEqual("pong", await this._jsonrpcClient._rpc("ping", ["pong"]));
+		const strParam = "pong_" + (this._jsonrpcClient.nCallID + 1);
+		assert.strictEqual(strParam, await this._jsonrpcClient._rpc("ping", [strParam]));
 	}
 
 
@@ -194,5 +197,34 @@ class TestServer
 			assert.strictEqual(error.code, 0);
 			assert.strictEqual(error.message, "Error");
 		}
+	}
+
+
+	/**
+	 * @returns {undefined} 
+	 */
+	async manyCallsInParallel()
+	{
+		const arrPromises = [];
+
+		const arrMethods = [
+			this.callRPCMethod,
+
+			this.callRPCMethodWhichThrowsSimpleError,
+			this.callRPCMethodWhichThrowsJSONRPCException,
+			
+			this.callRPCMethod,
+			this.callRPCMethod
+		];
+
+		// http://smallvoid.com/article/winnt-tcpip-max-limit.html
+		// https://blog.jayway.com/2015/04/13/600k-concurrent-websocket-connections-on-aws-using-node-js/
+		// http://stackoverflow.com/questions/17033631/node-js-maxing-out-at-1000-concurrent-connections
+		for(let i = 0; i < 800; i++)
+		{
+			arrPromises.push(arrMethods[Math.round(Math.random() * (arrMethods.length - 1))].apply(this, []));
+		}
+
+		await Promise.all(arrPromises);
 	}
 };
