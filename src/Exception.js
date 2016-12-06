@@ -1,5 +1,3 @@
-"use strict";
-
 /**
  * Class representing the JSONRPC Exceptions.
  * @class
