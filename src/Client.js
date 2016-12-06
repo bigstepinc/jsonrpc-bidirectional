@@ -16,42 +16,12 @@ class Client
 {
 	/**
 	 * @param {string} strJSONRPCRouterURL
-	 * @param {Function} fnReadyCallback
-	 * @param {boolean} bWithCredentials
 	 */
-	constructor(strJSONRPCRouterURL, fnReadyCallback, bWithCredentials)
+	constructor(strJSONRPCRouterURL)
 	{
-		if(strJSONRPCRouterURL !== undefined)
-		{
-			if(bWithCredentials === undefined)
-			{
-				this.bWithCredentials = false;
-			}
-			else
-			{
-				this.bWithCredentials = !!bWithCredentials;
-			}
-
-			this._arrFilterPlugins = [];
-			this._strJSONRPCRouterURL = strJSONRPCRouterURL;
-			this._nCallID = 0;
-
-			if(fnReadyCallback && typeof fnReadyCallback !== "function")
-			{
-				throw new Error("fnReadyCallback must be of type function.");
-			}
-
-			if(fnReadyCallback)
-			{
-				// Faking asynchronous loading.
-				setTimeout(
-					() => {
-						fnReadyCallback();
-					},
-					1
-				);
-			}
-		}
+		this._arrFilterPlugins = [];
+		this._strJSONRPCRouterURL = strJSONRPCRouterURL;
+		this._nCallID = 0;
 	}
 
 	/**
@@ -67,27 +37,16 @@ class Client
 	}
 
 	/**
-	 * If first element of arrParams is a function, it must be a callback for
-	 * making an asynchronous call. The callback will be called with a single response param,
-	 * which may be either an Error object (or an Error object subclass) or the actual response.
+	 * Function used to send the JSONRPC request.
 	 * 
-	 * @protected
 	 * @param {string} strFunctionName
 	 * @param {Array} arrParams
 	 */
-	async _rpc(strFunctionName, arrParams)
+	async rpc(strFunctionName, arrParams)
 	{
 		assert(Array.isArray(arrParams), "arrParams must be an Array.");
 
 		const objFilterParams = {};
-
-		let bAsynchronous = false;
-		let fnAsynchronous;
-		if(arrParams.length && typeof arrParams[0] === "function")
-		{
-			fnAsynchronous = arrParams.shift();
-			bAsynchronous = true;
-		}
 
 		objFilterParams.objRequest = {
 			"method": strFunctionName,
@@ -99,7 +58,7 @@ class Client
 
 		for(let i = 0; i < this._arrPlugins.length; i++)
 		{
-			this._arrPlugins[i].beforeJSONEncode(objFilterParams, bAsynchronous);
+			this._arrPlugins[i].beforeJSONEncode(objFilterParams);
 		}
 
 		objFilterParams.nCallID = this._nCallID;
@@ -123,14 +82,12 @@ class Client
 		let bErrorMode = false;
 		let strResult = null;
 		objFilterParams.bCalled = false;
-		objFilterParams.bAsynchronous = bAsynchronous;
-		objFilterParams.fnAsynchronous = fnAsynchronous;
 		for(let i = 0; i < this._arrPlugins.length; i++)
 		{
 			strResult = await this._arrPlugins[i].makeRequest(objFilterParams);
 			if(objFilterParams.bCalled)
 			{
-				if(bAsynchronous && strResult !== null)
+				if(strResult !== null)
 				{
 					return strResult;
 				}
@@ -160,7 +117,7 @@ class Client
 			const response = await fetch(request);
 			let strResult = await response.text();
 
-			if(response.status !== 200)
+			if(!response.ok)
 			{
 				bErrorMode = true;
 				if(parseInt(response.status, 10) === 0)
@@ -176,22 +133,7 @@ class Client
 				}
 			}
 
-			if(bAsynchronous)
-			{
-				await this.processRAWResponse(strResult, bErrorMode)
-					.catch((error) => 
-{
-						fnAsynchronous(error);
-					})
-					.then((mxResult) => 
-{
-						fnAsynchronous(mxResult);
-					});
-			}
-			else
-			{
-				return this.processRAWResponse(strResult, bErrorMode);
-			}
+			return await this.processRAWResponse(strResult, bErrorMode);
 		}
 	}
 
@@ -290,7 +232,7 @@ class Client
 	 */
 	rpcFunctions()
 	{
-		return this._rpc("rpc.functions", [].slice.call(arguments));
+		return this.rpc("rpc.functions", [].slice.call(arguments));
 	}
 
 	/**
@@ -298,7 +240,7 @@ class Client
 	 */
 	rpcReflectionFunction(strFunctionName)
 	{
-		return this._rpc("rpc.reflectionFunction", [].slice.call(arguments));
+		return this.rpc("rpc.reflectionFunction", [].slice.call(arguments));
 	}
 
 	/**
@@ -306,7 +248,7 @@ class Client
 	 */
 	rpcReflectionFunctions(arrFunctionNames)
 	{
-		return this._rpc("rpc.reflectionFunctions", [].slice.call(arguments));
+		return this.rpc("rpc.reflectionFunctions", [].slice.call(arguments));
 	}
 
 	/**
@@ -314,7 +256,7 @@ class Client
 	 */
 	rpcAllowedCrossSiteXHRSubdomains()
 	{
-		return this._rpc("rpc.allowedCrossSiteXHRSubdomains", [].slice.call(arguments));
+		return this.rpc("rpc.allowedCrossSiteXHRSubdomains", [].slice.call(arguments));
 	}
 
 	/**
