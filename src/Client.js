@@ -51,9 +51,11 @@ class Client
 			"method": strFunctionName,
 			"params": arrParams,
 
-			"id": Client.callID++,
+			"id": Client.callID,
 			"jsonrpc": Client.JSONRPC_VERSION
 		};
+
+		Client._nCallID++;
 
 		for(let i = 0; i < this._arrPlugins.length; i++)
 		{
@@ -327,16 +329,16 @@ class Client
 	/**
 	 * JSON-RPC protocol call ID.
 	 *
-	 * @returns {number|0} Client._nCallID
+	 * @returns {number}
 	 */
 	static get callID()
 	{
-		return Client._nCallID || 0;
-	}
+		if(!Client._nCallID)
+		{
+			Client._nCallID = 0;
+		}
 
-	static set callID(dummy)
-	{
-		Client._nCallID = (Client._nCallID || 0) + 1;
+		return Client._nCallID;
 	}
 
 	/**
