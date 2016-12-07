@@ -42,7 +42,7 @@ class SignatureAdd extends JSONRPC.ClientPluginBase
 	/**
 	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
 	 */
-	beforeJSONEncode(jsonrpcRequest)
+	async beforeJSONEncode(jsonrpcRequest)
 	{
 		// Not setting expires to allow HTTP caching AND because the browser machine's UTC time is wrong for a lot of users.
 		// Unknowingly users are setting the wrong timezone with the wrong UTC time, while the local time *appears* to be correct.
@@ -54,7 +54,7 @@ class SignatureAdd extends JSONRPC.ClientPluginBase
 	/**
 	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
 	 */
-	afterJSONEncode(jsonrpcRequest)
+	async afterJSONEncode(jsonrpcRequest)
 	{
 		let strVerifyHash = HMAC_SHA256(jsonrpcRequest.requestBody, this.strAPIKey);
 

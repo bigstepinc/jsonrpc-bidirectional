@@ -11,7 +11,7 @@ class ClientPluginBase
 	 * 
 	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
 	 */
-	beforeJSONEncode(jsonrpcRequest)
+	async beforeJSONEncode(jsonrpcRequest)
 	{
 		// jsonrpcRequest.requestObject is available here.
 
@@ -24,7 +24,7 @@ class ClientPluginBase
 	 * 
 	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
 	 */
-	afterJSONEncode(jsonrpcRequest)
+	async afterJSONEncode(jsonrpcRequest)
 	{
 		// jsonrpcRequest.requestBody is available here.
 
@@ -47,7 +47,7 @@ class ClientPluginBase
 	/**
 	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
 	 */
-	beforeJSONDecode(jsonrpcRequest)
+	async beforeJSONDecode(jsonrpcRequest)
 	{
 		// jsonrpcRequest.responseBody is available here.
 	}
@@ -56,7 +56,7 @@ class ClientPluginBase
 	/**
 	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
 	 */
-	afterJSONDecode(jsonrpcRequest)
+	async afterJSONDecode(jsonrpcRequest)
 	{
 		// jsonrpcRequest.responseObject is available here.
 	}
@@ -69,7 +69,7 @@ class ClientPluginBase
 	 * 
 	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
 	 */
-	exceptionCatch(jsonrpcRequest)
+	async exceptionCatch(jsonrpcRequest)
 	{
 		// jsonrpcRequest.callResult is available here, and it is a subclass of Error.
 	}

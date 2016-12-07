@@ -16,7 +16,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 
 		this.webSocket = webSocket;
 
-		// JSONRPC call ID as key, {promise: {Promise}, fnResolve: {Function}, fnReject: {Function}} as values.
+		// JSONRPC call ID as key, {promise: {Promise}, fnResolve: {Function}, fnReject: {Function}, jsonrpcRequest: {OutgoingRequest}} as values.
 		this._objWebSocketRequestsPromises = {};
 
 		this.webSocket.on(
@@ -33,6 +33,9 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 			}
 		);
 
+
+		// @TODO: This event handler needs to route the decoded response between WebSocketTransport of a server and WebSocketTransport of a client, so that JSON.parse happens only once.
+		// @TODO: In needs to be shared (central) between the server and client of the same websocket.
 		this.webSocket.on(
 			"message", 
 			(strResponse) => {
@@ -69,49 +72,48 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 				}
 				else
 				{
+					this._objWebSocketRequestsPromises[objResponse.id].jsonrpcRequest.responseBody = strResponse;
+					this._objWebSocketRequestsPromises[objResponse.id].jsonrpcRequest.requestObject = objResponse; 
+					this._objWebSocketRequestsPromises[objResponse.id].fnResolve(null);
+					// Sorrounding code will parse the result and throw if necessary. fnReject is not going to be used in this function.
 
+					delete this._objWebSocketRequestsPromises[objResponse.id];
 				}
 			}
 		);
 	}
 
 
-	async processMessage(objResponse)
-	{
-		this._objWebSocketRequestsPromises[objResponse.id].fnResolve(objResponse);
-		// Sorrounding code will parse the result and throw if necessary. fnReject is not going to be used in this function.
-
-		delete this._objWebSocketRequestsPromises[objResponse.id];
-	}
-
-
 	/**
-	 * @param {Object} objFilterParams
-	 * @returns {Promise.<*>}. The RAW string output of the server.
+	 * Populates the the OutgoingRequest class instance (jsonrpcRequest) with the RAW JSON response and the JSON parsed response object.
+	 * 
+	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
+	 * 
+	 * @returns {Promise.<null>}
 	 */
-	async makeRequest(objFilterParams)
+	async makeRequest(jsonrpcRequest)
 	{
 		if(this.webSocket.readyState !== WebSocket.OPEN)
 		{
 			throw new Error("WebSocket not connected.");
 		}
 
-		objFilterParams.bCalled = true;
+		jsonrpcRequest.isMethodCalled = true;
 
-		assert(typeof objFilterParams.nCallID === "number");
+		assert(typeof jsonrpcRequest.requestObject.id === "number");
 		
-		this._objWebSocketRequestsPromises[objFilterParams.nCallID] = {
-			unixtimeMilliseconds: (new Date()).getTime()
+		this._objWebSocketRequestsPromises[jsonrpcRequest.requestObject.id] = {
+			unixtimeMilliseconds: (new Date()).getTime(),
+			jsonrpcRequest: jsonrpcRequest
 		};
-		this._objWebSocketRequestsPromises[objFilterParams.nCallID].promise = new Promise((fnResolve, fnReject) => {
-			this._objWebSocketRequestsPromises[objFilterParams.nCallID].fnResolve = fnResolve;
-			this._objWebSocketRequestsPromises[objFilterParams.nCallID].fnReject = fnReject;
+		this._objWebSocketRequestsPromises[jsonrpcRequest.requestObject.id].promise = new Promise((fnResolve, fnReject) => {
+			this._objWebSocketRequestsPromises[jsonrpcRequest.requestObject.id].fnResolve = fnResolve;
+			this._objWebSocketRequestsPromises[jsonrpcRequest.requestObject.id].fnReject = fnReject;
 		});
 
-		this.webSocket.send(objFilterParams.strJSONRequest);
+		this.webSocket.send(jsonrpcRequest.requestObject.requestBody);
 
-		// Returning a Promise.
-		return this._objWebSocketRequestsPromises[objFilterParams.nCallID].promise;
+		return this._objWebSocketRequestsPromises[jsonrpcRequest.requestObject.id].promise;
 	}
 
 

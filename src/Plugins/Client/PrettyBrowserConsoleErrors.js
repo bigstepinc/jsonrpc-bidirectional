@@ -8,7 +8,7 @@ class PrettyBrowserConsoleErrors extends JSONRPC.ClientPluginBase
 	/**
 	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
 	 */
-	exceptionCatch(jsonrpcRequest)
+	async exceptionCatch(jsonrpcRequest)
 	{
 		console.error(jsonrpcRequest.callResult);
 	}
