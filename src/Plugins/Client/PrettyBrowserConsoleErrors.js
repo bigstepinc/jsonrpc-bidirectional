@@ -2,24 +2,14 @@ const JSONRPC = {};
 JSONRPC.ClientPluginBase = require("../../ClientPluginBase");
 JSONRPC.Exception = require("../../Exception");
 
-/**
- * PrettyBrowserConsoleErrors plugin.
- * @class
- * @extends JSONRPC.ClientPluginBase
- */
 module.exports =
 class PrettyBrowserConsoleErrors extends JSONRPC.ClientPluginBase
 {
 	/**
-	 * Catches the exception and prints it.
-	 * @param {error} exception
+	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
 	 */
-	exceptionCatch(exception)
+	exceptionCatch(jsonrpcRequest)
 	{
-		if(exception instanceof JSONRPC.Exception)
-		{
-			console.log("%c" + exception, "color: red");
-			console.log("%c JSONRPC_Exception: " + JSON.stringify(exception, null, 4), "color: red");
-		}
+		console.error(jsonrpcRequest.callResult);
 	}
 };

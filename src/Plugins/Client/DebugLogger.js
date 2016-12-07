@@ -1,33 +1,22 @@
 const JSONRPC = {};
 JSONRPC.ClientPluginBase = require("../../ClientPluginBase");
 
-/**
- * DebugLogger plugin.
- * @class
- * @extends JSONRPC.ClientPluginBase
- */
 module.exports =
 class DebugLogger extends JSONRPC.ClientPluginBase
 {
 	/**
-	 * Prints the request in JSON format.
-	 * @param {Object} objFilterParams - It allows for reference return for multiple params. It contains:
-	 * {String} strJSONRequest
-	 * {String} strEndpointURL
-	 * {Array} arrHTTPHeaders
+	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
 	 */
-	afterJSONEncode(objFilterParams)
+	afterJSONEncode(jsonrpcRequest)
 	{
-		console.log("Sent request at " + new Date() + "\n" + objFilterParams.strJSONRequest + "\n");
+		console.log("Sent request at " + new Date() + "\n" + jsonrpcRequest.requestBody + "\n");
 	}
 
 	/**
-	 * Prints the response in JSON format.
-	 * @param {Object} objFilterParams - It allows for reference return for multiple params. It contains:
-	 * {string} strJSONResponse
+	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
 	 */
-	beforeJSONDecode(objFilterParams)
+	beforeJSONDecode(jsonrpcRequest)
 	{
-		console.log("Received response at " + new Date() + "\n" + objFilterParams.strResult + "\n");
+		console.log("Received response at " + new Date() + "\n" + jsonrpcRequest.responseBody + "\n");
 	}
 };

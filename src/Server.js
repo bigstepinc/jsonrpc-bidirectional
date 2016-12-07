@@ -47,6 +47,7 @@ class Server
 				// Ignore paths which do not fall under strRootPath, or are not strRootPath. 
 				if(strRequestPath.substr(0, strRootPath.length) !== strRootPath)
 				{
+					httpResponse.end();
 					return;
 				}
 
@@ -73,6 +74,7 @@ class Server
 
 					if(!jsonrpcRequest.isNotification)
 					{
+						httpResponse.setHeader("Content-Type", "application/json");
 						httpResponse.write(JSON.stringify(objResponse, undefined, "\t"));
 					}
 				}
@@ -212,14 +214,12 @@ class Server
 					}
 				);
 
-				jsonrpcRequest.body = await promiseWaitForData;
+				jsonrpcRequest.requestBody = await promiseWaitForData;
 			}
 			else
 			{
-				jsonrpcRequest.callResult = null;
-				jsonrpcRequest.body = "";
+				throw new Error("JSONRPC does not handle HTTP " + httpRequest.method + " requests.");
 			}
-
 
 			const strPath = JSONRPC.EndpointBase.normalizePath(httpRequest.url);
 
@@ -231,7 +231,6 @@ class Server
 		}
 		catch(error)
 		{
-			console.error(error);
 			jsonrpcRequest.callResult = error;
 		}
 
@@ -251,7 +250,7 @@ class Server
 
 		try
 		{
-			jsonrpcRequest.body = await strMessage;
+			jsonrpcRequest.requestBody = strMessage;
 
 			const strPath = JSONRPC.EndpointBase.normalizePath(webSocket.address);
 
@@ -263,7 +262,6 @@ class Server
 		}
 		catch(error)
 		{
-			console.error(error);
 			jsonrpcRequest.callResult = error;
 		}
 
@@ -293,7 +291,7 @@ class Server
 
 				if(!jsonrpcRequest.requestObject)
 				{
-					jsonrpcRequest.requestObject = JSONRPC.Utils.jsonDecodeSafe(jsonrpcRequest.body);
+					jsonrpcRequest.requestObject = JSONRPC.Utils.jsonDecodeSafe(jsonrpcRequest.requestBody);
 				}
 
 

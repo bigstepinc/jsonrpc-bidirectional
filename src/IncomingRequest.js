@@ -13,12 +13,15 @@ class IncomingRequest
 	{
 		this._bAuthenticated = false;
 		this._bAuthorized = false;
-		this._strBody = null;
+		this._strRequestBody = null;
 		this._requestObject = null;
 		this._endpoint = null;
 
 		this._mxResult = null;
 		this._bMethodCalled = false;
+
+		//this._webSocket
+		//this._httpRequest
 
 		Object.seal(this);
 	}
@@ -65,20 +68,20 @@ class IncomingRequest
 	/**
 	 * @returns {String|null}
 	 */
-	get body()
+	get requestBody()
 	{
-		return this._strBody;
+		return this._strRequestBody;
 	}
 
 
 	/**
-	 * @param {string} strBody
+	 * @param {string} strRequestBody
 	 */
-	set body(strBody)
+	set requestBody(strRequestBody)
 	{
-		assert(typeof strBody === "string");
+		assert(typeof strRequestBody === "string");
 
-		this._strBody = strBody;
+		this._strRequestBody = strRequestBody;
 	}
 
 

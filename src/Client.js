@@ -3,6 +3,8 @@ JSONRPC.Exception = require("./Exception");
 
 JSONRPC.Plugins = {};
 JSONRPC.Plugins.Client = require("./Plugins/Client/index");
+JSONRPC.Utils = require("./Utils");
+JSONRPC.OutgoingRequest = require("./OutgoingRequest");
 
 const fetch = require("node-fetch");
 const Request = fetch.Request;
@@ -10,21 +12,23 @@ const Headers = fetch.Headers;
 
 const assert = require("assert");
 
+
 /**
- * Class representing the JSONRPC Client.
- * @class
+ * 
  */
 module.exports =
 class Client
 {
 	/**
-	 * @param {string} strJSONRPCRouterURL
+	 * @param {string} strEndpointURL
 	 */
-	constructor(strJSONRPCRouterURL)
+	constructor(strEndpointURL)
 	{
-		this._arrFilterPlugins = [];
-		this._strJSONRPCRouterURL = strJSONRPCRouterURL;
+		this._arrPlugins = [];
+		this._strJSONRPCEndpointURL = strEndpointURL;
+		this._nCallID = 1;
 	}
+
 
 	/**
 	 * This is the function used to set the HTTP credentials.
@@ -38,6 +42,7 @@ class Client
 		this._strHTTPPassword = strPassword;
 	}
 
+
 	/**
 	 * Function used to send the JSONRPC request.
 	 * 
@@ -48,162 +53,176 @@ class Client
 	{
 		assert(Array.isArray(arrParams), "arrParams must be an Array.");
 
-		const objFilterParams = {};
-		
-		objFilterParams.objRequest = {
-			"method": strFunctionName,
-			"params": arrParams,
+		const jsonrpcRequest = new JSONRPC.OutgoingRequest(strFunctionName, arrParams, this._nCallID);
+		this._nCallID++;
 
-			"id": Client.callID,
-			"jsonrpc": Client.JSONRPC_VERSION
-		};
-
-		Client._nCallID++;
-
-		for(let i = 0; i < this._arrPlugins.length; i++)
+		try
 		{
-			this._arrPlugins[i].beforeJSONEncode(objFilterParams);
-		}
+			jsonrpcRequest.endpointURL = this.endpointURL;
+			jsonrpcRequest.headers["Content-type"] = "application/json";
 
-		objFilterParams.nCallID = Client.nCallID;
-		objFilterParams.strJSONRequest = JSON.stringify(objFilterParams.objRequest, null, "\t");
-		delete objFilterParams.objRequest;
-		objFilterParams.strEndpointURL = this.jsonrpcRouterURL;
-		objFilterParams.objHTTPHeaders = {
-			"Content-type": "application/json"
-		};
-
-		if(this.httpUser !== null && this.httpPassword !== null)
-		{
-			objFilterParams.objHTTPHeaders["Authorization"] = "Basic " + this.httpUser + ":" + this.httpPassword;
-		}
-
-		for(let i = 0; i < this._arrPlugins.length; i++)
-		{
-			this._arrPlugins[i].afterJSONEncode(objFilterParams);
-		}
-
-		let bErrorMode = false;
-		let strResult = null;
-		objFilterParams.bCalled = false;
-		for(let i = 0; i < this._arrPlugins.length; i++)
-		{
-			strResult = await this._arrPlugins[i].makeRequest(objFilterParams);
-			if(objFilterParams.bCalled)
+			if(this.httpUser !== null && this.httpPassword !== null)
 			{
-				if(strResult !== null)
-				{
-					return strResult;
-				}
-
-				break;
+				jsonrpcRequest.headers["Authorization"] = "Basic " + this.httpUser + ":" + this.httpPassword;
 			}
-			else if(strResult !== null)
+
+
+			jsonrpcRequest.requestObject = jsonrpcRequest.toRequestObject();
+
+			for(let plugin of this._arrPlugins)
 			{
-				throw new Error("Plugin set return value to non-null while leaving bCalled===false.");
+				plugin.beforeJSONEncode(jsonrpcRequest);
 			}
-		}
 
-		if(!objFilterParams.bCalled)
-		{
-			const request = new Request(
-				objFilterParams.strEndpointURL,
-				{
-					method: "POST",
-					mode: "cors",
-					headers: new Headers(objFilterParams.objHTTPHeaders),
-					body: objFilterParams.strJSONRequest,
-					cache: "no-cache",
-					credentials: "include"
-				}
-			);
 
-			const response = await fetch(request);
-			let strResult = await response.text();
+			jsonrpcRequest.requestBody = JSON.stringify(jsonrpcRequest.requestObject, null, "\t");
+			console.log(jsonrpcRequest.requestObject);
+			console.log(jsonrpcRequest.requestBody);
 
-			if(!response.ok)
+			for(let plugin of this._arrPlugins)
 			{
-				bErrorMode = true;
-				if(parseInt(response.status, 10) === 0)
+				plugin.afterJSONEncode(jsonrpcRequest);
+			}
+
+
+			for(let plugin of this._arrPlugins)
+			{
+				await plugin.makeRequest(jsonrpcRequest);
+
+				if(jsonrpcRequest.isMethodCalled)
 				{
-					strResult = JSON.stringify({
+					break;
+				}
+				else if(jsonrpcRequest.callResult !== null)
+				{
+					throw new Error("Plugin set return value to non-null while leaving isMethodCalled === false.");
+				}
+			}
+
+
+			let response = null;
+			let bHTTPErrorMode = false;
+			if(!jsonrpcRequest.isMethodCalled)
+			{
+				const request = new Request(
+					jsonrpcRequest.endpointURL,
+					{
+						method: "POST",
+						mode: "cors",
+						headers: new Headers(jsonrpcRequest.headers),
+						body: jsonrpcRequest.requestBody,
+						cache: "no-cache",
+						credentials: "include"
+					}
+				);
+
+				response = await fetch(request);
+
+				bHTTPErrorMode = !response.ok; 
+
+				if(
+					!response.ok
+					&& parseInt(response.status, 10) === 0
+				)
+				{
+					jsonrpcRequest.responseObject = {
 						"jsonrpc": Client.JSONRPC_VERSION,
 						"error": {
 							"code": JSONRPC.Exception.NETWORK_ERROR,
 							"message": "Network error. The internet connection may have failed."
 						},
-						"id": objFilterParams.nCallID
-					});
+						"id": jsonrpcRequest.callID
+					}; 
+					jsonrpcRequest.responseBody = JSON.stringify(jsonrpcRequest.responseObject);
+				}
+				else
+				{
+					jsonrpcRequest.responseBody = await response.text();
 				}
 			}
 
-			return await this.processRAWResponse(strResult, bErrorMode);
-		}
-	}
-
-	/**
-	 * Decodes a JSON response, returns the result or throws an Error.
-	 * @param {string} strResult
-	 * @param {boolean} bErrorMode
-	 */
-	async processRAWResponse(strResult, bErrorMode)
-	{
-		try
-		{
-			const objFilterParams = {};
-
-			objFilterParams.strResult = strResult;
-			for(let i = 0; i < this._arrPlugins.length; i++)
+			
+			for(let plugin of this._arrPlugins)
 			{
-				this._arrPlugins[i].beforeJSONDecode(objFilterParams);
+				plugin.beforeJSONDecode(jsonrpcRequest);
 			}
 
-			let objResponse;
-			try
+
+			if(jsonrpcRequest.responseObject === null)
 			{
-				objResponse = JSON.parse(objFilterParams.strResult);
-			}
-			catch(error)
-			{
-				throw new JSONRPC.Exception("JSON parsing failed. RAW response: " + objFilterParams.strResult, JSONRPC.Exception.PARSE_ERROR);
+				jsonrpcRequest.responseObject = JSONRPC.Utils.jsonDecodeSafe(jsonrpcRequest.responseBody);
 			}
 
-			delete objFilterParams.strResult;
-			objFilterParams.objResponse = objResponse;
-			for(let i = 0; i < this._arrPlugins.length; i++)
+
+			for(let plugin of this._arrPlugins)
 			{
-				this._arrPlugins[i].afterJSONDecode(objFilterParams);
+				plugin.afterJSONDecode(jsonrpcRequest);
 			}
 
-			// Maybe it wasn't an object before calling filters, so maybe it wasn't passed by reference.
-			objResponse = objFilterParams.objResponse;
 
-			if((typeof objResponse !== "object") || (bErrorMode && !objResponse.hasOwnProperty("error")))
+			if(jsonrpcRequest.responseObject.hasOwnProperty("error"))
 			{
-				throw new JSONRPC.Exception(JSON.stringify("Invalid response structure. RAW response: " + strResult), JSONRPC.Exception.PARSE_ERROR);
+				if(
+					!jsonrpcRequest.responseObject.error.hasOwnProperty("message")
+					|| typeof jsonrpcRequest.responseObject.error.message !== "string"
+					|| !jsonrpcRequest.responseObject.error.hasOwnProperty("code")
+					|| typeof jsonrpcRequest.responseObject.error.code !== "number"
+				)
+				{
+					jsonrpcRequest.callResult = new JSONRPC.Exception("Invalid error object on JSONRPC protocol response. Response: " + JSON.stringify(jsonrpcRequest.responseObject), JSONRPC.Exception.INTERNAL_ERROR);
+				}
+				else
+				{
+					jsonrpcRequest.callResult = new JSONRPC.Exception(jsonrpcRequest.responseObject.error.message, jsonrpcRequest.responseObject.error.code);
+				}
 			}
-			else if(objResponse.hasOwnProperty("result") && !objResponse.hasOwnProperty("error") && !bErrorMode)
+			else if(jsonrpcRequest.responseObject.hasOwnProperty("result"))
 			{
-				return objResponse.result;
+				jsonrpcRequest.callResult = jsonrpcRequest.responseObject.result; 
+			}
+			else
+			{
+				bHTTPErrorMode = true;
 			}
 
-			throw new JSONRPC.Exception(objResponse.error.message, objResponse.error.code);
+
+			if(
+				bHTTPErrorMode
+				&& !(jsonrpcRequest.callResult instanceof Error)
+			)
+			{
+				jsonrpcRequest.callResult = new JSONRPC.Exception(
+					"Invalid error object on JSONRPC protocol response. Response object: " + JSON.stringify(jsonrpcRequest.responseObject) + ". HTTP response class instance: " + JSON.stringify(response) + ".", 
+					JSONRPC.Exception.INTERNAL_ERROR
+				);
+			}
 		}
 		catch(error)
 		{
-			for (let i = this._arrPlugins.length - 1; i >= 0; i--)
-			{
-				this._arrPlugins[i].exceptionCatch(error);
-			}
-
-			throw error;
+			jsonrpcRequest.callResult = error;
 		}
+
+
+		if(jsonrpcRequest.callResult instanceof Error)
+		{
+			for(let plugin of this._arrPlugins)
+			{
+				plugin.exceptionCatch(jsonrpcRequest);
+			}
+			assert(jsonrpcRequest.callResult instanceof Error, " A plugin has reset the jsonrpcRequest.callResult to a non-error.");
+
+			throw jsonrpcRequest.callResult;
+		}
+
+
+		return jsonrpcRequest.callResult;
 	}
 
 
 	/**
 	 * Adds a plugin.
-	 * @param {Object} plugin
+	 * 
+	 * @param {JSONRPC.ClientPluginBase} plugin
 	 */
 	addPlugin(plugin)
 	{
@@ -218,7 +237,8 @@ class Client
 
 	/**
 	 * Removes a plugin.
-	 * @param {Object} plugin
+	 * 
+	 * @param {JSONRPC.ClientPluginBase} plugin
 	 */
 	removePlugin(plugin)
 	{
@@ -232,36 +252,108 @@ class Client
 
 
 	/**
+	 * JSON-RPC server endpoint URL.
 	 *
+	 * @returns {string|null}
+	 */
+	get endpointURL()
+	{
+		return this._strJSONRPCEndpointURL;
+	}
+
+
+	/**
+	 * Plugins which extend JSONRPC.ClientPluginBase.
+	 *
+	 * @returns {Array}
+	 */
+	get plugins()
+	{
+		return this._arrPlugins;
+	}
+
+
+	/**
+	 * JSON-RPC protocol call ID.
+	 *
+	 * @returns {number}
+	 */
+	get callID()
+	{
+		return this._nCallID;
+	}
+
+
+	/**
+	 * The user name part of HTTP credentials used for authentication plugins.
+	 *
+	 * @returns {string|null} _strHTTPUser
+	 */
+	get httpUser()
+	{
+		return this._strHTTPUser;
+	}
+
+
+	/**
+	 * The user password part of HTTP credentials used for authentication plugins.
+	 * 
+	 * @returns {string|null}
+	 */
+	get httpPassword()
+	{
+		return this._strHTTPPassword;
+	}
+
+
+	/**
+	 * @returns {string}
+	 */
+	static get JSONRPC_VERSION()
+	{
+		return "2.0";
+	}
+
+
+	/**
+	 * @returns {string[]}
 	 */
 	rpcFunctions()
 	{
 		return this.rpc("rpc.functions", [].slice.call(arguments));
 	}
 
+
 	/**
 	 * @param {string} strFunctionName
+	 * 
+	 * @returns {Object}
 	 */
 	rpcReflectionFunction(strFunctionName)
 	{
-		return this.rpc("rpc.reflectionFunction", [].slice.call(arguments));
+		return this.rpc("rpc.reflectionFunction", [strFunctionName]);
 	}
+
 
 	/**
 	 * @param {Array} arrFunctionNames
+	 * 
+	 * @returns {Object}
 	 */
 	rpcReflectionFunctions(arrFunctionNames)
 	{
-		return this.rpc("rpc.reflectionFunctions", [].slice.call(arguments));
+		return this.rpc("rpc.reflectionFunctions", [arrFunctionNames]);
 	}
 
+
 	/**
-	 *
+	 * @returns {string[]}
 	 */
 	rpcAllowedCrossSiteXHRSubdomains()
 	{
-		return this.rpc("rpc.allowedCrossSiteXHRSubdomains", [].slice.call(arguments));
+		return this.rpc("rpc.allowedCrossSiteXHRSubdomains", []);
 	}
+
 
 	/**
 	 * Enables logging.
@@ -276,6 +368,7 @@ class Client
 		this.addPlugin(this._consoleLoggerPlugin);
 	}
 
+
 	/**
 	 * Disables logging.
 	 */
@@ -285,71 +378,5 @@ class Client
 		{
 			this.removePlugin(this._consoleLoggerPlugin);
 		}
-		else
-		{
-			throw new Error("Failed to remove ConsoleLogger plugin object, maybe plugin is not registered.");
-		}
-	}
-
-	/**
-	 * JSON-RPC server endpoint URL.
-	 *
-	 * @returns {string|null} _strJSONRPCRouterURL
-	 */
-	get jsonrpcRouterURL()
-	{
-		return this._strJSONRPCRouterURL || null;
-	}
-
-	/**
-	 * Filter plugins which extend JSONRPC.ClientPluginBase.
-	 *
-	 * @returns {Array|null} _arrFilterPlugins
-	 */
-	get _arrPlugins()
-	{
-		return this._arrFilterPlugins || null;
-	}
-
-	/**
-	 * JSON-RPC protocol call ID.
-	 *
-	 * @returns {number}
-	 */
-	static get callID()
-	{
-		if(Client._nCallID === undefined)
-		{
-			Client._nCallID = 1;
-		}
-
-		return Client._nCallID;
-	}
-
-	/**
-	 * The user name part of HTTP credentials used for authentication plugins.
-	 *
-	 * @returns {string|null} _strHTTPUser
-	 */
-	get httpUser()
-	{
-		return this._strHTTPUser || null;
-	}
-
-	/**
-	 * The user password part of HTTP credentials used for authentication plugins.
-	 * @returns {string|null} _strHTTPPassword
-	 */
-	get httpPassword()
-	{
-		return this._strHTTPPassword || null;
-	}
-
-	/**
-	 * @returns {string}
-	 */
-	static get JSONRPC_VERSION()
-	{
-		return "2.0";
 	}
 };

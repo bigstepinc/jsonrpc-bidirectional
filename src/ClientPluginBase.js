@@ -1,79 +1,76 @@
 /**
- * Class representing the base for the client filters.
- * @class
+ * JSONRPC.Client plugins need to extend this class.
  */
 module.exports =
 class ClientPluginBase
 {
 	/**
-	 * Should be used to
-	 * - add extra request object keys;
-	 * - translate or encode output params into the expected server request object format.
-	 * @param {Object} objFilterParams - It allows for reference return for multiple params. It contains:
-	 * {Object} objRequest
+	 * Gives a chance to modify the client request object before sending it out.
+	 * 
+	 * Normally, this allows extending the protocol.
+	 * 
+	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
 	 */
-	beforeJSONEncode(objFilterParams)
+	beforeJSONEncode(jsonrpcRequest)
 	{
+		// jsonrpcRequest.requestObject is available here.
 
+		// jsonrpcRequest.headers and jsonrpcRequest.enpointURL may be modified here.
 	}
 
-	/**
-	 * Should be used to
-	 * - encrypt, encode or otherwise prepare the JSON request string into the expected server input format;
-	 * - log raw output.
-	 * @param {Object} objFilterParams - It allows for reference return for multiple params. It contains:
-	 * {String} strJSONRequest
-	 * {String} strEndpointURL
-	 * {Array} arrHTTPHeaders
-	 */
-	afterJSONEncode(objFilterParams)
-	{
 
+	/**
+	 * Gives a chance to encrypt, sign or log RAW outgoing requests.
+	 * 
+	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
+	 */
+	afterJSONEncode(jsonrpcRequest)
+	{
+		// jsonrpcRequest.requestBody is available here.
+
+		// jsonrpcRequest.headers and jsonrpcRequest.enpointURL may be modified here.
 	}
 
+
 	/**
-	 * First plugin to make a request will be the last one. The respective plugin MUST set bCalled to true.
-	 * @param {Object} objFilterParams - It allows for reference return for multiple params.
-	 * @returns {*}. The RAW string output of the server or false on error (or can throw)
+	 * If a plugin chooses to actually make the call here, 
+	 * it must set the result in the jsonrpcRequest.callResult property.
+	 * 
+	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
 	 */
-	async makeRequest(objFilterParams)
+	async makeRequest(jsonrpcRequest)
 	{
-		return null;
+		// jsonrpcRequest.callResult may be written here.
 	}
 
-	/**
-	 * Should be used to
-	 * - decrypt, decode or otherwise prepare the JSON response into the expected JSON-RPC client format;
-	 * - log raw input.
-	 * @param {Object} objFilterParams - It allows for reference return for multiple params. It contains:
-	 * {string} strJSONResponse
-	 */
-	beforeJSONDecode(objFilterParams)
-	{
 
+	/**
+	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
+	 */
+	beforeJSONDecode(jsonrpcRequest)
+	{
+		// jsonrpcRequest.responseBody is available here.
 	}
 
-	/**
-	 * Should be used to
-	 * - add extra response object keys;
-	 * - translate or decode response params into the expected JSON-RPC client response object format.
-	 * @param {Object} objFilterParams - It allows for reference return for multiple params. It contains:
-	 * {Object} objResponse
-	 */
-	afterJSONDecode(objFilterParams)
-	{
 
+	/**
+	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
+	 */
+	afterJSONDecode(jsonrpcRequest)
+	{
+		// jsonrpcRequest.responseObject is available here.
 	}
 
-	/**
-	 * Should be used to rethrow exceptions as different types.
-	 * The first plugin to throw an exception will be the last one.
-	 * If there are no filter plugins registered or none of the plugins have thrown an exception,
-	 * then JSONRPC_client will throw the original JSONRPC_Exception.
-	 * @param {error} exception
-	 */
-	exceptionCatch(exception)
-	{
 
+	/**
+	 * Should be used to log exceptions or replace exceptions with other exceptions.
+	 * 
+	 * This is only called if jsonrpcRequest.callResult is a subclass of Error or an instance of Error.
+	 * 
+	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
+	 */
+	exceptionCatch(jsonrpcRequest)
+	{
+		// jsonrpcRequest.callResult is available here, and it is a subclass of Error.
 	}
 };

@@ -3,11 +3,7 @@ JSONRPC.ClientPluginBase = require("../../ClientPluginBase");
 
 const HMAC_SHA256 = require("crypto-js/hmac-sha256");
 
-/**
- * SignatureAdd plugin.
- * @class
- * @extends JSONRPC.ClientPluginBase
- */
+
 module.exports =
 class SignatureAdd extends JSONRPC.ClientPluginBase
 {
@@ -24,8 +20,8 @@ class SignatureAdd extends JSONRPC.ClientPluginBase
 		this.strKeyMetaData = SignatureAdd.getKeyMetaData(strAPIKey);
 	}
 
+
 	/**
-	 * @static
 	 * @param {string} strKey
 	 * @returns {string}
 	 */
@@ -41,57 +37,54 @@ class SignatureAdd extends JSONRPC.ClientPluginBase
 
 		return strMeta;
 	}
+	
 
 	/**
-	 * @param {Object} objFilterParams - It allows for reference return for multiple params. It contains:
-	 * {Object} objRequest
+	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
 	 */
-	beforeJSONEncode(objFilterParams)
+	beforeJSONEncode(jsonrpcRequest)
 	{
-		/*
-		 Not setting expires to allow HTTP caching AND because the browser machine's UTC time is wrong for a lot of users.
-		 Unknowingly users are setting the wrong timezone with the wrong UTC time, while the local time *appears* to be correct.
-		 */
-		objFilterParams.objRequest["expires"] = parseInt((new Date().getTime()) + 86400, 10);
+		// Not setting expires to allow HTTP caching AND because the browser machine's UTC time is wrong for a lot of users.
+		// Unknowingly users are setting the wrong timezone with the wrong UTC time, while the local time *appears* to be correct.
+
+		jsonrpcRequest.requestObject["expires"] = parseInt((new Date().getTime()) + 86400, 10);
 	}
 
+
 	/**
-	 * @param {Object} objFilterParams - It allows for reference return for multiple params. It contains:
-	 * {String} strJSONRequest
-	 * {String} strEndpointURL
-	 * {Array} arrHTTPHeaders
+	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
 	 */
-	afterJSONEncode(objFilterParams)
+	afterJSONEncode(jsonrpcRequest)
 	{
-		let strVerifyHash = HMAC_SHA256(objFilterParams.strJSONRequest, this.strAPIKey);
+		let strVerifyHash = HMAC_SHA256(jsonrpcRequest.requestBody, this.strAPIKey);
 
 		if(this.strKeyMetaData !== null)
 		{
 			strVerifyHash = this.strKeyMetaData + ":" + strVerifyHash;
 		}
 
-		if(objFilterParams.strEndpointURL.indexOf("?") > -1)
+		if(jsonrpcRequest.endpointURL.indexOf("?") > -1)
 		{
-			objFilterParams.strEndpointURL += "&"; 
+			jsonrpcRequest.endpointURL += "&"; 
 		}
 		else
 		{
-			objFilterParams.strEndpointURL += "?"; 
+			jsonrpcRequest.endpointURL += "?"; 
 		}
 
-		if(objFilterParams.strEndpointURL.indexOf("verify") === -1)
+		if(jsonrpcRequest.endpointURL.indexOf("verify") === -1)
 		{
-			objFilterParams.strEndpointURL += "verify=" + (strVerifyHash);
+			jsonrpcRequest.endpointURL += "verify=" + (strVerifyHash);
 		}
 
-		if(objFilterParams.strEndpointURL.charAt(objFilterParams.strEndpointURL.length - 1) === "&")
+		if(jsonrpcRequest.endpointURL.charAt(jsonrpcRequest.endpointURL.length - 1) === "&")
 		{
-			objFilterParams.strEndpointURL = objFilterParams.strEndpointURL.slice(0, -1); 
+			jsonrpcRequest.endpointURL = jsonrpcRequest.endpointURL.slice(0, -1); 
 		}
 
 		for(let strName in this._arrExtraURLVariables)
 		{
-			objFilterParams.strEndpointURL += "&" + strName + "=" + this._arrExtraURLVariables[strName]; 
+			jsonrpcRequest.endpointURL += "&" + strName + "=" + this._arrExtraURLVariables[strName]; 
 		}
 	}
 };

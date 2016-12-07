@@ -36,6 +36,9 @@ class TestServer
 		
 		await this.startServer();
 
+		await this.endpointNotFoundError();
+		await this.outsideJSONRPCPathError();
+
 		await this.triggerAuthenticationError();
 		await this.triggerAuthorizationError();
 
@@ -95,6 +98,58 @@ class TestServer
 
 
 	/**
+	 * @returns {undefined} 
+	 */
+	async endpointNotFoundError()
+	{
+		const client = new JSONRPC.Client("http://localhost:8324/api/bad-endpoint-path");
+		client.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
+
+		try
+		{
+			assert.throws(await client.rpc("ping", []));
+		}
+		catch(error)
+		{
+			if(error.constructor.name === "AssertionError")
+			{
+				throw error;
+			}
+			
+			assert(error instanceof JSONRPC.Exception);
+			assert.strictEqual(error.code, JSONRPC.Exception.METHOD_NOT_FOUND);
+			assert(error.message.includes("Unknown JSONRPC endpoint"));
+		}
+	}
+
+
+	/**
+	 * @returns {undefined} 
+	 */
+	async outsideJSONRPCPathError()
+	{
+		const client = new JSONRPC.Client("http://localhost:8324/unhandled-path");
+		client.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
+
+		try
+		{
+			assert.throws(await client.rpc("ping", []));
+		}
+		catch(error)
+		{
+			if(error.constructor.name === "AssertionError")
+			{
+				throw error;
+			}
+			
+			assert(error instanceof JSONRPC.Exception);
+			assert.strictEqual(error.code, JSONRPC.Exception.PARSE_ERROR);
+			assert(error.message.includes("Unexpected end of JSON input; RAW JSON string:"));
+		}
+	}
+
+
+	/**
 	 * @returns {undefined}
 	 */
 	async triggerAuthenticationError()
@@ -149,7 +204,7 @@ class TestServer
 	 */
 	async callRPCMethod()
 	{
-		const strParam = "pong_" + (JSONRPC.Client.callID);
+		const strParam = "pong_" + (this._jsonrpcClient.callID);
 		assert.strictEqual(strParam, await this._jsonrpcClient.rpc("ping", [strParam]));
 	}
 

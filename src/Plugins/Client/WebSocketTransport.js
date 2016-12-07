@@ -69,13 +69,19 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 				}
 				else
 				{
-					this._objWebSocketRequestsPromises[objResponse.id].fnResolve(strResponse);
-					// Sorrounding code will parse the result and throw if necessary. fnReject is not going to be used in this function.
 
-					delete this._objWebSocketRequestsPromises[objResponse.id];
 				}
 			}
 		);
+	}
+
+
+	async processMessage(objResponse)
+	{
+		this._objWebSocketRequestsPromises[objResponse.id].fnResolve(objResponse);
+		// Sorrounding code will parse the result and throw if necessary. fnReject is not going to be used in this function.
+
+		delete this._objWebSocketRequestsPromises[objResponse.id];
 	}
 
 
