@@ -37,6 +37,8 @@ class ClientPluginBase
 	 * it must set the result in the jsonrpcRequest.callResult property.
 	 * 
 	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
+	 * 
+	 * @returns {Promise.<null>}
 	 */
 	async makeRequest(jsonrpcRequest)
 	{
