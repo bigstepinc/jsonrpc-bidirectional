@@ -76,8 +76,8 @@ class Client
 
 
 			jsonrpcRequest.requestBody = JSON.stringify(jsonrpcRequest.requestObject, null, "\t");
-			console.log(jsonrpcRequest.requestObject);
-			console.log(jsonrpcRequest.requestBody);
+			// console.log(jsonrpcRequest.requestObject);
+			// console.log(jsonrpcRequest.requestBody);
 
 			for(let plugin of this._arrPlugins)
 			{
