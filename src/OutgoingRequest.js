@@ -10,6 +10,7 @@ class OutgoingRequest
 	/**
 	 * @param {string} strMethod
 	 * @param {Array} arrParams
+	 * @param {number} nCallID
 	 */
 	constructor(strMethod, arrParams, nCallID)
 	{
