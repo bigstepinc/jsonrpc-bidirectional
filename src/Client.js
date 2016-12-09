@@ -27,6 +27,8 @@ class Client
 		this._arrPlugins = [];
 		this._strJSONRPCEndpointURL = strEndpointURL;
 		this._nCallID = 1;
+		this._strHTTPUser = null;
+		this._strHTTPPassword = null;
 	}
 
 
@@ -71,7 +73,7 @@ class Client
 
 			for(let plugin of this._arrPlugins)
 			{
-				plugin.beforeJSONEncode(jsonrpcRequest);
+				await plugin.beforeJSONEncode(jsonrpcRequest);
 			}
 
 
@@ -81,7 +83,7 @@ class Client
 
 			for(let plugin of this._arrPlugins)
 			{
-				plugin.afterJSONEncode(jsonrpcRequest);
+				await plugin.afterJSONEncode(jsonrpcRequest);
 			}
 
 
@@ -144,7 +146,7 @@ class Client
 			
 			for(let plugin of this._arrPlugins)
 			{
-				plugin.beforeJSONDecode(jsonrpcRequest);
+				await plugin.beforeJSONDecode(jsonrpcRequest);
 			}
 
 
@@ -156,7 +158,7 @@ class Client
 
 			for(let plugin of this._arrPlugins)
 			{
-				plugin.afterJSONDecode(jsonrpcRequest);
+				await plugin.afterJSONDecode(jsonrpcRequest);
 			}
 
 
@@ -207,7 +209,7 @@ class Client
 		{
 			for(let plugin of this._arrPlugins)
 			{
-				plugin.exceptionCatch(jsonrpcRequest);
+				await plugin.exceptionCatch(jsonrpcRequest);
 			}
 			assert(jsonrpcRequest.callResult instanceof Error, " A plugin has reset the jsonrpcRequest.callResult to a non-error.");
 

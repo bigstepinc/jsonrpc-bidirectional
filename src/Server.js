@@ -71,8 +71,20 @@ class Server
 					{
 						httpResponse.statusCode = 200; // Ok
 					}
+					
 
-					if(!jsonrpcRequest.isNotification)
+					if(jsonrpcRequest.isNotification)
+					{
+						/*httpResponse.write(JSON.stringify({
+							id: null,
+							jsonrpc: "2.0",
+							error: {
+								message: "JSONRPC 2.0 notfications are not supported.",
+								code: JSONRPC.Exception.INTERNAL_ERROR
+							}
+						}, undefined, "\t"));*/
+					}
+					else
 					{
 						httpResponse.setHeader("Content-Type", "application/json");
 						httpResponse.write(JSON.stringify(objResponse, undefined, "\t"));
@@ -403,14 +415,5 @@ class Server
 		}
 
 		return objResponse;
-	}
-
-
-	/**
-	 * @returns {string}
-	 */
-	static get JSONRPC_VERSION()
-	{
-		return "2.0";
 	}
 };

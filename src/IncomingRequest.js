@@ -116,8 +116,8 @@ class IncomingRequest
 	get isNotification()
 	{
 		return (
-			this._requestObject !== null
-			&& typeof this._requestObject === "object" 
+			this._requestObject !== null 
+			&& typeof this._requestObject === "object"
 			&& !this.requestObject.hasOwnProperty("id")
 		);
 	}
@@ -186,7 +186,7 @@ class IncomingRequest
 	 */
 	toResponseObject()
 	{
-		let objResponse = {id: null};
+		let objResponse = {id: null, "jsonrpc": "2.0"};
 
 		if(this.callResult instanceof Error)
 		{
@@ -208,7 +208,6 @@ class IncomingRequest
 		{
 			objResponse.id = this._requestObject.id;
 		}
-		objResponse.jsonrpc = JSONRPC.Server.JSONRPC_VERSION;
 
 		return objResponse;
 	}
