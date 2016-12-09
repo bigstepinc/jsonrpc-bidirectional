@@ -13,5 +13,6 @@ objExports.JSONRPC.Server=require("./src/Server.js");
 objExports.JSONRPC.Plugins=objExports.JSONRPC.Plugins || {};
 objExports.JSONRPC.Plugins.Client=require("./src/Plugins/Client/index");
 objExports.JSONRPC.Plugins.Server=require("./src/Plugins/Server/index");
+objExports.JSONRPC.Plugins.Shared=require("./src/Plugins/Shared/index");
 
 module.exports=objExports;

@@ -251,37 +251,6 @@ class Server
 
 
 	/**
-	 * @param {http.IncomingMessage} strMessage
-	 * @param {ws.WebSocket} webSocket
-	 * 
-	 * @returns {JSONRPC.IncomingRequest}
-	 */
-	async processWebSocketRequest(strMessage, webSocket)
-	{
-		const jsonrpcRequest = new JSONRPC.IncomingRequest();
-
-		try
-		{
-			jsonrpcRequest.requestBody = strMessage;
-
-			const strPath = JSONRPC.EndpointBase.normalizePath(webSocket.address);
-
-			if(!this._objEndpoints.hasOwnProperty(strPath))
-			{
-				throw new JSONRPC.Exception("Unknown JSONRPC endpoint " + strPath + ".", JSONRPC.Exception.METHOD_NOT_FOUND);
-			}
-			jsonrpcRequest.endpoint = this._objEndpoints[strPath];
-		}
-		catch(error)
-		{
-			jsonrpcRequest.callResult = error;
-		}
-
-		return jsonrpcRequest;
-	}
-
-
-	/**
 	 * Returns the response object or null if in notification mode.
 	 * 
 	 * @param {JSONRPC.IncomingRequest} jsonrpcRequest
@@ -304,14 +273,6 @@ class Server
 				if(!jsonrpcRequest.requestObject)
 				{
 					jsonrpcRequest.requestObject = JSONRPC.Utils.jsonDecodeSafe(jsonrpcRequest.requestBody);
-				}
-
-
-				// Bi-directional support.
-				// Ignoring response objects.
-				if(jsonrpcRequest.requestObject.hasOwnProperty("error") || jsonrpcRequest.requestObject.hasOwnProperty("result"))
-				{
-					return;
 				}
 
 

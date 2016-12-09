@@ -14,73 +14,95 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 	{
 		super();
 
-		this.webSocket = webSocket;
+		assert(webSocket instanceof WebSocket);
+
+		this._webSocket = webSocket;
 
 		// JSONRPC call ID as key, {promise: {Promise}, fnResolve: {Function}, fnReject: {Function}, jsonrpcRequest: {OutgoingRequest}} as values.
 		this._objWebSocketRequestsPromises = {};
 
-		this.webSocket.on(
+		this._webSocket.on(
 			"close", 
 			(code, message) => {
 				this.rejectAllPromises(new Error("WebSocket closed. Code: " + JSON.stringify(code) + ". Message: " + JSON.stringify(message) + "."));
 			}
 		);
 		
-		this.webSocket.on(
+		this._webSocket.on(
 			"error",
 			(error) => {
 				this.rejectAllPromises(error);
 			}
 		);
+	}
 
 
-		// @TODO: This event handler needs to route the decoded response between WebSocketTransport of a server and WebSocketTransport of a client, so that JSON.parse happens only once.
-		// @TODO: In needs to be shared (central) between the server and client of the same websocket.
-		this.webSocket.on(
-			"message", 
-			(strResponse) => {
-				let objResponse;
+	/**
+	 * @returns {WebSocket} 
+	 */
+	get webSocket()
+	{
+		return this._webSocket;
+	}
 
-				try
-				{
-					objResponse = JSON.parse(strResponse);
 
-					if(
-						!(typeof objResponse.id === "number")
-						|| !this._objWebSocketRequestsPromises[objResponse.id]
-					)
-					{
-						throw new Error("Couldn't find JSONRPC response call ID in this._objWebSocketRequestsPromises.");
-					}
-
-					assert(this._objWebSocketRequestsPromises[objResponse.id]);
-				}
-				catch(error)
-				{
-					console.error(error);
-					console.error("RAW remote message: " + strResponse);
-					console.log("Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request.");
-					this.webSocket.close(1, "Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request.");
-
-					return;
-				}
-
-				if(objResponse.method)
-				{
-					// Ignore this, it is a request.
-					// This may be a websocket shared between a Client and a Server for bi-directional RPC.
-				}
-				else
-				{
-					this._objWebSocketRequestsPromises[objResponse.id].jsonrpcRequest.responseBody = strResponse;
-					this._objWebSocketRequestsPromises[objResponse.id].jsonrpcRequest.requestObject = objResponse; 
-					this._objWebSocketRequestsPromises[objResponse.id].fnResolve(null);
-					// Sorrounding code will parse the result and throw if necessary. fnReject is not going to be used in this function.
-
-					delete this._objWebSocketRequestsPromises[objResponse.id];
-				}
+	/**
+	 * strResponse is a string with the response JSON.
+	 * objResponse is the object obtained after JSON parsing for strResponse.
+	 * 
+	 * @param {string} strResponse
+	 * @param {Object} objResponse
+	 */
+	async processResponse(strResponse, objResponse)
+	{
+		if(!objResponse)
+		{
+			try
+			{
+				objResponse = JSON.parse(strResponse);
 			}
-		);
+			catch(error)
+			{
+				console.error(error);
+				console.error("Unable to parse JSON. RAW remote message: " + strResponse);
+
+				this.webSocket.send(JSON.stringify({
+					id: null,
+					jsonrpc: "2.0",
+					error: {
+						message: "Invalid JSON: " + JSON.stringify(strResponse) + ".",
+						code: JSONRPC.Exception.PARSE_ERROR
+					}
+				}, undefined, "\t"));
+
+				console.log("Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request or response.");
+				this.webSocket.close(1, "Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request or response.");
+
+				return;
+			}
+		}
+
+
+		if(
+			typeof objResponse.id !== "number"
+			|| !this._objWebSocketRequestsPromises[objResponse.id]
+		)
+		{
+			console.error(new Error("Couldn't find JSONRPC response call ID in this._objWebSocketRequestsPromises."));
+			console.error(new Error("RAW remote message: " + strResponse));
+			console.log("Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request.");
+			this.webSocket.close(1, "Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request.");
+
+			return;
+		}
+
+		this._objWebSocketRequestsPromises[objResponse.id].jsonrpcRequest.responseBody = strResponse;
+		this._objWebSocketRequestsPromises[objResponse.id].jsonrpcRequest.requestObject = objResponse;
+
+		this._objWebSocketRequestsPromises[objResponse.id].fnResolve(null);
+		// Sorrounding code will parse the result and throw if necessary. fnReject is not going to be used in this function.
+
+		delete this._objWebSocketRequestsPromises[objResponse.id];
 	}
 
 
