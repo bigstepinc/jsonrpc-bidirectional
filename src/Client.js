@@ -249,7 +249,15 @@ class Client
 			return;
 		}
 
-		this._arrPlugins.splice(this._arrPlugins.findIndex(plugin), 1);
+		this._arrPlugins.splice(
+			this._arrPlugins.findIndex(
+				(itemPlugin) => 
+				{
+					return plugin === itemPlugin;
+				}
+			), 
+			1
+		);
 	}
 
 

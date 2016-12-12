@@ -3,8 +3,12 @@ const JSONRPC = require("../index").JSONRPC;
 const http = require("http");
 
 const TestEndpoint = require("./TestEndpoint");
+const ClientPluginInvalidRequestJSON = require("./ClientPluginInvalidRequestJSON");
+const ServerPluginInvalidResponseJSON = require("./ServerPluginInvalidResponseJSON");
+
 
 const assert = require("assert");
+
 
 module.exports =
 class TestServer
@@ -44,6 +48,9 @@ class TestServer
 
 		this._jsonrpcServer.addPlugin(this._authorizeAllPlugin);
 		this._jsonrpcServer.addPlugin(this._authenticationSkipPlugin);
+
+		await this.requestParseError();
+		await this.responseParseError();
 
 		await this.callRPCMethod();
 
@@ -171,6 +178,56 @@ class TestServer
 			assert.strictEqual(error.code, JSONRPC.Exception.NOT_AUTHENTICATED);
 			assert.strictEqual(error.message, "Not authenticated.");
 		}
+	}
+
+
+	async requestParseError()
+	{
+		const invalidJSONPlugin = new ClientPluginInvalidRequestJSON();
+		this._jsonrpcClient.addPlugin(invalidJSONPlugin);
+
+		try
+		{
+			assert.throws(await this._jsonrpcClient.rpc("ping", []));
+		}
+		catch(error)
+		{
+			if(error.constructor.name === "AssertionError")
+			{
+				throw error;
+			}
+			
+			assert(error instanceof JSONRPC.Exception);
+			assert.strictEqual(error.code, JSONRPC.Exception.PARSE_ERROR);
+			assert(error.message.includes("Unexpected end of JSON input; RAW JSON string:"));
+		}
+
+		this._jsonrpcClient.removePlugin(invalidJSONPlugin);
+	}
+
+
+	async responseParseError()
+	{
+		const invalidJSONPlugin = new ServerPluginInvalidResponseJSON();
+		this._jsonrpcServer.addPlugin(invalidJSONPlugin);
+
+		try
+		{
+			assert.throws(await this._jsonrpcClient.rpc("ping", []));
+		}
+		catch(error)
+		{
+			if(error.constructor.name === "AssertionError")
+			{
+				throw error;
+			}
+			
+			assert(error instanceof JSONRPC.Exception);
+			assert.strictEqual(error.code, JSONRPC.Exception.INTERNAL_ERROR);
+			assert(error.message.includes("Invalid error object on JSONRPC protocol response"));
+		}
+
+		this._jsonrpcServer.removePlugin(invalidJSONPlugin);
 	}
 
 
