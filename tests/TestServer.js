@@ -260,6 +260,8 @@ class TestServer
 	 */
 	async manyCallsInParallel()
 	{
+		const nStartTime = (new Date()).getTime();
+
 		const arrPromises = [];
 
 		const arrMethods = [
@@ -275,11 +277,14 @@ class TestServer
 		// http://smallvoid.com/article/winnt-tcpip-max-limit.html
 		// https://blog.jayway.com/2015/04/13/600k-concurrent-websocket-connections-on-aws-using-node-js/
 		// http://stackoverflow.com/questions/17033631/node-js-maxing-out-at-1000-concurrent-connections
-		for(let i = 0; i < 700; i++)
+		const nCallCount = 500;
+		for(let i = 0; i < nCallCount; i++)
 		{
 			arrPromises.push(arrMethods[Math.round(Math.random() * (arrMethods.length - 1))].apply(this, []));
 		}
 
 		await Promise.all(arrPromises);
+
+		console.log(nCallCount + " calls executed in " + ((new Date()).getTime() - nStartTime) + " milliseconds.");
 	}
 };

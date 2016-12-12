@@ -31,7 +31,7 @@
     "ws": "^1.1.1"
   },
   "devDependencies": {
-    "@types/node": "0.0.2",
+    "@types/node": "*",
     "babel-cli": "*",
     "babel-core": "*",
     "babel-eslint": "*",
@@ -43,6 +43,6 @@
     "babel-preset-stage-0": "*",
     "browserify": "*",
     "eslint": "*",
-    "eslint-plugin-jsdoc": "^2.4.0"
+    "eslint-plugin-jsdoc": "*"
   }
 }

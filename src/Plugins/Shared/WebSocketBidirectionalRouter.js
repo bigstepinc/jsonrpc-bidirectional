@@ -45,7 +45,7 @@ class WebSocketBidirectionalRouter
 					id: null,
 					jsonrpc: "2.0",
 					error: {
-						message: "Invalid JSON: " + JSON.stringify(strMessage) + ".",
+						message: "Invalid request: " + JSON.stringify(strMessage) + ".",
 						code: JSONRPC.Exception.PARSE_ERROR
 					}
 				}, undefined, "\t"));
@@ -57,39 +57,81 @@ class WebSocketBidirectionalRouter
 			return;
 		}
 
-		if(objMessage.hasOwnProperty("method") && this._jsonrpcServer)
+		try
 		{
-			const jsonrpcRequest = new JSONRPC.IncomingRequest();
-
-
-			// Move this somewhere in a state tracking class instance of the websocket connection so it is only executed on an incoming connection,
-			// for efficiency.
-			try
+			if(objMessage.hasOwnProperty("method"))
 			{
-				const strPath = JSONRPC.EndpointBase.normalizePath(webSocket.address);
-
-				if(!this._objEndpoints.hasOwnProperty(strPath))
+				if(!this._jsonrpcServer)
 				{
-					throw new JSONRPC.Exception("Unknown JSONRPC endpoint " + strPath + ".", JSONRPC.Exception.METHOD_NOT_FOUND);
+					webSocket.send(JSON.stringify({
+						id: null,
+						jsonrpc: "2.0",
+						error: {
+							message: "Invalid JSON: " + JSON.stringify(strMessage) + ".",
+							code: JSONRPC.Exception.PARSE_ERROR
+						}
+					}, undefined, "\t"));
 				}
-				jsonrpcRequest.endpoint = this._objEndpoints[strPath];
 
 
-				jsonrpcRequest.requestBody = strMessage;
-				jsonrpcRequest.requestObject = objMessage;
+				const jsonrpcRequest = new JSONRPC.IncomingRequest();
+
+
+				// Move this somewhere in a state tracking class instance of the websocket connection so it is only executed on an incoming connection,
+				// for efficiency.
+				try
+				{
+					const strPath = JSONRPC.EndpointBase.normalizePath(webSocket.address);
+
+					if(!this._objEndpoints.hasOwnProperty(strPath))
+					{
+						throw new JSONRPC.Exception("Unknown JSONRPC endpoint " + strPath + ".", JSONRPC.Exception.METHOD_NOT_FOUND);
+					}
+					jsonrpcRequest.endpoint = this._objEndpoints[strPath];
+
+
+					jsonrpcRequest.requestBody = strMessage;
+					jsonrpcRequest.requestObject = objMessage;
+				}
+				catch(error)
+				{
+					jsonrpcRequest.callResult = error;
+				}
+
+
+				const objResponse = await this._jsonrpcServer.processRequest(jsonrpcRequest);
+				webSocket.send(JSON.stringify(objResponse));
 			}
-			catch(error)
+			else if(objMessage.hasOwnProperty("result") || objMessage.hasOwnProperty("error"))
 			{
-				jsonrpcRequest.callResult = error;
+				await this._webSocketTransportClient.processResponse(strMessage, objMessage);
+			}
+			else
+			{
+				throw new Error("Unable to qualify the message as a JSONRPC request or response.");
+			}
+		}
+		catch(error)
+		{
+			console.error(error);
+			console.error("Uncaught error. RAW remote message: " + strMessage);
+
+			if(this._jsonrpcServer && !this._webSocketTransportClient)
+			{
+				webSocket.send(JSON.stringify({
+					id: null,
+					jsonrpc: "2.0",
+					error: {
+						message: "Internal error: " + error.message + ".",
+						code: JSONRPC.Exception.INTERNAL_ERROR
+					}
+				}, undefined, "\t"));
 			}
 
+			console.log("Unclean state. Closing websocket.");
+			webSocket.close(1, "Unclean state. Closing websocket.");
 
-			const objResponse = await this._jsonrpcServer.processRequest(jsonrpcRequest);
-			webSocket.send(JSON.stringify(objResponse));
-		}
-		else
-		{
-			await this._webSocketTransportClient.processResponse(strMessage, objMessage);
+			return;
 		}
 	}
 };
