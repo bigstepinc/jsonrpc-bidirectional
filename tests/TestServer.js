@@ -231,6 +231,9 @@ class TestServer
 	{
 		console.log("triggerConnectionRefused");
 
+		assert(this._httpServer === null);
+		assert(this._jsonrpcServer === null);
+
 		try
 		{
 			await this.setupClient();
