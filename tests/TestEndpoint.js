@@ -50,4 +50,35 @@ class TestEndpoint extends JSONRPC.EndpointBase
 	{
 		throw new Error("Error");
 	}
+
+
+	/**
+	 * Authentication function. 
+	 * 
+	 * It is intercepted by ServerPluginAuthorizeAndWebSocketMultiton.
+	 * If it doesn't throw, it will remember that the websocket connection is authenticated.
+	 * 
+	 * @param {string} strTeamMember
+	 * @param {string} strSecretKnock
+	 * 
+	 * @returns {{teamMember: {string}}}
+	 */
+	async ImHereForTheParty(strTeamMember, strSecretKnock)
+	{
+		const arrTheATeam = ["Hannibal", "Face", "Baracus", "Murdock", "Lynch"];
+		
+		if(!arrTheATeam.includes(strTeamMember))
+		{
+			throw new JSONRPC.Exception("We don't let strangers in.", JSONRPC.Exception.NOT_AUTHENTICATED);
+		}
+
+		if(strSecretKnock !== (strTeamMember + " does the harlem shake"))
+		{
+			throw new JSONRPC.Exception("You don't dance like " + strTeamMember + ". Who are you?", JSONRPC.Exception.NOT_AUTHENTICATED);
+		}
+
+		return {
+			"teamMember": strTeamMember
+		};
+	}
 };

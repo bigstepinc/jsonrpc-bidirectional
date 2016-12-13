@@ -1,5 +1,3 @@
-
-
 const JSONRPC = require("../index").JSONRPC;
 
 const http = require("http");
@@ -18,18 +16,27 @@ const assert = require("assert");
 module.exports =
 class TestServer
 {
+	/**
+	 * @param {boolean} bWebSocketMode
+	 */
 	constructor(bWebSocketMode)
 	{
-		this._jsonrpcServer = null;
-		this._jsonrpcClient = null;
-		
-		this._httpServer = null;
-	
-		this._authenticationSkipPlugin = null;
-		this._authorizeAllPlugin = null;
+		// SiteA is supposedly reachable over the internet. It listens for new connections (websocket or http). 
+		this._httpServerSiteA = null;
+		this._webSocketServerSiteA = null;
+		this._jsonrpcServerSiteA = null;
+		this._jsonrpcClientSiteA = null; // reverse calls, TCP server using a JSONRPC client calls into a TCP client with an attached JSONRPC server.
 
-		this._webSocketServer = null;
-		this._webSocketClient = null;
+		this._serverAuthenticationSkipPlugin = null;
+		this._serverAuthorizeAllPlugin = null;
+
+
+		// SiteB does not have to be reachable (it can be firewalled, private IP or simply not listening for connections).
+		// It is akin to a browser.
+		this._webSocketClientSiteB = null;
+		this._jsonrpcClientSiteB = null;
+		this._jsonrpcServerSiteA = null; // reverse calls, TCP client using a JSONRPC server accepts requests from a TCP server with an attached JSONRPC client.
+
 
 		this._bWebSocketMode = !!bWebSocketMode;
 
@@ -42,8 +49,8 @@ class TestServer
 	 */
 	async runTests()
 	{
-		this._authenticationSkipPlugin = new JSONRPC.Plugins.Server.AuthenticationSkip();
-		this._authorizeAllPlugin = new JSONRPC.Plugins.Server.AuthorizeAll();
+		this._serverAuthenticationSkipPlugin = new JSONRPC.Plugins.Server.AuthenticationSkip();
+		this._serverAuthorizeAllPlugin = new JSONRPC.Plugins.Server.AuthorizeAll();
 
 		
 		await this.triggerConnectionRefused();
@@ -65,8 +72,8 @@ class TestServer
 		await this.triggerAuthenticationError();
 		await this.triggerAuthorizationError();
 
-		this._jsonrpcServer.addPlugin(this._authorizeAllPlugin);
-		this._jsonrpcServer.addPlugin(this._authenticationSkipPlugin);
+		this._jsonrpcServerSiteA.addPlugin(this._serverAuthorizeAllPlugin);
+		this._jsonrpcServerSiteA.addPlugin(this._serverAuthenticationSkipPlugin);
 
 		await this.requestParseError();
 		await this.responseParseError();
@@ -78,7 +85,7 @@ class TestServer
 
 		await this.manyCallsInParallel();
 
-		if(this._httpServer)
+		if(this._httpServerSiteA)
 		{
 			let fnResolveWaitClose;
 			let fnRejectWaitClose;
@@ -86,7 +93,7 @@ class TestServer
 				fnResolveWaitClose = fnResolve;
 				fnRejectWaitClose = fnReject;
 			});
-			this._httpServer.close((result, error) => {
+			this._httpServerSiteA.close((result, error) => {
 				if(error)
 				{
 					fnRejectWaitClose(error);
@@ -101,7 +108,7 @@ class TestServer
 		}
 
 
-		if(this._webSocketServer)
+		if(this._webSocketServerSiteA)
 		{
 			let fnResolveWaitClose;
 			let fnRejectWaitClose;
@@ -109,7 +116,7 @@ class TestServer
 				fnResolveWaitClose = fnResolve;
 				fnRejectWaitClose = fnReject;
 			});
-			this._webSocketServer.close((result, error) => {
+			this._webSocketServerSiteA.close((result, error) => {
 				if(error)
 				{
 					fnRejectWaitClose(error);
@@ -130,13 +137,13 @@ class TestServer
 	 */
 	async setupHTTPServer()
 	{
-		this._httpServer = http.createServer();
-		this._jsonrpcServer = new JSONRPC.Server();
+		this._httpServerSiteA = http.createServer();
+		this._jsonrpcServerSiteA = new JSONRPC.Server();
 
-		this._jsonrpcServer.registerEndpoint(new TestEndpoint());
-		this._jsonrpcServer.attachToHTTPServer(this._httpServer, "/api/");
+		this._jsonrpcServerSiteA.registerEndpoint(new TestEndpoint());
+		this._jsonrpcServerSiteA.attachToHTTPServer(this._httpServerSiteA, "/api/");
 
-		this._httpServer.listen(8324);
+		this._httpServerSiteA.listen(8324);
 	}
 
 
@@ -145,17 +152,17 @@ class TestServer
 	 */
 	async setupWebsocketServer()
 	{
-		this._webSocketServer = new WebSocketServer({
+		this._webSocketServerSiteA = new WebSocketServer({
 			port: 8325
 		});
 
-		this._webSocketServer.on(
+		this._webSocketServerSiteA.on(
 			"error",
 			console.error
 		);
 		
-		const wsJSONRPCRouter = new JSONRPC.Plugins.Shared.WebSocketBidirectionalRouter(null, this._jsonrpcServer);
-		this._webSocketServer.on(
+		const wsJSONRPCRouter = new JSONRPC.Plugins.Shared.WebSocketBidirectionalRouter(null, this._jsonrpcServerSiteA);
+		this._webSocketServerSiteA.on(
 			"connection", 
 			(ws) => 
 			{
@@ -184,20 +191,20 @@ class TestServer
 		if(this._bWebSocketMode)
 		{
 			if(
-				this._webSocketClient
-				&& this._webSocketClient.readyState === WebSocket.OPEN
+				this._webSocketClientSiteB
+				&& this._webSocketClientSiteB.readyState === WebSocket.OPEN
 			)
 			{
-				this._webSocketClient.close(
+				this._webSocketClientSiteB.close(
 					/*CLOSE_NORMAL*/ 1000,
 					"Normal close."
 				);
 
-				this._webSocketClient = null;
+				this._webSocketClientSiteB = null;
 			}
 
-			this._jsonrpcClient = new JSONRPC.Client("ws://localhost:8325/api");
-			this._jsonrpcClient.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
+			this._jsonrpcClientSiteB = new JSONRPC.Client("ws://localhost:8325/api");
+			this._jsonrpcClientSiteB.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 
 			let fnResolveWaitForOpen;
 			let fnRejectWaitForOpen;
@@ -206,20 +213,20 @@ class TestServer
 				fnRejectWaitForOpen = fnReject;
 			});
 
-			const ws = new WebSocket(this._jsonrpcClient.endpointURL);
+			const ws = new WebSocket(this._jsonrpcClientSiteB.endpointURL);
 
 			ws.on("open", fnResolveWaitForOpen);
 			ws.on("error", fnRejectWaitForOpen);
 
-			await promiseWaitForOpen;
+			this._webSocketClientSiteB = ws;
+			this._jsonrpcClientSiteB.addPlugin(new JSONRPC.Plugins.Client.WebSocketTransport(ws));
 
-			this._webSocketClient = ws;
-			this._jsonrpcClient.addPlugin(new JSONRPC.Plugins.Client.WebSocketTransport(ws));
+			await promiseWaitForOpen;
 		}
 		else
 		{
-			this._jsonrpcClient = new JSONRPC.Client("http://localhost:8324/api");
-			this._jsonrpcClient.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
+			this._jsonrpcClientSiteB = new JSONRPC.Client("http://localhost:8324/api");
+			this._jsonrpcClientSiteB.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 		}
 	}
 
@@ -231,13 +238,13 @@ class TestServer
 	{
 		console.log("triggerConnectionRefused");
 
-		assert(this._httpServer === null);
-		assert(this._jsonrpcServer === null);
+		assert(this._httpServerSiteA === null);
+		assert(this._jsonrpcServerSiteA === null);
 
 		try
 		{
 			await this.setupClient();
-			assert.throws(await this._jsonrpcClient.rpc("ping", ["pong"]));
+			assert.throws(await this._jsonrpcClientSiteB.rpc("ping", ["pong"]));
 		}
 		catch(error)
 		{
@@ -318,11 +325,11 @@ class TestServer
 	{
 		console.log("triggerAuthenticationError");
 
-		this._jsonrpcServer.addPlugin(this._authorizeAllPlugin);
-		this._jsonrpcServer.removePlugin(this._authenticationSkipPlugin);
+		this._jsonrpcServerSiteA.addPlugin(this._serverAuthorizeAllPlugin);
+		this._jsonrpcServerSiteA.removePlugin(this._serverAuthenticationSkipPlugin);
 		try
 		{
-			assert.throws(await this._jsonrpcClient.rpc("ping", []));
+			assert.throws(await this._jsonrpcClientSiteB.rpc("ping", []));
 		}
 		catch(error)
 		{
@@ -343,11 +350,11 @@ class TestServer
 		console.log("requestParseError");
 
 		const invalidJSONPlugin = new ClientPluginInvalidRequestJSON();
-		this._jsonrpcClient.addPlugin(invalidJSONPlugin);
+		this._jsonrpcClientSiteB.addPlugin(invalidJSONPlugin);
 
 		try
 		{
-			assert.throws(await this._jsonrpcClient.rpc("ping", []));
+			assert.throws(await this._jsonrpcClientSiteB.rpc("ping", []));
 		}
 		catch(error)
 		{
@@ -368,7 +375,7 @@ class TestServer
 			}
 		}
 
-		this._jsonrpcClient.removePlugin(invalidJSONPlugin);
+		this._jsonrpcClientSiteB.removePlugin(invalidJSONPlugin);
 	}
 
 
@@ -377,11 +384,11 @@ class TestServer
 		console.log("responseParseError");
 
 		const invalidJSONPlugin = new ServerPluginInvalidResponseJSON();
-		this._jsonrpcServer.addPlugin(invalidJSONPlugin);
+		this._jsonrpcServerSiteA.addPlugin(invalidJSONPlugin);
 
 		try
 		{
-			assert.throws(await this._jsonrpcClient.rpc("ping", []));
+			assert.throws(await this._jsonrpcClientSiteB.rpc("ping", []));
 		}
 		catch(error)
 		{
@@ -402,7 +409,7 @@ class TestServer
 			}
 		}
 
-		this._jsonrpcServer.removePlugin(invalidJSONPlugin);
+		this._jsonrpcServerSiteA.removePlugin(invalidJSONPlugin);
 	}
 
 
@@ -413,11 +420,11 @@ class TestServer
 	{
 		console.log("triggerAuthorizationError");
 
-		this._jsonrpcServer.removePlugin(this._authorizeAllPlugin);
-		this._jsonrpcServer.addPlugin(this._authenticationSkipPlugin);
+		this._jsonrpcServerSiteA.removePlugin(this._serverAuthorizeAllPlugin);
+		this._jsonrpcServerSiteA.addPlugin(this._serverAuthenticationSkipPlugin);
 		try
 		{
-			assert.throws(await this._jsonrpcClient.rpc("ping", []));
+			assert.throws(await this._jsonrpcClientSiteB.rpc("ping", []));
 		}
 		catch(error)
 		{
@@ -440,8 +447,8 @@ class TestServer
 	{
 		console.log("callRPCMethod");
 
-		const strParam = "pong_" + (this._jsonrpcClient.callID);
-		assert.strictEqual(strParam, await this._jsonrpcClient.rpc("ping", [strParam]));
+		const strParam = "pong_" + (this._jsonrpcClientSiteB.callID);
+		assert.strictEqual(strParam, await this._jsonrpcClientSiteB.rpc("ping", [strParam]));
 	}
 
 
@@ -454,7 +461,7 @@ class TestServer
 
 		try
 		{
-			assert.throws(await this._jsonrpcClient.rpc("throwJSONRPCException", []));
+			assert.throws(await this._jsonrpcClientSiteB.rpc("throwJSONRPCException", []));
 		}
 		catch(error)
 		{
@@ -479,7 +486,7 @@ class TestServer
 
 		try
 		{
-			assert.throws(await this._jsonrpcClient.rpc("throwError", []));
+			assert.throws(await this._jsonrpcClientSiteB.rpc("throwError", []));
 		}
 		catch(error)
 		{

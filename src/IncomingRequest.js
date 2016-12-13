@@ -16,7 +16,7 @@ class IncomingRequest
 		this._strRequestBody = null;
 		this._requestObject = null;
 		this._endpoint = null;
-
+		
 		this._mxResult = null;
 		this._bMethodCalled = false;
 
