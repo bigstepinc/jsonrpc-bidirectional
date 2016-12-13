@@ -4,6 +4,7 @@ JSONRPC.IncomingRequest = require("./IncomingRequest");
 JSONRPC.Utils = require("./Utils");
 JSONRPC.EndpointBase = require("./EndpointBase");
 
+
 const assert = require("assert");
 
 module.exports =
@@ -139,6 +140,15 @@ class Server
 			delete this._objEndpoints[strPath];
 			return true;
 		}
+	}
+
+
+	/**
+	 * @returns {Object}
+	 */
+	get endpoints()
+	{
+		return this._objEndpoints;
 	}
 
 

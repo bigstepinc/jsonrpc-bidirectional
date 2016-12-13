@@ -1,6 +1,11 @@
+
+
 const JSONRPC = require("../index").JSONRPC;
 
 const http = require("http");
+
+const WebSocket = require("ws");
+const WebSocketServer = WebSocket.Server;
 
 const TestEndpoint = require("./TestEndpoint");
 const ClientPluginInvalidRequestJSON = require("./ClientPluginInvalidRequestJSON");
@@ -13,12 +18,20 @@ const assert = require("assert");
 module.exports =
 class TestServer
 {
-	constructor()
+	constructor(bWebSocketMode)
 	{
 		this._jsonrpcServer = null;
 		this._jsonrpcClient = null;
+		
+		this._httpServer = null;
+	
 		this._authenticationSkipPlugin = null;
 		this._authorizeAllPlugin = null;
+
+		this._webSocketServer = null;
+		this._webSocketClient = null;
+
+		this._bWebSocketMode = !!bWebSocketMode;
 
 		Object.seal(this);
 	}
@@ -29,16 +42,22 @@ class TestServer
 	 */
 	async runTests()
 	{
-		this._jsonrpcClient = new JSONRPC.Client("http://localhost:8324/api");
-		this._jsonrpcClient.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
-
 		this._authenticationSkipPlugin = new JSONRPC.Plugins.Server.AuthenticationSkip();
 		this._authorizeAllPlugin = new JSONRPC.Plugins.Server.AuthorizeAll();
 
 		
 		await this.triggerConnectionRefused();
-		
-		await this.startServer();
+
+
+		await this.setupHTTPServer();
+
+
+		if(this._bWebSocketMode)
+		{
+			await this.setupWebsocketServer();
+		}
+
+		await this.setupClient();
 
 		await this.endpointNotFoundError();
 		await this.outsideJSONRPCPathError();
@@ -59,7 +78,149 @@ class TestServer
 
 		await this.manyCallsInParallel();
 
-		console.log("Finished all tests!!!");
+		if(this._httpServer)
+		{
+			let fnResolveWaitClose;
+			let fnRejectWaitClose;
+			const promiseWaitClose = new Promise((fnResolve, fnReject) => {
+				fnResolveWaitClose = fnResolve;
+				fnRejectWaitClose = fnReject;
+			});
+			this._httpServer.close((result, error) => {
+				if(error)
+				{
+					fnRejectWaitClose(error);
+				}
+				else
+				{
+					fnResolveWaitClose(result);
+				}
+			});
+			
+			await promiseWaitClose;
+		}
+
+
+		if(this._webSocketServer)
+		{
+			let fnResolveWaitClose;
+			let fnRejectWaitClose;
+			const promiseWaitClose = new Promise((fnResolve, fnReject) => {
+				fnResolveWaitClose = fnResolve;
+				fnRejectWaitClose = fnReject;
+			});
+			this._webSocketServer.close((result, error) => {
+				if(error)
+				{
+					fnRejectWaitClose(error);
+				}
+				else
+				{
+					fnResolveWaitClose(result);
+				}
+			});
+			
+			await promiseWaitClose;
+		}
+	}
+
+
+	/**
+	 * @returns {undefined}
+	 */
+	async setupHTTPServer()
+	{
+		this._httpServer = http.createServer();
+		this._jsonrpcServer = new JSONRPC.Server();
+
+		this._jsonrpcServer.registerEndpoint(new TestEndpoint());
+		this._jsonrpcServer.attachToHTTPServer(this._httpServer, "/api/");
+
+		this._httpServer.listen(8324);
+	}
+
+
+	/**
+	 * @returns {undefined}
+	 */
+	async setupWebsocketServer()
+	{
+		this._webSocketServer = new WebSocketServer({
+			port: 8325
+		});
+
+		this._webSocketServer.on(
+			"error",
+			console.error
+		);
+		
+		const wsJSONRPCRouter = new JSONRPC.Plugins.Shared.WebSocketBidirectionalRouter(null, this._jsonrpcServer);
+		this._webSocketServer.on(
+			"connection", 
+			(ws) => 
+			{
+				ws.on(
+					"error",
+					console.error
+				);
+
+				ws.on(
+					"message", 
+					async (strMessage) => 
+					{
+						await wsJSONRPCRouter.routeMessage(strMessage, ws);
+					}
+				);
+			}
+		);
+	}
+
+
+	/**
+	 * @returns {undefined}
+	 */
+	async setupClient()
+	{
+		if(this._bWebSocketMode)
+		{
+			if(
+				this._webSocketClient
+				&& this._webSocketClient.readyState === WebSocket.OPEN
+			)
+			{
+				this._webSocketClient.close(
+					/*CLOSE_NORMAL*/ 1000,
+					"Normal close."
+				);
+
+				this._webSocketClient = null;
+			}
+
+			this._jsonrpcClient = new JSONRPC.Client("ws://localhost:8325/api");
+			this._jsonrpcClient.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
+
+			let fnResolveWaitForOpen;
+			let fnRejectWaitForOpen;
+			const promiseWaitForOpen = new Promise((fnResolve, fnReject) => {
+				fnResolveWaitForOpen = fnResolve;
+				fnRejectWaitForOpen = fnReject;
+			});
+
+			const ws = new WebSocket(this._jsonrpcClient.endpointURL);
+
+			ws.on("open", fnResolveWaitForOpen);
+			ws.on("error", fnRejectWaitForOpen);
+
+			await promiseWaitForOpen;
+
+			this._webSocketClient = ws;
+			this._jsonrpcClient.addPlugin(new JSONRPC.Plugins.Client.WebSocketTransport(ws));
+		}
+		else
+		{
+			this._jsonrpcClient = new JSONRPC.Client("http://localhost:8324/api");
+			this._jsonrpcClient.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
+		}
 	}
 
 
@@ -68,13 +229,16 @@ class TestServer
 	 */
 	async triggerConnectionRefused()
 	{
+		console.log("triggerConnectionRefused");
+
 		try
 		{
+			await this.setupClient();
 			assert.throws(await this._jsonrpcClient.rpc("ping", ["pong"]));
 		}
 		catch(error)
 		{
-			if(error.constructor.name !== "FetchError")
+			if(!this._bWebSocketMode && error.constructor.name !== "FetchError")
 			{
 				throw error;
 			}
@@ -89,26 +253,12 @@ class TestServer
 
 
 	/**
-	 * @returns {undefined}
-	 */
-	async startServer()
-	{
-		const httpServer = http.createServer();
-		this._jsonrpcServer = new JSONRPC.Server();
-
-		this._jsonrpcServer.registerEndpoint(new TestEndpoint());
-
-		this._jsonrpcServer.attachToHTTPServer(httpServer, "/api/");
-
-		httpServer.listen(8324);
-	}
-
-
-	/**
 	 * @returns {undefined} 
 	 */
 	async endpointNotFoundError()
 	{
+		console.log("endpointNotFoundError");
+
 		const client = new JSONRPC.Client("http://localhost:8324/api/bad-endpoint-path");
 		client.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 
@@ -135,6 +285,8 @@ class TestServer
 	 */
 	async outsideJSONRPCPathError()
 	{
+		console.log("outsideJSONRPCPathError");
+
 		const client = new JSONRPC.Client("http://localhost:8324/unhandled-path");
 		client.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 
@@ -161,6 +313,8 @@ class TestServer
 	 */
 	async triggerAuthenticationError()
 	{
+		console.log("triggerAuthenticationError");
+
 		this._jsonrpcServer.addPlugin(this._authorizeAllPlugin);
 		this._jsonrpcServer.removePlugin(this._authenticationSkipPlugin);
 		try
@@ -183,6 +337,8 @@ class TestServer
 
 	async requestParseError()
 	{
+		console.log("requestParseError");
+
 		const invalidJSONPlugin = new ClientPluginInvalidRequestJSON();
 		this._jsonrpcClient.addPlugin(invalidJSONPlugin);
 
@@ -197,9 +353,16 @@ class TestServer
 				throw error;
 			}
 			
-			assert(error instanceof JSONRPC.Exception);
-			assert.strictEqual(error.code, JSONRPC.Exception.PARSE_ERROR);
-			assert(error.message.includes("Unexpected end of JSON input; RAW JSON string:"));
+			if(this._bWebSocketMode)
+			{
+				await this.setupClient();
+			}
+			else
+			{
+				assert(error instanceof JSONRPC.Exception);
+				assert.strictEqual(error.code, JSONRPC.Exception.PARSE_ERROR);
+				assert(error.message.includes("Unexpected end of JSON input; RAW JSON string:"));
+			}
 		}
 
 		this._jsonrpcClient.removePlugin(invalidJSONPlugin);
@@ -208,6 +371,8 @@ class TestServer
 
 	async responseParseError()
 	{
+		console.log("responseParseError");
+
 		const invalidJSONPlugin = new ServerPluginInvalidResponseJSON();
 		this._jsonrpcServer.addPlugin(invalidJSONPlugin);
 
@@ -222,9 +387,16 @@ class TestServer
 				throw error;
 			}
 			
-			assert(error instanceof JSONRPC.Exception);
-			assert.strictEqual(error.code, JSONRPC.Exception.INTERNAL_ERROR);
-			assert(error.message.includes("Invalid error object on JSONRPC protocol response"));
+			if(this._bWebSocketMode)
+			{
+				await this.setupClient();
+			}
+			else
+			{
+				assert(error instanceof JSONRPC.Exception);
+				assert.strictEqual(error.code, JSONRPC.Exception.INTERNAL_ERROR);
+				assert(error.message.includes("Invalid error object on JSONRPC protocol response"));
+			}
 		}
 
 		this._jsonrpcServer.removePlugin(invalidJSONPlugin);
@@ -236,6 +408,8 @@ class TestServer
 	 */
 	async triggerAuthorizationError()
 	{
+		console.log("triggerAuthorizationError");
+
 		this._jsonrpcServer.removePlugin(this._authorizeAllPlugin);
 		this._jsonrpcServer.addPlugin(this._authenticationSkipPlugin);
 		try
@@ -261,6 +435,8 @@ class TestServer
 	 */
 	async callRPCMethod()
 	{
+		console.log("callRPCMethod");
+
 		const strParam = "pong_" + (this._jsonrpcClient.callID);
 		assert.strictEqual(strParam, await this._jsonrpcClient.rpc("ping", [strParam]));
 	}
@@ -271,6 +447,8 @@ class TestServer
 	 */
 	async callRPCMethodWhichThrowsJSONRPCException()
 	{
+		console.log("callRPCMethodWhichThrowsJSONRPCException");
+
 		try
 		{
 			assert.throws(await this._jsonrpcClient.rpc("throwJSONRPCException", []));
@@ -294,6 +472,8 @@ class TestServer
 	 */
 	async callRPCMethodWhichThrowsSimpleError()
 	{
+		console.log("callRPCMethodWhichThrowsSimpleError");
+
 		try
 		{
 			assert.throws(await this._jsonrpcClient.rpc("throwError", []));
@@ -317,6 +497,8 @@ class TestServer
 	 */
 	async manyCallsInParallel()
 	{
+		console.log("manyCallsInParallel");
+
 		const nStartTime = (new Date()).getTime();
 
 		const arrPromises = [];
@@ -334,7 +516,7 @@ class TestServer
 		// http://smallvoid.com/article/winnt-tcpip-max-limit.html
 		// https://blog.jayway.com/2015/04/13/600k-concurrent-websocket-connections-on-aws-using-node-js/
 		// http://stackoverflow.com/questions/17033631/node-js-maxing-out-at-1000-concurrent-connections
-		const nCallCount = 500;
+		const nCallCount = this._bWebSocketMode ? 2500 : 500;
 		for(let i = 0; i < nCallCount; i++)
 		{
 			arrPromises.push(arrMethods[Math.round(Math.random() * (arrMethods.length - 1))].apply(this, []));

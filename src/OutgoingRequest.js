@@ -133,10 +133,7 @@ class OutgoingRequest
 	set requestObject(objRequest)
 	{
 		assert(typeof objRequest === "object" || Array.isArray(objRequest));
-		assert(
-			objRequest.hasOwnProperty("method")
-			|| objRequest.hasOwnProperty("params")
-		);
+		assert(objRequest.hasOwnProperty("method") || objRequest.hasOwnProperty("params"), JSON.stringify(objRequest));
 
 		this._requestObject = objRequest;
 	}

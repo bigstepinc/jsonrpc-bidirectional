@@ -1,7 +1,17 @@
 const assert = require("assert");
-const JSONRPC = require("../../../index").JSONRPC;
 
-module.export =
+const JSONRPC = {};
+JSONRPC.Exception = require("../../Exception");
+JSONRPC.Server = require("../../Server");
+JSONRPC.IncomingRequest = require("../../IncomingRequest");
+JSONRPC.EndpointBase = require("../../EndpointBase");
+
+
+JSONRPC.Plugins = {};
+JSONRPC.Plugins.Client = require("../../Plugins/Client/index");
+JSONRPC.Utils = require("../../Utils");
+
+module.exports =
 class WebSocketBidirectionalRouter
 {
 	/**
@@ -10,7 +20,7 @@ class WebSocketBidirectionalRouter
 	 * @param {JSONRPC.Plugins.Client.WebSocketTransport|null} webSocketTransportClient
 	 * @param {JSONRPC.Server|null} jsonrpcServer
 	 */
-	construct(webSocketTransportClient, jsonrpcServer)
+	constructor(webSocketTransportClient, jsonrpcServer)
 	{
 		assert(webSocketTransportClient === null || webSocketTransportClient instanceof JSONRPC.Plugins.Client.WebSocketTransport);
 		assert(jsonrpcServer === null || jsonrpcServer instanceof JSONRPC.Server);
@@ -28,11 +38,17 @@ class WebSocketBidirectionalRouter
 	 */
 	async routeMessage(strMessage, webSocket)
 	{
+		if(!strMessage.length)
+		{
+			console.log("WebSocketBidirectionalRouter: Received empty message. Ignoring.");
+			return;
+		}
+
 		let objMessage;
 
 		try
 		{
-			objMessage = JSON.parse(strMessage);
+			objMessage = JSONRPC.Utils.jsonDecodeSafe(strMessage);
 		}
 		catch(error)
 		{
@@ -52,7 +68,10 @@ class WebSocketBidirectionalRouter
 			}
 
 			console.log("Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request or response.");
-			webSocket.close(1, "Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request or response.");
+			webSocket.close(
+				/*ws/lib/ErrorCodes.js/1011 'an unexpected condition prevented the request from being fulfilled'*/ 1011, 
+				"Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request or response."
+			);
 
 			return;
 		}
@@ -81,13 +100,13 @@ class WebSocketBidirectionalRouter
 				// for efficiency.
 				try
 				{
-					const strPath = JSONRPC.EndpointBase.normalizePath(webSocket.address);
+					const strPath = JSONRPC.EndpointBase.normalizePath(webSocket.upgradeReq.url);
 
-					if(!this._objEndpoints.hasOwnProperty(strPath))
+					if(!this._jsonrpcServer.endpoints.hasOwnProperty(strPath))
 					{
 						throw new JSONRPC.Exception("Unknown JSONRPC endpoint " + strPath + ".", JSONRPC.Exception.METHOD_NOT_FOUND);
 					}
-					jsonrpcRequest.endpoint = this._objEndpoints[strPath];
+					jsonrpcRequest.endpoint = this._jsonrpcServer.endpoints[strPath];
 
 
 					jsonrpcRequest.requestBody = strMessage;
@@ -129,7 +148,10 @@ class WebSocketBidirectionalRouter
 			}
 
 			console.log("Unclean state. Closing websocket.");
-			webSocket.close(1, "Unclean state. Closing websocket.");
+			webSocket.close(
+				/*ws/lib/ErrorCodes.js/1011 'an unexpected condition prevented the request from being fulfilled'*/ 1011, 
+				"Unclean state. Closing websocket."
+			);
 
 			return;
 		}

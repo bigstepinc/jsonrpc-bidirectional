@@ -1,18 +1,18 @@
-const objExports={};
-objExports.JSONRPC={};
+const objExports = {};
+objExports.JSONRPC = {};
 
-objExports.JSONRPC.Client=require("./src/Client");
-objExports.JSONRPC.ClientPluginBase=require("./src/ClientPluginBase");
+objExports.JSONRPC.Client = require("./src/Client");
+objExports.JSONRPC.ClientPluginBase = require("./src/ClientPluginBase");
 
-objExports.JSONRPC.Utils=require("./src/Utils.js");
-objExports.JSONRPC.Exception=require("./src/Exception");
+objExports.JSONRPC.Utils = require("./src/Utils.js");
+objExports.JSONRPC.Exception = require("./src/Exception");
 
-objExports.JSONRPC.EndpointBase=require("./src/EndpointBase.js");
-objExports.JSONRPC.Server=require("./src/Server.js");
+objExports.JSONRPC.EndpointBase = require("./src/EndpointBase.js");
+objExports.JSONRPC.Server = require("./src/Server.js");
 
-objExports.JSONRPC.Plugins=objExports.JSONRPC.Plugins || {};
-objExports.JSONRPC.Plugins.Client=require("./src/Plugins/Client/index");
-objExports.JSONRPC.Plugins.Server=require("./src/Plugins/Server/index");
-objExports.JSONRPC.Plugins.Shared=require("./src/Plugins/Shared/index");
+objExports.JSONRPC.Plugins = objExports.JSONRPC.Plugins || {};
+objExports.JSONRPC.Plugins.Client = require("./src/Plugins/Client/index");
+objExports.JSONRPC.Plugins.Server = require("./src/Plugins/Server/index");
+objExports.JSONRPC.Plugins.Shared = require("./src/Plugins/Shared/index");
 
-module.exports=objExports;
+module.exports = objExports;

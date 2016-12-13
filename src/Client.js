@@ -1,3 +1,7 @@
+const url = require("url");
+
+const WebSocket = require("ws");
+
 const JSONRPC = {};
 JSONRPC.Exception = require("./Exception");
 
@@ -29,6 +33,21 @@ class Client
 		this._nCallID = 1;
 		this._strHTTPUser = null;
 		this._strHTTPPassword = null;
+
+		const strProtocol = url.parse(strEndpointURL).protocol;
+
+		if(strProtocol === "http:" || strProtocol === "https:")
+		{
+			// Embedded support.
+		}
+		else if(strProtocol === "ws:" || strProtocol === "wss:")
+		{
+			// Don't forget to add WebSocketTransport.
+		}
+		else
+		{
+			throw new Error("Unsupported protocol " + JSON.stringify(strProtocol) + ".");
+		}
 	}
 
 

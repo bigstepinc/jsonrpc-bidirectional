@@ -4,7 +4,7 @@ JSONRPC.ClientPluginBase = require("../../ClientPluginBase");
 const assert = require("assert");
 const WebSocket = require("ws");
 
-module.export =
+module.exports =
 class WebSocketTransport extends JSONRPC.ClientPluginBase
 {
 	/**
@@ -32,6 +32,16 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 			"error",
 			(error) => {
 				this.rejectAllPromises(error);
+			}
+		);
+
+		this._webSocket.on(
+			"message", 
+			(data, flags) => {
+				// flags.binary will be set if a binary data is received.
+				// flags.masked will be set if the data was masked.
+
+				this.processResponse(data);
 			}
 		);
 	}
@@ -66,17 +76,11 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 				console.error(error);
 				console.error("Unable to parse JSON. RAW remote message: " + strResponse);
 
-				this.webSocket.send(JSON.stringify({
-					id: null,
-					jsonrpc: "2.0",
-					error: {
-						message: "Invalid JSON: " + JSON.stringify(strResponse) + ".",
-						code: JSONRPC.Exception.PARSE_ERROR
-					}
-				}, undefined, "\t"));
-
 				console.log("Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request or response.");
-				this.webSocket.close(1, "Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request or response.");
+				this.webSocket.close(
+					/*ws/lib/ErrorCodes.js/1011 'an unexpected condition prevented the request from being fulfilled'*/ 1011,
+					"Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request or response."
+				);
 
 				return;
 			}
@@ -91,13 +95,16 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 			console.error(new Error("Couldn't find JSONRPC response call ID in this._objWebSocketRequestsPromises."));
 			console.error(new Error("RAW remote message: " + strResponse));
 			console.log("Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request.");
-			this.webSocket.close(1, "Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request.");
+			this.webSocket.close(
+				/*ws/lib/ErrorCodes.js/1011 'an unexpected condition prevented the request from being fulfilled'*/ 1011, 
+				"Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request."
+			);
 
 			return;
 		}
 
 		this._objWebSocketRequestsPromises[objResponse.id].jsonrpcRequest.responseBody = strResponse;
-		this._objWebSocketRequestsPromises[objResponse.id].jsonrpcRequest.requestObject = objResponse;
+		this._objWebSocketRequestsPromises[objResponse.id].jsonrpcRequest.responseObject = objResponse;
 
 		this._objWebSocketRequestsPromises[objResponse.id].fnResolve(null);
 		// Sorrounding code will parse the result and throw if necessary. fnReject is not going to be used in this function.
@@ -133,9 +140,9 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 			this._objWebSocketRequestsPromises[jsonrpcRequest.requestObject.id].fnReject = fnReject;
 		});
 
-		this.webSocket.send(jsonrpcRequest.requestObject.requestBody);
+		this.webSocket.send(jsonrpcRequest.requestBody);
 
-		return this._objWebSocketRequestsPromises[jsonrpcRequest.requestObject.id].promise;
+		return await this._objWebSocketRequestsPromises[jsonrpcRequest.requestObject.id].promise;
 	}
 
 
