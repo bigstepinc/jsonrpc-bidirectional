@@ -193,7 +193,7 @@ class IncomingRequest
 			objResponse.error = {
 				message: this.callResult.message,
 				code: (this.callResult instanceof JSONRPC.Exception) ? this.callResult.code : 0,
-				data: this.callResult.stack
+				data: this.callResult.stack.split(/[\r\n]+/mg)
 			};
 		}
 		else
