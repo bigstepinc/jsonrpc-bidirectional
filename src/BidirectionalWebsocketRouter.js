@@ -1,23 +1,22 @@
 const assert = require("assert");
 
 const JSONRPC = {};
-JSONRPC.Exception = require("../../Exception");
-JSONRPC.Server = require("../../Server");
-JSONRPC.IncomingRequest = require("../../IncomingRequest");
-JSONRPC.EndpointBase = require("../../EndpointBase");
-
+JSONRPC.Exception = require("./Exception");
+JSONRPC.Server = require("./Server");
+JSONRPC.IncomingRequest = require("./IncomingRequest");
+JSONRPC.EndpointBase = require("./EndpointBase");
 
 JSONRPC.Plugins = {};
-JSONRPC.Plugins.Client = require("../../Plugins/Client/index");
-JSONRPC.Utils = require("../../Utils");
+JSONRPC.Plugins.Client = require("./Plugins/Client/index");
+JSONRPC.Utils = require("./Utils");
 
 module.exports =
-class WebSocketBidirectionalRouter
+class BidirectionalWebsocketRouter
 {
 	/**
 	 * If both the client and server plugins are specified, bi-directional JSONRPC over the same websocket is enabled.
 	 * 
-	 * @param {Function|null} fnConnectionIDToJSONRPCClient
+	 * @param {Function|null} fnConnectionIDToClientWebSocketPlugin
 	 * @param {JSONRPC.Server|null} jsonrpcServer
 	 */
 	constructor(fnConnectionIDToJSONRPCClient, jsonrpcServer)
@@ -25,7 +24,7 @@ class WebSocketBidirectionalRouter
 		assert(fnConnectionIDToJSONRPCClient === null || typeof fnConnectionIDToJSONRPCClient === "function");
 		assert(jsonrpcServer === null || jsonrpcServer instanceof JSONRPC.Server);
 
-		this._fnConnectionIDToJSONRPCClient = fnConnectionIDToJSONRPCClient;
+		this._fnConnectionIDToClientWebSocketPlugin = fnConnectionIDToJSONRPCClient;
 		this._jsonrpcServer = jsonrpcServer;
 	}
 
@@ -56,7 +55,7 @@ class WebSocketBidirectionalRouter
 			console.error(error);
 			console.error("Unable to parse JSON. RAW remote message: " + strMessage);
 
-			if(this._jsonrpcServer && !this._fnConnectionIDToJSONRPCClient)
+			if(this._jsonrpcServer && !this._fnConnectionIDToClientWebSocketPlugin)
 			{
 				webSocket.send(JSON.stringify({
 					id: null,
@@ -126,7 +125,7 @@ class WebSocketBidirectionalRouter
 			}
 			else if(objMessage.hasOwnProperty("result") || objMessage.hasOwnProperty("error"))
 			{
-				await this._fnConnectionIDToJSONRPCClient(nWebSocketConnectionID).processResponse(strMessage, objMessage);
+				await this._fnConnectionIDToClientWebSocketPlugin(nWebSocketConnectionID).processResponse(strMessage, objMessage);
 			}
 			else
 			{
@@ -138,7 +137,7 @@ class WebSocketBidirectionalRouter
 			console.error(error);
 			console.error("Uncaught error. RAW remote message: " + strMessage);
 
-			if(this._jsonrpcServer && !this._fnConnectionIDToJSONRPCClient)
+			if(this._jsonrpcServer && !this._fnConnectionIDToClientWebSocketPlugin)
 			{
 				webSocket.send(JSON.stringify({
 					id: null,

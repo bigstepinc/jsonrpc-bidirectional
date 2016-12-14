@@ -2,6 +2,10 @@ const JSONRPC = {};
 JSONRPC.ServerPluginBase = require("../src/ServerPluginBase");
 JSONRPC.Exception = require("../src/Exception");
 
+JSONRPC.Plugins = {};
+JSONRPC.Plugins.Client = require("../src/Plugins/Client/index");
+JSONRPC.Utils = require("../src/Utils");
+
 const WebSocket = require("ws");
 
 const assert = require("assert");
@@ -47,7 +51,6 @@ class ServerPluginAuthorizeWebSocketAndClientMultiton extends JSONRPC.ServerPlug
 			&& this._objSessions[jsonrpcRequest.connectionID].authorization !== null
 		)
 		{
-			console.log(this._objSessions[jsonrpcRequest.connectionID]);
 			jsonrpcRequest.isAuthenticated = true;
 			jsonrpcRequest.isAuthorized = true;
 		}
@@ -96,8 +99,22 @@ class ServerPluginAuthorizeWebSocketAndClientMultiton extends JSONRPC.ServerPlug
 		this._objSessions[nWebSocketConnectionID] = {
 			authorization: null, 
 			connectionID: nWebSocketConnectionID, 
-			clientReverseCalls: clientReverseCalls
+			clientReverseCalls: clientReverseCalls,
+			clientWebSocketPlugin: null
 		};
+
+		for(let plugin of clientReverseCalls.plugins)
+		{
+			if(plugin instanceof JSONRPC.Plugins.Client.WebSocketTransport)
+			{
+				this._objSessions[nWebSocketConnectionID].clientWebSocketPlugin = plugin;
+				break;
+			}
+		}
+		if(!this._objSessions[nWebSocketConnectionID].clientWebSocketPlugin)
+		{
+			throw new Error("The client must have the WebSocketTransport plugin added.");
+		}
 
 		webSocket.on(
 			"close",
@@ -128,7 +145,23 @@ class ServerPluginAuthorizeWebSocketAndClientMultiton extends JSONRPC.ServerPlug
 	 * 
 	 * @returns {JSONRPC.Client}
 	 */
-	connectionIDToJSONRPCClient(nConnectionID)
+	connectionIDToClientWebSocketPlugin(nConnectionID)
+	{
+		if(!this._objSessions.hasOwnProperty(nConnectionID))
+		{
+			throw new Error("initConnection was not called with connection id " + JSON.stringify(nConnectionID) + " or the connection was closed in the meantime.");
+		}
+
+		return this._objSessions[nConnectionID].clientWebSocketPlugin;
+	}
+
+
+	/**
+	 * @param {number} nConnectionID
+	 * 
+	 * @returns {JSONRPC.Client}
+	 */
+	connectionIDToClient(nConnectionID)
 	{
 		if(!this._objSessions.hasOwnProperty(nConnectionID))
 		{

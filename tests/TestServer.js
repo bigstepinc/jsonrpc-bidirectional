@@ -37,7 +37,7 @@ class TestServer
 		// It is akin to a browser.
 		this._webSocketClientSiteB = null;
 		this._jsonrpcClientSiteB = null;
-		this._jsonrpcServerSiteA = null; // reverse calls, TCP client using a JSONRPC server accepts requests from a TCP server with an attached JSONRPC client.
+		this._jsonrpcServerSiteB = null; // reverse calls, TCP client using a JSONRPC server accepts requests from a TCP server with an attached JSONRPC client.
 
 
 		this._bWebSocketMode = !!bWebSocketMode;
@@ -63,7 +63,7 @@ class TestServer
 
 		if(this._bWebSocketMode)
 		{
-			await this.setupWebsocketServer();
+			await this.setupWebsocketServerSiteA();
 		}
 
 		await this.setupClientSiteB();
@@ -154,9 +154,9 @@ class TestServer
 	/**
 	 * @returns {undefined}
 	 */
-	async setupWebsocketServer()
+	async setupWebsocketServerSiteA()
 	{
-		console.log("setupWebsocketServer.");
+		console.log("setupWebsocketServerSiteA.");
 
 		this._webSocketServerSiteA = new WebSocketServer({
 			port: 8325
@@ -173,10 +173,10 @@ class TestServer
 		this._jsonrpcServerSiteA.addPlugin(this._serverPluginAuthorizeWebSocketAndClientMultitonSiteA);
 
 
-		console.log("Instantiating JSONRPC.Plugins.Shared.WebSocketBidirectionalRouter on SiteA.");
-		const wsJSONRPCRouter = new JSONRPC.Plugins.Shared.WebSocketBidirectionalRouter(
-			/*fnConnectionIDToJSONRPCClient*/ (nConnectionID) => {
-				return this._serverPluginAuthorizeWebSocketAndClientMultitonSiteA.connectionIDToJSONRPCClient(nConnectionID); 
+		console.log("Instantiating JSONRPC.BidirectionalWebsocketRouter on SiteA.");
+		const wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(
+			/*fnConnectionIDToClientWebSocketPlugin*/ (nConnectionID) => {
+				return this._serverPluginAuthorizeWebSocketAndClientMultitonSiteA.connectionIDToClientWebSocketPlugin(nConnectionID); 
 			}, 
 			this._jsonrpcServerSiteA
 		);
@@ -250,12 +250,48 @@ class TestServer
 
 			this._webSocketClientSiteB = ws;
 			this._jsonrpcClientSiteB.addPlugin(new JSONRPC.Plugins.Client.WebSocketTransport(ws));
+
+			await this.setupWebSocketJSONRPCServerSiteB();
 		}
 		else
 		{
 			this._jsonrpcClientSiteB = new JSONRPC.Client("http://localhost:8324/api");
 			this._jsonrpcClientSiteB.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 		}
+	}
+
+
+	/**
+	 * JSONRPC server that sits on a client WebSocket connection.
+	 * 
+	 * @returns {undefined} 
+	 */
+	async setupWebSocketJSONRPCServerSiteB()
+	{
+		this._jsonrpcServerSiteB = new JSONRPC.Server();
+
+		console.log("Instantiating JSONRPC.BidirectionalWebsocketRouter on SiteB.");
+		const wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(
+			/*connectionIDToClientWebSocketPlugin*/ (nConnectionID) => {
+				for(let plugin of this._jsonrpcClientSiteB.plugins)
+				{
+					if(plugin instanceof JSONRPC.Plugins.Client.WebSocketTransport)
+					{
+						return plugin;
+					}
+				}
+				
+				throw new Error("The client must have the WebSocketTransport plugin added."); 
+			}, 
+			this._jsonrpcServerSiteB
+		);
+
+		this._webSocketClientSiteB.on(
+			"message",
+			async (strMessage) => {
+				await wsJSONRPCRouter.routeMessage(strMessage, this._webSocketClientSiteB, /*nWebSocketConnectionID*/ 0);
+			}
+		);
 	}
 
 

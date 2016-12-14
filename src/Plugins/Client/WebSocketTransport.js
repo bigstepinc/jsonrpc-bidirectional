@@ -34,16 +34,6 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 				this.rejectAllPromises(error);
 			}
 		);
-
-		this._webSocket.on(
-			"message", 
-			(data, flags) => {
-				// flags.binary will be set if a binary data is received.
-				// flags.masked will be set if the data was masked.
-
-				this.processResponse(data);
-			}
-		);
 	}
 
 
@@ -65,36 +55,6 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 	 */
 	async processResponse(strResponse, objResponse)
 	{
-		if(!objResponse)
-		{
-			try
-			{
-				objResponse = JSON.parse(strResponse);
-			}
-			catch(error)
-			{
-				console.error(error);
-				console.error("Unable to parse JSON. RAW remote message: " + strResponse);
-
-				console.log("Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request or response.");
-				this.webSocket.close(
-					/* CloseEvent.Internal Error */ 1011,
-					"Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request or response."
-				);
-
-				return;
-			}
-		}
-
-
-		// It is inneficient to have server requests slip into the client, however, it is supported.
-		// Ignoring bi-directional communication (request to be served by a JSONRPC.Server, not this client).
-		if(objResponse.hasOwnProperty("method"))
-		{
-			return;
-		}
-
-
 		if(
 			typeof objResponse.id !== "number"
 			|| !this._objWebSocketRequestsPromises[objResponse.id]
