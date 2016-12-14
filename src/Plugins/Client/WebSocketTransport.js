@@ -87,6 +87,14 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 		}
 
 
+		// It is inneficient to have server requests slip into the client, however, it is supported.
+		// Ignoring bi-directional communication (request to be served by a JSONRPC.Server, not this client).
+		if(objResponse.hasOwnProperty("method"))
+		{
+			return;
+		}
+
+
 		if(
 			typeof objResponse.id !== "number"
 			|| !this._objWebSocketRequestsPromises[objResponse.id]

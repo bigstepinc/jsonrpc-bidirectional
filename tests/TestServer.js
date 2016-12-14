@@ -192,7 +192,7 @@ class TestServer
 				console.log("Making a new JSONRPC.Client for the new incoming connection, which is about to be passed to ServerPluginAuthorizeWebSocketAndClientMultiton.");
 				const clientReverseCalls = new JSONRPC.Client(ws.upgradeReq.url);
 				clientReverseCalls.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
-				//clientReverseCalls.addPlugin(new JSONRPC.Plugins.Client.WebSocketTransport(ws));
+				clientReverseCalls.addPlugin(new JSONRPC.Plugins.Client.WebSocketTransport(ws));
 				
 				console.log("Passing a new incoming connection to ServerPluginAuthorizeWebSocketAndClientMultiton.");
 				this._serverPluginAuthorizeWebSocketAndClientMultitonSiteA.initConnection(nWebSocketConnectionID, clientReverseCalls, ws);
