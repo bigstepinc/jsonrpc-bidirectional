@@ -1,3 +1,5 @@
+const sleep = require("sleep-promise");
+
 const JSONRPC = {};
 JSONRPC.Exception = require("../src/Exception");
 JSONRPC.EndpointBase = require("../src/EndpointBase");
@@ -26,6 +28,8 @@ class TestEndpoint extends JSONRPC.EndpointBase
 	 */
 	async ping(strReturn)
 	{
+		await sleep(parseInt(Math.random()*5000, 10));
+
 		return strReturn;
 	}
 

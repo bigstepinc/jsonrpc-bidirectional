@@ -43,6 +43,7 @@
     "babel-preset-stage-0": "*",
     "browserify": "*",
     "eslint": "*",
-    "eslint-plugin-jsdoc": "*"
+    "eslint-plugin-jsdoc": "*",
+    "sleep-promise": "*"
   }
 }
