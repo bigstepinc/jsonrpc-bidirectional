@@ -78,7 +78,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 
 				console.log("Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request or response.");
 				this.webSocket.close(
-					/*ws/lib/ErrorCodes.js/1011 'an unexpected condition prevented the request from being fulfilled'*/ 1011,
+					/* CloseEvent.Internal Error */ 1011,
 					"Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request or response."
 				);
 
@@ -96,7 +96,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 			console.error(new Error("RAW remote message: " + strResponse));
 			console.log("Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request.");
 			this.webSocket.close(
-				/*ws/lib/ErrorCodes.js/1011 'an unexpected condition prevented the request from being fulfilled'*/ 1011, 
+				/* CloseEvent.Internal Error */ 1011, 
 				"Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request."
 			);
 

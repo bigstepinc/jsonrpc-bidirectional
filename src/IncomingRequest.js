@@ -20,6 +20,8 @@ class IncomingRequest
 		this._mxResult = null;
 		this._bMethodCalled = false;
 
+		this._nConnectionID = null;
+
 		//this._webSocket
 		//this._httpRequest
 
@@ -33,6 +35,25 @@ class IncomingRequest
 	get isAuthenticated()
 	{
 		return this._bAuthenticated;
+	}
+
+
+	/**
+	 * @returns {number|null}
+	 */
+	get connectionID()
+	{
+		return this._nConnectionID;
+	}
+
+
+	/**
+	 * @param {number} nConnectionID
+	 */
+	set connectionID(nConnectionID)
+	{
+		assert(typeof nConnectionID === "number" && parseInt(nConnectionID, 10) === nConnectionID);
+		this._nConnectionID = nConnectionID;
 	}
 
 
@@ -198,7 +219,7 @@ class IncomingRequest
 		}
 		else
 		{
-			objResponse.result = this.callResult; 
+			objResponse.result = this.callResult === undefined ? null : this.callResult; 
 		}
 
 		if(

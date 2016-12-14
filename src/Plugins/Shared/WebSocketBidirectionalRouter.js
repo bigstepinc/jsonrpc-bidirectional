@@ -17,26 +17,27 @@ class WebSocketBidirectionalRouter
 	/**
 	 * If both the client and server plugins are specified, bi-directional JSONRPC over the same websocket is enabled.
 	 * 
-	 * @param {JSONRPC.Plugins.Client.WebSocketTransport|null} webSocketTransportClient
+	 * @param {Function|null} fnConnectionIDToJSONRPCClient
 	 * @param {JSONRPC.Server|null} jsonrpcServer
 	 */
-	constructor(webSocketTransportClient, jsonrpcServer)
+	constructor(fnConnectionIDToJSONRPCClient, jsonrpcServer)
 	{
-		assert(webSocketTransportClient === null || webSocketTransportClient instanceof JSONRPC.Plugins.Client.WebSocketTransport);
+		assert(fnConnectionIDToJSONRPCClient === null || typeof fnConnectionIDToJSONRPCClient === "function");
 		assert(jsonrpcServer === null || jsonrpcServer instanceof JSONRPC.Server);
 
-		this._webSocketTransportClient = webSocketTransportClient;
+		this._fnConnectionIDToJSONRPCClient = fnConnectionIDToJSONRPCClient;
 		this._jsonrpcServer = jsonrpcServer;
 	}
 
 
 	/**
 	 * Routes websocket messages to either the client or the server websocket plugin.
-	 *  
+	 * 
 	 * @param {string} strMessage
 	 * @param {WebSocket} webSocket
+	 * @param {number} nWebSocketConnectionID
 	 */
-	async routeMessage(strMessage, webSocket)
+	async routeMessage(strMessage, webSocket, nWebSocketConnectionID)
 	{
 		if(!strMessage.length)
 		{
@@ -55,7 +56,7 @@ class WebSocketBidirectionalRouter
 			console.error(error);
 			console.error("Unable to parse JSON. RAW remote message: " + strMessage);
 
-			if(this._jsonrpcServer && !this._webSocketTransportClient)
+			if(this._jsonrpcServer && !this._fnConnectionIDToJSONRPCClient)
 			{
 				webSocket.send(JSON.stringify({
 					id: null,
@@ -69,7 +70,7 @@ class WebSocketBidirectionalRouter
 
 			console.log("Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request or response.");
 			webSocket.close(
-				/*ws/lib/ErrorCodes.js/1011 'an unexpected condition prevented the request from being fulfilled'*/ 1011, 
+				/* CloseEvent.Internal Error */ 1011, 
 				"Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request or response."
 			);
 
@@ -94,6 +95,8 @@ class WebSocketBidirectionalRouter
 
 
 				const jsonrpcRequest = new JSONRPC.IncomingRequest();
+
+				jsonrpcRequest.connectionID = nWebSocketConnectionID;
 
 
 				// Move this somewhere in a state tracking class instance of the websocket connection so it is only executed on an incoming connection,
@@ -123,7 +126,7 @@ class WebSocketBidirectionalRouter
 			}
 			else if(objMessage.hasOwnProperty("result") || objMessage.hasOwnProperty("error"))
 			{
-				await this._webSocketTransportClient.processResponse(strMessage, objMessage);
+				await this._fnConnectionIDToJSONRPCClient(nWebSocketConnectionID).processResponse(strMessage, objMessage);
 			}
 			else
 			{
@@ -135,7 +138,7 @@ class WebSocketBidirectionalRouter
 			console.error(error);
 			console.error("Uncaught error. RAW remote message: " + strMessage);
 
-			if(this._jsonrpcServer && !this._webSocketTransportClient)
+			if(this._jsonrpcServer && !this._fnConnectionIDToJSONRPCClient)
 			{
 				webSocket.send(JSON.stringify({
 					id: null,
@@ -149,7 +152,7 @@ class WebSocketBidirectionalRouter
 
 			console.log("Unclean state. Closing websocket.");
 			webSocket.close(
-				/*ws/lib/ErrorCodes.js/1011 'an unexpected condition prevented the request from being fulfilled'*/ 1011, 
+				/* CloseEvent.Internal Error */ 1011, 
 				"Unclean state. Closing websocket."
 			);
 

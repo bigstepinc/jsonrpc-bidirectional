@@ -46,7 +46,7 @@ class Client
 		}
 		else
 		{
-			throw new Error("Unsupported protocol " + JSON.stringify(strProtocol) + ".");
+			// throw new Error("Unsupported protocol " + JSON.stringify(strProtocol) + ", URL: " + strEndpointURL + ".");
 		}
 	}
 

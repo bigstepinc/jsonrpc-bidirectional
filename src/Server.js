@@ -221,8 +221,8 @@ class Server
 
 				httpRequest.on(
 					"data", 
-					(chunk) => {
-						arrBody.push(chunk);
+					(bufferChunk) => {
+						arrBody.push(bufferChunk);
 					}
 				);
 
