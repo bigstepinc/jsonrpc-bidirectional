@@ -55,7 +55,7 @@ class TestEndpoint extends JSONRPC.EndpointBase
 	/**
 	 * Authentication function. 
 	 * 
-	 * It is intercepted by ServerPluginAuthorizeAndWebSocketMultiton.
+	 * It is intercepted by ServerPluginAuthorizeWebSocketAndClientMultiton.
 	 * If it doesn't throw, it will remember that the websocket connection is authenticated.
 	 * 
 	 * @param {string} strTeamMember
