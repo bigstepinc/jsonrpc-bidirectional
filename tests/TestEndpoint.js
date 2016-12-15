@@ -4,6 +4,8 @@ const JSONRPC = {};
 JSONRPC.Exception = require("../src/Exception");
 JSONRPC.EndpointBase = require("../src/EndpointBase");
 
+const TestServer = require("./TestServer");
+
 module.exports =
 class TestEndpoint extends JSONRPC.EndpointBase 
 {
@@ -23,12 +25,26 @@ class TestEndpoint extends JSONRPC.EndpointBase
 	 * Hello world?
 	 * 
 	 * @param {string} strReturn
+	 * @param {boolean} bRandomSleep
+	 * @param {string|null} strATeamCharacterName
 	 * 
 	 * @returns {string}
 	 */
-	async ping(strReturn)
+	async ping(strReturn, bRandomSleep, strATeamCharacterName)
 	{
-		await sleep(parseInt(Math.random()*5000, 10));
+		if(bRandomSleep)
+		{
+			await sleep(parseInt(Math.random() * 1500 /*milliseconds*/, 10));
+		}
+
+		if(typeof strATeamCharacterName === "string")
+		{
+			const nConnectionID = TestServer.serverPluginAuthorizeWebSocketAndClientMultitonSiteA.aTeamMemberToConnectionID(strATeamCharacterName);
+
+			const reverseCallsClient = TestServer.serverPluginAuthorizeWebSocketAndClientMultitonSiteA.connectionIDToClient(nConnectionID);
+
+			await reverseCallsClient.rpc("ping", [strATeamCharacterName + " called back to confirm this: " + strReturn + "!"]);
+		}
 
 		return strReturn;
 	}
@@ -64,10 +80,11 @@ class TestEndpoint extends JSONRPC.EndpointBase
 	 * 
 	 * @param {string} strTeamMember
 	 * @param {string} strSecretKnock
+	 * @param {boolean} bDoNotAuthorizeMe
 	 * 
 	 * @returns {{teamMember: {string}}}
 	 */
-	async ImHereForTheParty(strTeamMember, strSecretKnock)
+	async ImHereForTheParty(strTeamMember, strSecretKnock, bDoNotAuthorizeMe)
 	{
 		const arrTheATeam = ["Hannibal", "Face", "Baracus", "Murdock", "Lynch"];
 		

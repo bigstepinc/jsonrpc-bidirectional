@@ -18,6 +18,7 @@ class ServerPluginAuthorizeWebSocketAndClientMultiton extends JSONRPC.ServerPlug
 		super();
 
 		this._objSessions = {};
+		this._objATeamMemberToConnectionID = {};
 
 		Object.seal(this);
 	}
@@ -48,11 +49,11 @@ class ServerPluginAuthorizeWebSocketAndClientMultiton extends JSONRPC.ServerPlug
 			typeof jsonrpcRequest.connectionID === "number" 
 			&& this._objSessions.hasOwnProperty(jsonrpcRequest.connectionID)
 			&& this._objSessions[jsonrpcRequest.connectionID]
-			&& this._objSessions[jsonrpcRequest.connectionID].authorization !== null
+			&& this._objSessions[jsonrpcRequest.connectionID].partyMembership !== null
 		)
 		{
 			jsonrpcRequest.isAuthenticated = true;
-			jsonrpcRequest.isAuthorized = true;
+			jsonrpcRequest.isAuthorized = this._objSessions[jsonrpcRequest.connectionID].authorized;
 		}
 	}
 
@@ -66,14 +67,14 @@ class ServerPluginAuthorizeWebSocketAndClientMultiton extends JSONRPC.ServerPlug
 	{
 		if(jsonrpcRequest.requestObject.method === "ImHereForTheParty")
 		{
-			assert(typeof this.jsonrpcRequest.connectionID === "number");
+			assert(typeof jsonrpcRequest.connectionID === "number");
 			
 			if(
 				this._objSessions.hasOwnProperty(jsonrpcRequest.connectionID)
-				&& typeof this._objSessions[jsonrpcRequest.connectionID].authorization === "object" 
+				&& this._objSessions[jsonrpcRequest.connectionID].partyMembership !== null
 			)
 			{
-				jsonrpcRequest.callResult = new JSONRPC.Exception("Not authorized. Current connnection was already authenticated.", JSONRPC.Exception.NOT_AUTHORIZED);
+				jsonrpcRequest.callResult = new JSONRPC.Exception("Not authorized. Current connnection " + jsonrpcRequest.connectionID + " was already authenticated.", JSONRPC.Exception.NOT_AUTHORIZED);
 
 				return;
 			}
@@ -84,7 +85,13 @@ class ServerPluginAuthorizeWebSocketAndClientMultiton extends JSONRPC.ServerPlug
 			}
 			
 			assert(!(jsonrpcRequest.callResult instanceof Error));
-			this._objSessions[jsonrpcRequest.connectionID].authorization = jsonrpcRequest.callResult;
+			this._objSessions[jsonrpcRequest.connectionID].partyMembership = jsonrpcRequest.callResult;
+			
+			// bDoNotAuthorizeMe param.
+			assert(typeof jsonrpcRequest.requestObject.params[2] === "boolean");
+			this._objSessions[jsonrpcRequest.connectionID].authorized = !jsonrpcRequest.requestObject.params[2];
+
+			this._objATeamMemberToConnectionID[jsonrpcRequest.callResult.teamMember] = jsonrpcRequest.connectionID;
 		}
 	}
 
@@ -97,10 +104,11 @@ class ServerPluginAuthorizeWebSocketAndClientMultiton extends JSONRPC.ServerPlug
 	initConnection(nWebSocketConnectionID, clientReverseCalls, webSocket)
 	{
 		this._objSessions[nWebSocketConnectionID] = {
-			authorization: null, 
+			partyMembership: null, 
+			authorized: false, 
 			connectionID: nWebSocketConnectionID, 
-			clientReverseCalls: clientReverseCalls,
-			clientWebSocketPlugin: null
+			clientReverseCalls: clientReverseCalls, 
+			clientWebSocketPlugin: null 
 		};
 
 		for(let plugin of clientReverseCalls.plugins)
@@ -169,5 +177,21 @@ class ServerPluginAuthorizeWebSocketAndClientMultiton extends JSONRPC.ServerPlug
 		}
 
 		return this._objSessions[nConnectionID].clientReverseCalls;
+	}
+
+
+	/**
+	 * @param {string} strATeamMember
+	 * 
+	 * @returns {JSONRPC.Client}
+	 */
+	aTeamMemberToConnectionID(strATeamMember)
+	{
+		if(!this._objATeamMemberToConnectionID.hasOwnProperty(strATeamMember))
+		{
+			throw new Error("The team member is not logged in!!!");
+		}
+
+		return this._objATeamMemberToConnectionID[strATeamMember];
 	}
 };

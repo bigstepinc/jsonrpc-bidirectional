@@ -13,6 +13,7 @@ const ServerPluginAuthorizeWebSocketAndClientMultiton = require("./ServerPluginA
 
 const assert = require("assert");
 
+let serverPluginAuthorizeWebSocketAndClientMultitonSiteA = null;
 
 module.exports =
 class TestServer
@@ -26,11 +27,8 @@ class TestServer
 		this._httpServerSiteA = null;
 		this._webSocketServerSiteA = null;
 		this._jsonrpcServerSiteA = null;
-		this._jsonrpcClientSiteA = null; // reverse calls, TCP server using a JSONRPC client calls into a TCP client with an attached JSONRPC server.
-
-		this._serverAuthenticationSkipPlugin = null;
-		this._serverAuthorizeAllPlugin = null;
 		this._serverPluginAuthorizeWebSocketAndClientMultitonSiteA = null;
+		//Use this._serverPluginAuthorizeWebSocketAndClientMultitonSiteA.connectionIDToclient() to obtain a JSONRPC client.
 
 
 		// SiteB does not have to be reachable (it can be firewalled, private IP or simply not listening for connections).
@@ -38,6 +36,11 @@ class TestServer
 		this._webSocketClientSiteB = null;
 		this._jsonrpcClientSiteB = null;
 		this._jsonrpcServerSiteB = null; // reverse calls, TCP client using a JSONRPC server accepts requests from a TCP server with an attached JSONRPC client.
+
+
+		// Used by SiteB, which trusts the remote server based on SSL certificates.
+		this._serverAuthenticationSkipPlugin = new JSONRPC.Plugins.Server.AuthenticationSkip();
+		this._serverAuthorizeAllPlugin = new JSONRPC.Plugins.Server.AuthorizeAll();
 
 
 		this._bWebSocketMode = !!bWebSocketMode;
@@ -51,10 +54,6 @@ class TestServer
 	 */
 	async runTests()
 	{
-		this._serverAuthenticationSkipPlugin = new JSONRPC.Plugins.Server.AuthenticationSkip();
-		this._serverAuthorizeAllPlugin = new JSONRPC.Plugins.Server.AuthorizeAll();
-
-		
 		await this.triggerConnectionRefused();
 
 
@@ -74,13 +73,20 @@ class TestServer
 		await this.triggerAuthenticationError();
 		await this.triggerAuthorizationError();
 
-		this._jsonrpcServerSiteA.addPlugin(this._serverAuthorizeAllPlugin);
-		this._jsonrpcServerSiteA.addPlugin(this._serverAuthenticationSkipPlugin);
-
 		await this.requestParseError();
 		await this.responseParseError();
 
-		await this.callRPCMethod();
+		if(!this._bWebSocketMode)
+		{
+			this._jsonrpcServerSiteA.addPlugin(this._serverAuthorizeAllPlugin);
+			this._jsonrpcServerSiteA.addPlugin(this._serverAuthenticationSkipPlugin);
+		}
+		else
+		{
+			await this._jsonrpcClientSiteB.rpc("ImHereForTheParty", ["Hannibal", "Hannibal does the harlem shake", /*bDoNotAuthorizeMe*/ false]);
+		}
+
+		await this.callRPCMethod(/*bDoNotSleep*/ true);
 
 		await this.callRPCMethodWhichThrowsJSONRPCException();
 		await this.callRPCMethodWhichThrowsSimpleError();
@@ -170,6 +176,8 @@ class TestServer
 
 		console.log("Instantiating ServerPluginAuthorizeWebSocketAndClientMultiton on SiteA.");
 		this._serverPluginAuthorizeWebSocketAndClientMultitonSiteA = new ServerPluginAuthorizeWebSocketAndClientMultiton();
+		serverPluginAuthorizeWebSocketAndClientMultitonSiteA = this._serverPluginAuthorizeWebSocketAndClientMultitonSiteA;
+
 		this._jsonrpcServerSiteA.addPlugin(this._serverPluginAuthorizeWebSocketAndClientMultitonSiteA);
 
 
@@ -230,8 +238,7 @@ class TestServer
 				this._webSocketClientSiteB = null;
 			}
 
-			this._jsonrpcClientSiteB = new JSONRPC.Client("ws://localhost:8325/api");
-			this._jsonrpcClientSiteB.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
+			const strEndpointURL = "ws://localhost:8325/api";
 
 			let fnResolveWaitForOpen;
 			let fnRejectWaitForOpen;
@@ -240,16 +247,19 @@ class TestServer
 				fnRejectWaitForOpen = fnReject;
 			});
 
-			console.log("Connecting SiteB JSONRPC client to " + this._jsonrpcClientSiteB.endpointURL + ".");
-			const ws = new WebSocket(this._jsonrpcClientSiteB.endpointURL);
+			console.log("Connecting SiteB JSONRPC client to " + strEndpointURL + ".");
+			const ws = new WebSocket(strEndpointURL);
 
 			ws.on("open", fnResolveWaitForOpen);
 			ws.on("error", fnRejectWaitForOpen);
 
 			await promiseWaitForOpen;
 
-			this._webSocketClientSiteB = ws;
+			this._jsonrpcClientSiteB = new JSONRPC.Client(strEndpointURL);
+			this._jsonrpcClientSiteB.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 			this._jsonrpcClientSiteB.addPlugin(new JSONRPC.Plugins.Client.WebSocketTransport(ws));
+
+			this._webSocketClientSiteB = ws;
 
 			await this.setupWebSocketJSONRPCServerSiteB();
 		}
@@ -269,6 +279,10 @@ class TestServer
 	async setupWebSocketJSONRPCServerSiteB()
 	{
 		this._jsonrpcServerSiteB = new JSONRPC.Server();
+		this._jsonrpcServerSiteB.registerEndpoint(new TestEndpoint());
+
+		this._jsonrpcServerSiteB.addPlugin(this._serverAuthenticationSkipPlugin);
+		this._jsonrpcServerSiteB.addPlugin(this._serverAuthorizeAllPlugin);
 
 		console.log("Instantiating JSONRPC.BidirectionalWebsocketRouter on SiteB.");
 		const wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(
@@ -308,7 +322,7 @@ class TestServer
 		try
 		{
 			await this.setupClientSiteB();
-			await this._jsonrpcClientSiteB.rpc("ping", ["pong"]);
+			await this._jsonrpcClientSiteB.rpc("ping", ["triggerConnectionRefused", /*bRandomSleep*/ false]);
 			assert.throws(() => {});
 		}
 		catch(error)
@@ -339,7 +353,7 @@ class TestServer
 
 		try
 		{
-			await client.rpc("ping", []);
+			await client.rpc("ping", ["endpointNotFoundError", /*bRandomSleep*/ false]);
 			assert.throws(() => {});
 		}
 		catch(error)
@@ -368,7 +382,7 @@ class TestServer
 
 		try
 		{
-			await client.rpc("ping", []);
+			await client.rpc("ping", ["outsideJSONRPCPathError", /*bRandomSleep*/ false]);
 			assert.throws(() => {});
 		}
 		catch(error)
@@ -392,11 +406,9 @@ class TestServer
 	{
 		console.log("triggerAuthenticationError");
 
-		this._jsonrpcServerSiteA.addPlugin(this._serverAuthorizeAllPlugin);
-		this._jsonrpcServerSiteA.removePlugin(this._serverAuthenticationSkipPlugin);
 		try
 		{
-			await this._jsonrpcClientSiteB.rpc("ping", []);
+			await this._jsonrpcClientSiteB.rpc("ping", ["triggerAuthenticationError", /*bRandomSleep*/ false]);
 			assert.throws(() => {});
 		}
 		catch(error)
@@ -422,7 +434,7 @@ class TestServer
 
 		try
 		{
-			await this._jsonrpcClientSiteB.rpc("ping", []);
+			await this._jsonrpcClientSiteB.rpc("ping", ["requestParseError", /*bRandomSleep*/ false]);
 			assert.throws(() => {});
 		}
 		catch(error)
@@ -457,7 +469,7 @@ class TestServer
 
 		try
 		{
-			await this._jsonrpcClientSiteB.rpc("ping", []);
+			await this._jsonrpcClientSiteB.rpc("ping", ["responseParseError", /*bRandomSleep*/ false]);
 			assert.throws(() => {});
 		}
 		catch(error)
@@ -490,11 +502,19 @@ class TestServer
 	{
 		console.log("triggerAuthorizationError");
 
-		this._jsonrpcServerSiteA.removePlugin(this._serverAuthorizeAllPlugin);
-		this._jsonrpcServerSiteA.addPlugin(this._serverAuthenticationSkipPlugin);
+		if(this._bWebSocketMode)
+		{
+			await this._jsonrpcClientSiteB.rpc("ImHereForTheParty", ["Hannibal", "Hannibal does the harlem shake", /*bDoNotAuthorizeMe*/ true]);
+		}
+		else
+		{
+			this._jsonrpcServerSiteA.removePlugin(this._serverAuthorizeAllPlugin);
+			this._jsonrpcServerSiteA.addPlugin(this._serverAuthenticationSkipPlugin);
+		}
+
 		try
 		{
-			await this._jsonrpcClientSiteB.rpc("ping", []);
+			await this._jsonrpcClientSiteB.rpc("ping", ["triggerAuthorizationError", /*bRandomSleep*/ false]);
 			assert.throws(() => {});
 		}
 		catch(error)
@@ -512,14 +532,18 @@ class TestServer
 
 
 	/**
+	 * @param {boolean} bDoNotSleep
+	 * 
 	 * @returns {undefined}
 	 */
-	async callRPCMethod()
+	async callRPCMethod(bDoNotSleep)
 	{
+		const bRandomSleep = !bDoNotSleep;
+
 		console.log("callRPCMethod");
 
 		const strParam = "pong_" + (this._jsonrpcClientSiteB.callID);
-		assert.strictEqual(strParam, await this._jsonrpcClientSiteB.rpc("ping", [strParam]));
+		assert.strictEqual(strParam, await this._jsonrpcClientSiteB.rpc("ping", [strParam, bRandomSleep]));
 	}
 
 
@@ -599,7 +623,7 @@ class TestServer
 		// http://smallvoid.com/article/winnt-tcpip-max-limit.html
 		// https://blog.jayway.com/2015/04/13/600k-concurrent-websocket-connections-on-aws-using-node-js/
 		// http://stackoverflow.com/questions/17033631/node-js-maxing-out-at-1000-concurrent-connections
-		const nCallCount = this._bWebSocketMode ? 2500 : 500;
+		const nCallCount = this._bWebSocketMode ? 2000 : 500;
 		for(let i = 0; i < nCallCount; i++)
 		{
 			arrPromises.push(arrMethods[Math.round(Math.random() * (arrMethods.length - 1))].apply(this, []));
@@ -608,5 +632,14 @@ class TestServer
 		await Promise.all(arrPromises);
 
 		console.log(nCallCount + " calls executed in " + ((new Date()).getTime() - nStartTime) + " milliseconds.");
+	}
+
+
+	/**
+	 * @returns {ServerPluginAuthorizeWebSocketAndClientMultiton}
+	 */
+	static get serverPluginAuthorizeWebSocketAndClientMultitonSiteA()
+	{
+		return serverPluginAuthorizeWebSocketAndClientMultitonSiteA;
 	}
 };
