@@ -9,7 +9,7 @@ class DebugLogger extends JSONRPC.ClientPluginBase
 	 */
 	async afterJSONEncode(jsonrpcRequest)
 	{
-		console.log("Sent request at " + new Date() + "\n" + jsonrpcRequest.requestBody + "\n");
+		console.log("[" + (new Date()).toISOString() + "] Sent JSONRPC request: " + jsonrpcRequest.requestBody + "\n");
 	}
 
 	/**
@@ -17,6 +17,6 @@ class DebugLogger extends JSONRPC.ClientPluginBase
 	 */
 	async beforeJSONDecode(jsonrpcRequest)
 	{
-		console.log("Received response at " + new Date() + "\n" + jsonrpcRequest.responseBody + "\n");
+		console.log("[" + (new Date()).toISOString() + "] Received JSONRPC response at: " + jsonrpcRequest.responseBody + "\n");
 	}
 };
