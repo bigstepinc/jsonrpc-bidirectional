@@ -19,12 +19,12 @@ class BidirectionalWebsocketRouter
 	 * @param {Function|null} fnConnectionIDToClientWebSocketPlugin
 	 * @param {JSONRPC.Server|null} jsonrpcServer
 	 */
-	constructor(fnConnectionIDToJSONRPCClient, jsonrpcServer)
+	constructor(fnConnectionIDToClientWebSocketPlugin, jsonrpcServer)
 	{
-		assert(fnConnectionIDToJSONRPCClient === null || typeof fnConnectionIDToJSONRPCClient === "function");
+		assert(fnConnectionIDToClientWebSocketPlugin === null || typeof fnConnectionIDToClientWebSocketPlugin === "function");
 		assert(jsonrpcServer === null || jsonrpcServer instanceof JSONRPC.Server);
 
-		this._fnConnectionIDToClientWebSocketPlugin = fnConnectionIDToJSONRPCClient;
+		this._fnConnectionIDToClientWebSocketPlugin = fnConnectionIDToClientWebSocketPlugin;
 		this._jsonrpcServer = jsonrpcServer;
 	}
 

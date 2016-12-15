@@ -26,8 +26,6 @@ class EndpointBase
 		this._strName = strName;
 		this._strPath = EndpointBase.normalizePath(strPath);
 		this._objReflection = objReflection;
-
-		Object.seal(this);
 	}
 
 
