@@ -8,7 +8,7 @@
             "type": "node",
             "request": "launch",
             "name": "Launch Program",
-            "program": "${workspaceRoot}\\src\\main.js",
+            "program": "${workspaceRoot}\\tests\\main.js",
             "args": ["--cli-run"],
             "runtimeArgs": ["--harmony_async_await"],
             "cwd": "${workspaceRoot}"

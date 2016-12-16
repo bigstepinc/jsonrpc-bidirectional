@@ -9,11 +9,11 @@ const TestEndpoint = require("./TestEndpoint");
 const ClientPluginInvalidRequestJSON = require("./ClientPluginInvalidRequestJSON");
 const ServerPluginInvalidResponseJSON = require("./ServerPluginInvalidResponseJSON");
 const ServerPluginAuthorizeWebSocketAndClientMultiton = require("./ServerPluginAuthorizeWebSocketAndClientMultiton");
-
+const ServerDebugMarkerPlugin = require("./ServerDebugMarkerPlugin");
+const ClientDebugMarkerPlugin = require("./ClientDebugMarkerPlugin");
 
 const assert = require("assert");
 
-let serverPluginAuthorizeWebSocketAndClientMultitonSiteA = null;
 
 module.exports =
 class TestServer
@@ -23,6 +23,8 @@ class TestServer
 	 */
 	constructor(bWebSocketMode)
 	{
+		this._testEndpoint = new TestEndpoint();
+
 		// SiteA is supposedly reachable over the internet. It listens for new connections (websocket or http). 
 		this._httpServerSiteA = null;
 		this._webSocketServerSiteA = null;
@@ -150,7 +152,9 @@ class TestServer
 		this._httpServerSiteA = http.createServer();
 		this._jsonrpcServerSiteA = new JSONRPC.Server();
 
-		this._jsonrpcServerSiteA.registerEndpoint(new TestEndpoint());
+		this._jsonrpcServerSiteA.addPlugin(new ServerDebugMarkerPlugin("SiteA"));
+
+		this._jsonrpcServerSiteA.registerEndpoint(this._testEndpoint);
 		this._jsonrpcServerSiteA.attachToHTTPServer(this._httpServerSiteA, "/api/");
 
 		this._httpServerSiteA.listen(8324);
@@ -176,7 +180,7 @@ class TestServer
 
 		console.log("Instantiating ServerPluginAuthorizeWebSocketAndClientMultiton on SiteA.");
 		this._serverPluginAuthorizeWebSocketAndClientMultitonSiteA = new ServerPluginAuthorizeWebSocketAndClientMultiton();
-		serverPluginAuthorizeWebSocketAndClientMultitonSiteA = this._serverPluginAuthorizeWebSocketAndClientMultitonSiteA;
+		this._testEndpoint.serverPluginAuthorizeWebSocketAndClientMultitonSiteA = this._serverPluginAuthorizeWebSocketAndClientMultitonSiteA;
 
 		this._jsonrpcServerSiteA.addPlugin(this._serverPluginAuthorizeWebSocketAndClientMultitonSiteA);
 
@@ -200,6 +204,7 @@ class TestServer
 				console.log("Making a new JSONRPC.Client for the new incoming connection, which is about to be passed to ServerPluginAuthorizeWebSocketAndClientMultiton.");
 				const clientReverseCalls = new JSONRPC.Client(ws.upgradeReq.url);
 				clientReverseCalls.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
+				clientReverseCalls.addPlugin(new ClientDebugMarkerPlugin("SiteA; reverse calls; connection ID: " + nWebSocketConnectionID));
 				clientReverseCalls.addPlugin(new JSONRPC.Plugins.Client.WebSocketTransport(ws));
 				
 				console.log("Passing a new incoming connection to ServerPluginAuthorizeWebSocketAndClientMultiton.");
@@ -256,6 +261,7 @@ class TestServer
 			await promiseWaitForOpen;
 
 			this._jsonrpcClientSiteB = new JSONRPC.Client(strEndpointURL);
+			this._jsonrpcClientSiteB.addPlugin(new ClientDebugMarkerPlugin("SiteB"));
 			this._jsonrpcClientSiteB.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 			this._jsonrpcClientSiteB.addPlugin(new JSONRPC.Plugins.Client.WebSocketTransport(ws));
 
@@ -266,6 +272,7 @@ class TestServer
 		else
 		{
 			this._jsonrpcClientSiteB = new JSONRPC.Client("http://localhost:8324/api");
+			this._jsonrpcClientSiteB.addPlugin(new ClientDebugMarkerPlugin("SiteB"));
 			this._jsonrpcClientSiteB.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 		}
 	}
@@ -283,6 +290,7 @@ class TestServer
 
 		this._jsonrpcServerSiteB.addPlugin(this._serverAuthenticationSkipPlugin);
 		this._jsonrpcServerSiteB.addPlugin(this._serverAuthorizeAllPlugin);
+		this._jsonrpcServerSiteB.addPlugin(new ServerDebugMarkerPlugin("SiteB"));
 
 		console.log("Instantiating JSONRPC.BidirectionalWebsocketRouter on SiteB.");
 		const wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(
@@ -349,6 +357,7 @@ class TestServer
 		console.log("endpointNotFoundError");
 
 		const client = new JSONRPC.Client("http://localhost:8324/api/bad-endpoint-path");
+		client.addPlugin(new ClientDebugMarkerPlugin("SiteB"));
 		client.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 
 		try
@@ -378,6 +387,7 @@ class TestServer
 		console.log("outsideJSONRPCPathError");
 
 		const client = new JSONRPC.Client("http://localhost:8324/unhandled-path");
+		client.addPlugin(new ClientDebugMarkerPlugin("SiteB"));
 		client.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 
 		try
@@ -543,7 +553,14 @@ class TestServer
 		console.log("callRPCMethod");
 
 		const strParam = "pong_" + (this._jsonrpcClientSiteB.callID);
-		assert.strictEqual(strParam, await this._jsonrpcClientSiteB.rpc("ping", [strParam, bRandomSleep]));
+		const arrParams = [strParam, bRandomSleep];
+
+		if(this._bWebSocketMode)
+		{
+			arrParams.push("Hannibal");
+		}
+
+		assert.strictEqual(strParam, await this._jsonrpcClientSiteB.rpc("ping", arrParams));
 	}
 
 
@@ -632,14 +649,5 @@ class TestServer
 		await Promise.all(arrPromises);
 
 		console.log(nCallCount + " calls executed in " + ((new Date()).getTime() - nStartTime) + " milliseconds.");
-	}
-
-
-	/**
-	 * @returns {ServerPluginAuthorizeWebSocketAndClientMultiton}
-	 */
-	static get serverPluginAuthorizeWebSocketAndClientMultitonSiteA()
-	{
-		return serverPluginAuthorizeWebSocketAndClientMultitonSiteA;
 	}
 };

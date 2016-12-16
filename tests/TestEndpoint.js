@@ -17,7 +17,17 @@ class TestEndpoint extends JSONRPC.EndpointBase
 			/*objReflection*/ {}
 		);
 
-		Object.seal(this);
+		this._serverPluginAuthorizeWebSocketAndClientMultitonSiteA = null;
+		//Object.seal(this);
+	}
+
+
+	/**
+	 * @param {ServerPluginAuthorizeWebSocketAndClientMultiton} serverPluginAuthorizeWebSocketAndClientMultitonSiteA
+	 */
+	set serverPluginAuthorizeWebSocketAndClientMultitonSiteA(serverPluginAuthorizeWebSocketAndClientMultitonSiteA)
+	{
+		this._serverPluginAuthorizeWebSocketAndClientMultitonSiteA = serverPluginAuthorizeWebSocketAndClientMultitonSiteA;
 	}
 
 
@@ -34,16 +44,16 @@ class TestEndpoint extends JSONRPC.EndpointBase
 	{
 		if(bRandomSleep)
 		{
-			await sleep(parseInt(Math.random() * 1500 /*milliseconds*/, 10));
+			await sleep(parseInt(Math.random() * 5000 /*milliseconds*/, 10));
 		}
 
 		if(typeof strATeamCharacterName === "string")
 		{
-			const nConnectionID = TestServer.serverPluginAuthorizeWebSocketAndClientMultitonSiteA.aTeamMemberToConnectionID(strATeamCharacterName);
+			const nConnectionID = this._serverPluginAuthorizeWebSocketAndClientMultitonSiteA.aTeamMemberToConnectionID(strATeamCharacterName);
 
-			const reverseCallsClient = TestServer.serverPluginAuthorizeWebSocketAndClientMultitonSiteA.connectionIDToClient(nConnectionID);
+			const reverseCallsClient = this._serverPluginAuthorizeWebSocketAndClientMultitonSiteA.connectionIDToClient(nConnectionID);
 
-			await reverseCallsClient.rpc("ping", [strATeamCharacterName + " called back to confirm this: " + strReturn + "!"]);
+			await reverseCallsClient.rpc("ping", [strATeamCharacterName + " called back to confirm this: " + strReturn + "!", /*bRandomSleep*/ true]);
 		}
 
 		return strReturn;

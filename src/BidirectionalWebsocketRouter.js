@@ -102,7 +102,7 @@ class BidirectionalWebsocketRouter
 				// for efficiency.
 				try
 				{
-					const strPath = JSONRPC.EndpointBase.normalizePath(webSocket.upgradeReq.url);
+					const strPath = JSONRPC.EndpointBase.normalizePath(webSocket.url ? webSocket.url : webSocket.upgradeReq.url);
 
 					if(!this._jsonrpcServer.endpoints.hasOwnProperty(strPath))
 					{
