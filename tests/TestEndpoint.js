@@ -4,8 +4,6 @@ const JSONRPC = {};
 JSONRPC.Exception = require("../src/Exception");
 JSONRPC.EndpointBase = require("../src/EndpointBase");
 
-const TestServer = require("./TestServer");
-
 module.exports =
 class TestEndpoint extends JSONRPC.EndpointBase 
 {
