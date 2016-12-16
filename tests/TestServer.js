@@ -40,7 +40,14 @@ class TestServer
 		this._jsonrpcServerSiteB = null; // reverse calls, TCP client using a JSONRPC server accepts requests from a TCP server with an attached JSONRPC client.
 
 
-		// Used by SiteB, which trusts the remote server based on SSL certificates.
+		// SiteC does not have to be reachable (it can be firewalled, private IP or simply not listening for connections).
+		// It is akin to a browser.
+		this._webSocketClientSiteC = null;
+		this._jsonrpcClientSiteC = null;
+		this._jsonrpcServerSiteC = null; // reverse calls, TCP client using a JSONRPC server accepts requests from a TCP server with an attached JSONRPC client.
+
+
+		// Used by SiteB and SiteC, which trusts the remote server based on SSL certificates.
 		this._serverAuthenticationSkipPlugin = new JSONRPC.Plugins.Server.AuthenticationSkip();
 		this._serverAuthorizeAllPlugin = new JSONRPC.Plugins.Server.AuthorizeAll();
 
@@ -68,6 +75,7 @@ class TestServer
 		}
 
 		await this.setupClientSiteB();
+		await this.setupClientSiteC();
 
 		await this.endpointNotFoundError();
 		await this.outsideJSONRPCPathError();
@@ -86,12 +94,13 @@ class TestServer
 		else
 		{
 			await this._jsonrpcClientSiteB.rpc("ImHereForTheParty", ["Hannibal", "Hannibal does the harlem shake", /*bDoNotAuthorizeMe*/ false]);
+			await this._jsonrpcClientSiteC.rpc("ImHereForTheParty", ["Baracus", "Baracus does the harlem shake", /*bDoNotAuthorizeMe*/ false]);
 		}
 
-		await this.callRPCMethod(/*bDoNotSleep*/ true);
+		await this.callRPCMethodSiteB(/*bDoNotSleep*/ true);
 
-		await this.callRPCMethodWhichThrowsJSONRPCException();
-		await this.callRPCMethodWhichThrowsSimpleError();
+		await this.callRPCMethodSiteBWhichThrowsJSONRPCException();
+		await this.callRPCMethodSiteBWhichThrowsSimpleError();
 
 		await this.manyCallsInParallel();
 
@@ -279,6 +288,62 @@ class TestServer
 
 
 	/**
+	 * @returns {undefined}
+	 */
+	async setupClientSiteC()
+	{
+		console.log("setupClientSiteC.");
+		if(this._bWebSocketMode)
+		{
+			if(
+				this._webSocketClientSiteC
+				&& this._webSocketClientSiteC.readyState === WebSocket.OPEN
+			)
+			{
+				this._webSocketClientSiteC.close(
+					/*CloseEvent.CLOSE_NORMAL*/ 1000,
+					"Normal close."
+				);
+
+				this._webSocketClientSiteC = null;
+			}
+
+			const strEndpointURL = "ws://localhost:8325/api";
+
+			let fnResolveWaitForOpen;
+			let fnRejectWaitForOpen;
+			const promiseWaitForOpen = new Promise((fnResolve, fnReject) => {
+				fnResolveWaitForOpen = fnResolve;
+				fnRejectWaitForOpen = fnReject;
+			});
+
+			console.log("Connecting SiteC JSONRPC client to " + strEndpointURL + ".");
+			const ws = new WebSocket(strEndpointURL);
+
+			ws.on("open", fnResolveWaitForOpen);
+			ws.on("error", fnRejectWaitForOpen);
+
+			await promiseWaitForOpen;
+
+			this._jsonrpcClientSiteC = new JSONRPC.Client(strEndpointURL);
+			this._jsonrpcClientSiteC.addPlugin(new ClientDebugMarkerPlugin("SiteC"));
+			this._jsonrpcClientSiteC.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
+			this._jsonrpcClientSiteC.addPlugin(new JSONRPC.Plugins.Client.WebSocketTransport(ws));
+
+			this._webSocketClientSiteC = ws;
+
+			await this.setupWebSocketJSONRPCServerSiteC();
+		}
+		else
+		{
+			this._jsonrpcClientSiteC = new JSONRPC.Client("http://localhost:8324/api");
+			this._jsonrpcClientSiteC.addPlugin(new ClientDebugMarkerPlugin("SiteC"));
+			this._jsonrpcClientSiteC.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
+		}
+	}
+
+
+	/**
 	 * JSONRPC server that sits on a client WebSocket connection.
 	 * 
 	 * @returns {undefined} 
@@ -312,6 +377,45 @@ class TestServer
 			"message",
 			async (strMessage) => {
 				await wsJSONRPCRouter.routeMessage(strMessage, this._webSocketClientSiteB, /*nWebSocketConnectionID*/ 0);
+			}
+		);
+	}
+
+
+	/**
+	 * JSONRPC server that sits on a client WebSocket connection.
+	 * 
+	 * @returns {undefined} 
+	 */
+	async setupWebSocketJSONRPCServerSiteC()
+	{
+		this._jsonrpcServerSiteC = new JSONRPC.Server();
+		this._jsonrpcServerSiteC.registerEndpoint(new TestEndpoint());
+
+		this._jsonrpcServerSiteC.addPlugin(this._serverAuthenticationSkipPlugin);
+		this._jsonrpcServerSiteC.addPlugin(this._serverAuthorizeAllPlugin);
+		this._jsonrpcServerSiteC.addPlugin(new ServerDebugMarkerPlugin("SiteC"));
+
+		console.log("Instantiating JSONRPC.BidirectionalWebsocketRouter on SiteC.");
+		const wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(
+			/*connectionIDToClientWebSocketPlugin*/ (nConnectionID) => {
+				for(let plugin of this._jsonrpcClientSiteC.plugins)
+				{
+					if(plugin instanceof JSONRPC.Plugins.Client.WebSocketTransport)
+					{
+						return plugin;
+					}
+				}
+				
+				throw new Error("The client must have the WebSocketTransport plugin added."); 
+			}, 
+			this._jsonrpcServerSiteC
+		);
+
+		this._webSocketClientSiteC.on(
+			"message",
+			async (strMessage) => {
+				await wsJSONRPCRouter.routeMessage(strMessage, this._webSocketClientSiteC, /*nWebSocketConnectionID*/ 0);
 			}
 		);
 	}
@@ -546,11 +650,11 @@ class TestServer
 	 * 
 	 * @returns {undefined}
 	 */
-	async callRPCMethod(bDoNotSleep)
+	async callRPCMethodSiteB(bDoNotSleep)
 	{
 		const bRandomSleep = !bDoNotSleep;
 
-		console.log("callRPCMethod");
+		console.log("callRPCMethodSiteB");
 
 		const strParam = "pong_" + (this._jsonrpcClientSiteB.callID);
 		const arrParams = [strParam, bRandomSleep];
@@ -565,11 +669,34 @@ class TestServer
 
 
 	/**
+	 * @param {boolean} bDoNotSleep
+	 * 
 	 * @returns {undefined}
 	 */
-	async callRPCMethodWhichThrowsJSONRPCException()
+	async callRPCMethodSiteC(bDoNotSleep)
 	{
-		console.log("callRPCMethodWhichThrowsJSONRPCException");
+		const bRandomSleep = !bDoNotSleep;
+
+		console.log("callRPCMethodSiteC");
+
+		const strParam = "pong_" + (this._jsonrpcClientSiteC.callID);
+		const arrParams = [strParam, bRandomSleep];
+
+		if(this._bWebSocketMode)
+		{
+			arrParams.push("Baracus");
+		}
+
+		assert.strictEqual(strParam, await this._jsonrpcClientSiteC.rpc("ping", arrParams));
+	}
+
+
+	/**
+	 * @returns {undefined}
+	 */
+	async callRPCMethodSiteBWhichThrowsJSONRPCException()
+	{
+		console.log("callRPCMethodSiteBWhichThrowsJSONRPCException");
 
 		try
 		{
@@ -593,9 +720,9 @@ class TestServer
 	/**
 	 * @returns {undefined} 
 	 */
-	async callRPCMethodWhichThrowsSimpleError()
+	async callRPCMethodSiteBWhichThrowsSimpleError()
 	{
-		console.log("callRPCMethodWhichThrowsSimpleError");
+		console.log("callRPCMethodSiteBWhichThrowsSimpleError");
 
 		try
 		{
@@ -628,13 +755,16 @@ class TestServer
 		const arrPromises = [];
 
 		const arrMethods = [
-			this.callRPCMethod,
+			this.callRPCMethodSiteB,
+			this.callRPCMethodSiteC,
 
-			this.callRPCMethodWhichThrowsSimpleError,
-			this.callRPCMethodWhichThrowsJSONRPCException,
+			this.callRPCMethodSiteBWhichThrowsSimpleError,
+			this.callRPCMethodSiteBWhichThrowsJSONRPCException,
 			
-			this.callRPCMethod,
-			this.callRPCMethod
+			this.callRPCMethodSiteC,
+
+			this.callRPCMethodSiteB,
+			this.callRPCMethodSiteB
 		];
 
 		// http://smallvoid.com/article/winnt-tcpip-max-limit.html

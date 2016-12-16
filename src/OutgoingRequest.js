@@ -218,7 +218,7 @@ class OutgoingRequest
 			&& !objResponse.hasOwnProperty("error")
 		)
 		{
-			throw new JSONRPC.Exception("Invalid response structure. RAW response: " + JSON.stringify(this._strResponseBody), JSONRPC.Exception.PARSE_ERROR);
+			throw new JSONRPC.Exception("Invalid response structure. RAW response: " + JSON.stringify(this._strResponseBody, undefined, "\t"), JSONRPC.Exception.PARSE_ERROR);
 		}
 
 		this._responseObject = objResponse;

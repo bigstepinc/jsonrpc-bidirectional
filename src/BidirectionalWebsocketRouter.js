@@ -121,7 +121,7 @@ class BidirectionalWebsocketRouter
 
 
 				const objResponse = await this._jsonrpcServer.processRequest(jsonrpcRequest);
-				webSocket.send(JSON.stringify(objResponse));
+				webSocket.send(JSON.stringify(objResponse, undefined, "\t"));
 			}
 			else if(objMessage.hasOwnProperty("result") || objMessage.hasOwnProperty("error"))
 			{

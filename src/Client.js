@@ -154,7 +154,7 @@ class Client
 						},
 						"id": jsonrpcRequest.callID
 					}; 
-					jsonrpcRequest.responseBody = JSON.stringify(jsonrpcRequest.responseObject);
+					jsonrpcRequest.responseBody = JSON.stringify(jsonrpcRequest.responseObject, undefined, "\t");
 				}
 				else
 				{

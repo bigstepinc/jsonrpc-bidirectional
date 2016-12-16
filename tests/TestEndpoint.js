@@ -44,7 +44,7 @@ class TestEndpoint extends JSONRPC.EndpointBase
 	{
 		if(bRandomSleep)
 		{
-			await sleep(parseInt(Math.random() * 5000 /*milliseconds*/, 10));
+			await sleep(parseInt(Math.random() * 1000 /*milliseconds*/, 10));
 		}
 
 		if(typeof strATeamCharacterName === "string")
