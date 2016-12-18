@@ -10,6 +10,8 @@ JSONRPC.Plugins.Client = require("./Plugins/Client/index");
 JSONRPC.Utils = require("./Utils");
 JSONRPC.OutgoingRequest = require("./OutgoingRequest");
 
+const EventEmitter = require("events");
+
 const fetch = require("node-fetch");
 const Request = fetch.Request;
 const Headers = fetch.Headers;
@@ -21,13 +23,15 @@ const assert = require("assert");
  * 
  */
 module.exports =
-class Client
+class Client extends EventEmitter
 {
 	/**
 	 * @param {string} strEndpointURL
 	 */
 	constructor(strEndpointURL)
 	{
+		super();
+
 		this._arrPlugins = [];
 		this._strJSONRPCEndpointURL = strEndpointURL;
 		this._nCallID = 1;
@@ -90,6 +94,7 @@ class Client
 
 			jsonrpcRequest.requestObject = jsonrpcRequest.toRequestObject();
 
+			this.emit("beforeJSONEncode", jsonrpcRequest);
 			for(let plugin of this._arrPlugins)
 			{
 				await plugin.beforeJSONEncode(jsonrpcRequest);
@@ -100,24 +105,25 @@ class Client
 			// console.log(jsonrpcRequest.requestObject);
 			// console.log(jsonrpcRequest.requestBody);
 
+			this.emit("afterJSONEncode", jsonrpcRequest);
 			for(let plugin of this._arrPlugins)
 			{
 				await plugin.afterJSONEncode(jsonrpcRequest);
 			}
 
 
+			if(!jsonrpcRequest.isMethodCalled)
+			{
+				this.emit("makeRequest", jsonrpcRequest);
+			}
 			for(let plugin of this._arrPlugins)
 			{
-				await plugin.makeRequest(jsonrpcRequest);
-
 				if(jsonrpcRequest.isMethodCalled)
 				{
 					break;
 				}
-				else if(jsonrpcRequest.callResult !== null)
-				{
-					throw new Error("Plugin set return value to non-null while leaving isMethodCalled === false.");
-				}
+
+				await plugin.makeRequest(jsonrpcRequest);
 			}
 
 
@@ -163,6 +169,7 @@ class Client
 			}
 
 			
+			this.emit("beforeJSONDecode", jsonrpcRequest);
 			for(let plugin of this._arrPlugins)
 			{
 				await plugin.beforeJSONDecode(jsonrpcRequest);
@@ -175,6 +182,7 @@ class Client
 			}
 
 
+			this.emit("afterJSONDecode", jsonrpcRequest);
 			for(let plugin of this._arrPlugins)
 			{
 				await plugin.afterJSONDecode(jsonrpcRequest);
@@ -226,6 +234,7 @@ class Client
 
 		if(jsonrpcRequest.callResult instanceof Error)
 		{
+			this.emit("exceptionCatch", jsonrpcRequest);
 			for(let plugin of this._arrPlugins)
 			{
 				await plugin.exceptionCatch(jsonrpcRequest);

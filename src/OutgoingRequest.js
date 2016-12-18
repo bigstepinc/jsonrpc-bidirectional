@@ -230,6 +230,8 @@ class OutgoingRequest
 	 */
 	get callResult()
 	{
+		this.isMethodCalled = true;
+
 		return this._mxResult;
 	}
 
@@ -239,6 +241,8 @@ class OutgoingRequest
 	 */
 	set callResult(mxResult)
 	{
+		//assert(!this.isMethodCalled, "JSONRPC.OutgoingRequest.isMethodCalled is already true, set by another plugin maybe?");
+
 		this.isMethodCalled = true;
 		this._mxResult = mxResult;
 	}

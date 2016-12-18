@@ -4,14 +4,18 @@ JSONRPC.IncomingRequest = require("./IncomingRequest");
 JSONRPC.Utils = require("./Utils");
 JSONRPC.EndpointBase = require("./EndpointBase");
 
+const EventEmitter = require("events");
+
 
 const assert = require("assert");
 
 module.exports =
-class Server
+class Server extends EventEmitter
 {
 	constructor()
 	{
+		super();
+
 		this._arrPlugins = [];
 		this._objEndpoints = {};
 
@@ -273,7 +277,7 @@ class Server
 		{
 			if(!jsonrpcRequest.isMethodCalled)
 			{
-					
+				this.emit("beforeJSONDecode", jsonrpcRequest);
 				for(let plugin of this._arrPlugins)
 				{
 					await plugin.beforeJSONDecode(jsonrpcRequest);
@@ -285,7 +289,7 @@ class Server
 					jsonrpcRequest.requestObject = JSONRPC.Utils.jsonDecodeSafe(jsonrpcRequest.requestBody);
 				}
 
-
+				this.emit("afterJSONDecode", jsonrpcRequest);
 				for(let plugin of this._arrPlugins)
 				{
 					await plugin.afterJSONDecode(jsonrpcRequest);
@@ -318,12 +322,6 @@ class Server
 				}
 
 
-				for(let plugin of this._arrPlugins)
-				{
-					await plugin.afterJSONDecode(jsonrpcRequest);
-				}
-
-
 				if(!jsonrpcRequest.isAuthenticated)
 				{
 					throw new JSONRPC.Exception("Not authenticated.", JSONRPC.Exception.NOT_AUTHENTICATED);
@@ -335,6 +333,10 @@ class Server
 				}
 
 
+				if(!jsonrpcRequest.isMethodCalled)
+				{
+					this.emit("callFunction", jsonrpcRequest);
+				}
 				for(let plugin of this._arrPlugins)
 				{
 					if(jsonrpcRequest.isMethodCalled)
@@ -365,21 +367,26 @@ class Server
 		}
 
 
-		for(let plugin of this._arrPlugins)
+		if(jsonrpcRequest.callResult instanceof Error)
 		{
-			if(jsonrpcRequest.callResult instanceof Error)
+			this.emit("exceptionCatch", jsonrpcRequest);
+			for(let plugin of this._arrPlugins)
 			{
 				await plugin.exceptionCatch(jsonrpcRequest);
 			}
-			else
+		}
+		else
+		{
+			this.emit("result", jsonrpcRequest);
+			for(let plugin of this._arrPlugins)
 			{
 				await plugin.result(jsonrpcRequest);
 			}
 		}
 
-
 		let objResponse = jsonrpcRequest.toResponseObject();
 
+		this.emit("result", objResponse);
 		for(let plugin of this._arrPlugins)
 		{
 			await plugin.response(objResponse);
