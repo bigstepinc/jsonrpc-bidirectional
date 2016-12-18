@@ -90,6 +90,11 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 	 */
 	async makeRequest(jsonrpcRequest)
 	{
+		if(jsonrpcRequest.isMethodCalled)
+		{
+			return;
+		}
+
 		if(this.webSocket.readyState !== WebSocket.OPEN)
 		{
 			throw new Error("WebSocket not connected.");
