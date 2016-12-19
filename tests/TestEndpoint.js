@@ -50,9 +50,7 @@ class TestEndpoint extends JSONRPC.EndpointBase
 
 		if(typeof strATeamCharacterName === "string")
 		{
-			const reverseCallsClient = incomingRequest.bidirectionalWebsocketRouter.connectionIDToClient(incomingRequest.connectionID, JSONRPC.Client);
-			
-			await reverseCallsClient.rpc("ping", [strATeamCharacterName + " called back to confirm this: " + strReturn + "!", /*bRandomSleep*/ true]);
+			await incomingRequest.reverseCallsClient.rpc("ping", [strATeamCharacterName + " called back to confirm this: " + strReturn + "!", /*bRandomSleep*/ true]);
 		}
 
 		return strReturn;

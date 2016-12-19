@@ -23,6 +23,8 @@ class IncomingRequest
 
 		this._nConnectionID = null;
 
+		this._classClient = null;
+
 		//this._webSocket
 		//this._httpRequest
 
@@ -169,19 +171,6 @@ class IncomingRequest
 
 
 	/**
-	 * bidirectionalWebsocketRouter.connectionIDToClient(nConnectionID, ClientClass) may be used to obtain 
-	 * a JSONRPC.Client on the same websocket connection.
-	 * See .endpoint
-	 * 
-	 * @returns {JSONRPC.BidirectionalWebsocketRouter|null}
-	 */
-	get bidirectionalWebsocketRouter()
-	{
-		return this._bidirectionalWebsocketRouter;
-	}
-
-
-	/**
 	 * @param {JSONRPC.BidirectionalWebsocketRouter} bidirectionalWebsocketRouter
 	 */
 	set bidirectionalWebsocketRouter(bidirectionalWebsocketRouter)
@@ -189,6 +178,27 @@ class IncomingRequest
 		assert(bidirectionalWebsocketRouter.constructor.name === "BidirectionalWebsocketRouter");
 
 		this._bidirectionalWebsocketRouter = bidirectionalWebsocketRouter;
+	}
+
+
+	/**
+	 * @returns {Class}
+	 */
+	get reverseCallsClient()
+	{
+		if(this._classClient === null)
+		{
+			if(
+				this.connectionID !== null
+				&& this.endpoint
+				&& this.endpoint.ReverseCallsClientClass
+			)
+			{
+				this._classClient = this._bidirectionalWebsocketRouter.connectionIDToClient(this.connectionID, this.endpoint.ReverseCallsClientClass);
+			}
+		}
+
+		return this._classClient;
 	}
 
 
