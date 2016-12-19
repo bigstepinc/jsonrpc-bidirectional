@@ -33,8 +33,10 @@ class Client extends EventEmitter
 		this._arrPlugins = [];
 		this._strJSONRPCEndpointURL = strEndpointURL;
 		this._nCallID = 1;
+
 		this._strHTTPUser = null;
 		this._strHTTPPassword = null;
+		this._strBase64BasicAuthentication = null;
 
 		const strProtocol = url.parse(strEndpointURL).protocol;
 
@@ -63,6 +65,7 @@ class Client extends EventEmitter
 	{
 		this._strHTTPUser = strUsername;
 		this._strHTTPPassword = strPassword;
+		this._strBase64BasicAuthentication = new Buffer(strUsername + ":" + strPassword).toString("base64");
 	}
 
 
@@ -82,11 +85,11 @@ class Client extends EventEmitter
 		try
 		{
 			outgoingRequest.endpointURL = this.endpointURL;
-			outgoingRequest.headers["Content-type"] = "application/json";
+			outgoingRequest.headers["Content-Type"] = "application/json";
 
 			if(this.httpUser !== null && this.httpPassword !== null)
 			{
-				outgoingRequest.headers["Authorization"] = "Basic " + this.httpUser + ":" + this.httpPassword;
+				outgoingRequest.headers["Authorization"] = "Basic " + this._strBase64BasicAuthentication;
 			}
 
 
