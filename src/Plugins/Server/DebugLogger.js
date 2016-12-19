@@ -11,8 +11,7 @@ class DebugLogger extends JSONRPC.ServerPluginBase
 	 */
 	beforeJSONDecode(incomingRequest)
 	{
-		// @TODO: specify selected endpoint?
-		console.log("[" + (new Date()).toISOString() + "] Received JSONRPC request: " + incomingRequest.requestBody + "\n");
+		console.log("[" + (new Date()).toISOString() + "] Received JSONRPC request at endpoint path" + incomingRequest.endpoint.path + ": " + incomingRequest.requestBody + "\n");
 	}
 
 	/**

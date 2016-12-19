@@ -61,14 +61,14 @@ class Server extends EventEmitter
 					// Default.
 					httpResponse.statusCode = 500;
 
-					const jsonrpcRequest = await this.processHTTPRequest(httpRequest, httpResponse);
-					const objResponse = await this.processRequest(jsonrpcRequest);
+					const incomingRequest = await this.processHTTPRequest(httpRequest, httpResponse);
+					const objResponse = await this.processRequest(incomingRequest);
 
-					if(jsonrpcRequest.callResult instanceof Error)
+					if(incomingRequest.callResult instanceof Error)
 					{
 						httpResponse.statusCode = 500; // Internal Server Error
 					}
-					else if(jsonrpcRequest.isNotification)
+					else if(incomingRequest.isNotification)
 					{
 						httpResponse.statusCode = 204; // No Content
 					}
@@ -78,7 +78,7 @@ class Server extends EventEmitter
 					}
 					
 
-					if(jsonrpcRequest.isNotification)
+					if(incomingRequest.isNotification)
 					{
 						/*httpResponse.write(JSON.stringify({
 							id: null,
@@ -206,7 +206,7 @@ class Server extends EventEmitter
 	 */
 	async processHTTPRequest(httpRequest, httpResponse)
 	{
-		const jsonrpcRequest = new JSONRPC.IncomingRequest();
+		const incomingRequest = new JSONRPC.IncomingRequest();
 
 		try
 		{
@@ -240,7 +240,7 @@ class Server extends EventEmitter
 					}
 				);
 
-				jsonrpcRequest.requestBody = await promiseWaitForData;
+				incomingRequest.requestBody = await promiseWaitForData;
 			}
 			else
 			{
@@ -253,50 +253,50 @@ class Server extends EventEmitter
 			{
 				throw new JSONRPC.Exception("Unknown JSONRPC endpoint " + strPath + ".", JSONRPC.Exception.METHOD_NOT_FOUND);
 			}
-			jsonrpcRequest.endpoint = this._objEndpoints[strPath];
+			incomingRequest.endpoint = this._objEndpoints[strPath];
 		}
 		catch(error)
 		{
-			jsonrpcRequest.callResult = error;
+			incomingRequest.callResult = error;
 		}
 
-		return jsonrpcRequest;
+		return incomingRequest;
 	}
 
 
 	/**
 	 * Returns the response object or null if in notification mode.
 	 * 
-	 * @param {JSONRPC.IncomingRequest} jsonrpcRequest
+	 * @param {JSONRPC.IncomingRequest} incomingRequest
 	 * 
 	 * @returns {Object|null}
 	 */
-	async processRequest(jsonrpcRequest)
+	async processRequest(incomingRequest)
 	{
 		try
 		{
-			if(!jsonrpcRequest.isMethodCalled)
+			if(!incomingRequest.isMethodCalled)
 			{
-				this.emit("beforeJSONDecode", jsonrpcRequest);
+				this.emit("beforeJSONDecode", incomingRequest);
 				for(let plugin of this._arrPlugins)
 				{
-					await plugin.beforeJSONDecode(jsonrpcRequest);
+					await plugin.beforeJSONDecode(incomingRequest);
 				}
 
 
-				if(!jsonrpcRequest.requestObject)
+				if(!incomingRequest.requestObject)
 				{
-					jsonrpcRequest.requestObject = JSONRPC.Utils.jsonDecodeSafe(jsonrpcRequest.requestBody);
+					incomingRequest.requestObject = JSONRPC.Utils.jsonDecodeSafe(incomingRequest.requestBody);
 				}
 
-				this.emit("afterJSONDecode", jsonrpcRequest);
+				this.emit("afterJSONDecode", incomingRequest);
 				for(let plugin of this._arrPlugins)
 				{
-					await plugin.afterJSONDecode(jsonrpcRequest);
+					await plugin.afterJSONDecode(incomingRequest);
 				}
 
 
-				if(Array.isArray(jsonrpcRequest.requestObject))
+				if(Array.isArray(incomingRequest.requestObject))
 				{
 					throw new JSONRPC.Exception("Batch requests are not supported by this JSON-RPC server.", JSONRPC.Exception.INTERNAL_ERROR);
 				}
@@ -305,86 +305,88 @@ class Server extends EventEmitter
 				// JSON-RPC 2.0 Specification:
 				// A Structured value that holds the parameter values to be used during the invocation of the method.
 				// This member MAY be omitted.
-				if(!jsonrpcRequest.requestObject.hasOwnProperty("params"))
+				if(!incomingRequest.requestObject.hasOwnProperty("params"))
 				{
-					jsonrpcRequest.requestObject.params = [];
+					incomingRequest.requestObject.params = [];
 				}
-				else if(!Array.isArray(jsonrpcRequest.requestObject.params))
+				else if(!Array.isArray(incomingRequest.requestObject.params))
 				{
-					if(typeof jsonrpcRequest.requestObject.params === "object")
+					if(typeof incomingRequest.requestObject.params === "object")
 					{
 						throw new JSONRPC.Exception("Named params are not supported by this server.", JSONRPC.Exception.INTERNAL_ERROR);
 					}
 					else
 					{
-						throw new JSONRPC.Exception("The params property has invalid data type, per JSON-RPC 2.0 specification. Unexpected type: " + (typeof jsonrpcRequest.requestObject.params) + ".", JSONRPC.Exception.INVALID_REQUEST);
+						throw new JSONRPC.Exception("The params property has invalid data type, per JSON-RPC 2.0 specification. Unexpected type: " + (typeof incomingRequest.requestObject.params) + ".", JSONRPC.Exception.INVALID_REQUEST);
 					}
 				}
 
 
-				if(!jsonrpcRequest.isAuthenticated)
+				if(!incomingRequest.isAuthenticated)
 				{
 					throw new JSONRPC.Exception("Not authenticated.", JSONRPC.Exception.NOT_AUTHENTICATED);
 				}
 
-				if(!jsonrpcRequest.isAuthorized)
+				if(!incomingRequest.isAuthorized)
 				{
 					throw new JSONRPC.Exception("Not authorized.", JSONRPC.Exception.NOT_AUTHORIZED);
 				}
 
 
-				if(!jsonrpcRequest.isMethodCalled)
+				if(!incomingRequest.isMethodCalled)
 				{
-					this.emit("callFunction", jsonrpcRequest);
+					this.emit("callFunction", incomingRequest);
 				}
 				for(let plugin of this._arrPlugins)
 				{
-					if(jsonrpcRequest.isMethodCalled)
+					if(incomingRequest.isMethodCalled)
 					{
 						break;
 					}
 
 					// Allows plugins to override normal method calling on the exported endpoint.
 					// If a plugin does choose to do this, all subsequent plugins will be skipped. 
-					await plugin.callFunction(jsonrpcRequest);
+					await plugin.callFunction(incomingRequest);
 				}
 
-				
-				if(!jsonrpcRequest.isMethodCalled)
+				if(!incomingRequest.isMethodCalled)
 				{
-					if(typeof jsonrpcRequest.endpoint[jsonrpcRequest.requestObject.method] !== "function")
+					if(typeof incomingRequest.endpoint[incomingRequest.requestObject.method] !== "function")
 					{
-						throw new JSONRPC.Exception("Method " + JSON.stringify(jsonrpcRequest.requestObject.method) + " not found on endpoint " + JSON.stringify(jsonrpcRequest.endpoint.path) + ".", JSONRPC.Exception.METHOD_NOT_FOUND);
+						throw new JSONRPC.Exception("Method " + JSON.stringify(incomingRequest.requestObject.method) + " not found on endpoint " + JSON.stringify(incomingRequest.endpoint.path) + ".", JSONRPC.Exception.METHOD_NOT_FOUND);
 					}
 
-					jsonrpcRequest.callResult = await jsonrpcRequest.endpoint[jsonrpcRequest.requestObject.method].apply(jsonrpcRequest.endpoint, jsonrpcRequest.requestObject.params);
+					incomingRequest.callResult = await incomingRequest.endpoint[incomingRequest.requestObject.method].apply(
+						incomingRequest.endpoint, 
+						[incomingRequest].concat(incomingRequest.requestObject.params)
+					);
 				}
 			}
 		}
 		catch(error)
 		{
-			jsonrpcRequest.callResult = error;
+			incomingRequest.callResult = error;
 		}
 
 
-		if(jsonrpcRequest.callResult instanceof Error)
+		if(incomingRequest.callResult instanceof Error)
 		{
-			this.emit("exceptionCatch", jsonrpcRequest);
+			this.emit("exceptionCatch", incomingRequest);
 			for(let plugin of this._arrPlugins)
 			{
-				await plugin.exceptionCatch(jsonrpcRequest);
+				await plugin.exceptionCatch(incomingRequest);
 			}
 		}
 		else
 		{
-			this.emit("result", jsonrpcRequest);
+			this.emit("result", incomingRequest);
 			for(let plugin of this._arrPlugins)
 			{
-				await plugin.result(jsonrpcRequest);
+				await plugin.result(incomingRequest);
 			}
 		}
 
-		let objResponse = jsonrpcRequest.toResponseObject();
+		let objResponse = incomingRequest.toResponseObject();
 
 		this.emit("result", objResponse);
 		for(let plugin of this._arrPlugins)

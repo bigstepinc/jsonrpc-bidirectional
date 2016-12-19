@@ -169,7 +169,7 @@ class Client extends EventEmitter
 				}
 			}
 
-			
+
 			this.emit("beforeJSONDecode", outgoingRequest);
 			for(let plugin of this._arrPlugins)
 			{
@@ -181,7 +181,7 @@ class Client extends EventEmitter
 			{
 				outgoingRequest.responseObject = JSONRPC.Utils.jsonDecodeSafe(outgoingRequest.responseBody);
 			}
-
+			
 
 			this.emit("afterJSONDecode", outgoingRequest);
 			for(let plugin of this._arrPlugins)
@@ -240,7 +240,7 @@ class Client extends EventEmitter
 			{
 				await plugin.exceptionCatch(outgoingRequest);
 			}
-			assert(outgoingRequest.callResult instanceof Error, " A plugin has reset the outgoingRequest.callResult to a non-error.");
+			//assert(outgoingRequest.callResult instanceof Error, " A plugin has reset the outgoingRequest.callResult to a non-error.");
 
 			throw outgoingRequest.callResult;
 		}

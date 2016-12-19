@@ -11,7 +11,7 @@ const WebSocket = require("ws");
 const assert = require("assert");
 
 module.exports =
-class ServerPluginAuthorizeWebSocketAndClientMultiton extends JSONRPC.ServerPluginBase
+class ServerPluginAuthorizeWebSocket extends JSONRPC.ServerPluginBase
 {
 	constructor()
 	{
@@ -81,7 +81,7 @@ class ServerPluginAuthorizeWebSocketAndClientMultiton extends JSONRPC.ServerPlug
 
 			if(!this._objSessions.hasOwnProperty(incomingRequest.connectionID))
 			{
-				throw new Error("initConnection was not called with connection id " + JSON.stringify(incomingRequest.connectionID) + ".");
+				throw new Error("addConnection was not called with connection id " + JSON.stringify(incomingRequest.connectionID) + ".");
 			}
 			
 			assert(!(incomingRequest.callResult instanceof Error));
@@ -98,31 +98,17 @@ class ServerPluginAuthorizeWebSocketAndClientMultiton extends JSONRPC.ServerPlug
 
 	/**
 	 * @param {number} nWebSocketConnectionID
-	 * @param {JSONRPC.Client} clientReverseCalls
 	 * @param {WebSocket} webSocket
 	 */
-	initConnection(nWebSocketConnectionID, clientReverseCalls, webSocket)
+	addConnection(nWebSocketConnectionID, webSocket)
 	{
+		assert(typeof nWebSocketConnectionID === "number");
+
 		this._objSessions[nWebSocketConnectionID] = {
 			partyMembership: null, 
 			authorized: false, 
-			connectionID: nWebSocketConnectionID, 
-			clientReverseCalls: clientReverseCalls, 
-			clientWebSocketPlugin: null 
+			connectionID: nWebSocketConnectionID
 		};
-
-		for(let plugin of clientReverseCalls.plugins)
-		{
-			if(plugin instanceof JSONRPC.Plugins.Client.WebSocketTransport)
-			{
-				this._objSessions[nWebSocketConnectionID].clientWebSocketPlugin = plugin;
-				break;
-			}
-		}
-		if(!this._objSessions[nWebSocketConnectionID].clientWebSocketPlugin)
-		{
-			throw new Error("The client must have the WebSocketTransport plugin added.");
-		}
 
 		webSocket.on(
 			"close",
@@ -130,53 +116,6 @@ class ServerPluginAuthorizeWebSocketAndClientMultiton extends JSONRPC.ServerPlug
 				delete this._objSessions[nWebSocketConnectionID];
 			}
 		);
-
-		webSocket.on(
-			"error",
-			(error) => {
-				delete this._objSessions[nWebSocketConnectionID];
-
-				if(webSocket.readyState === WebSocket.OPEN)
-				{
-					webSocket.close(
-						/* CloseEvent.Internal Error */ 1011, 
-						error.message
-					);
-				}
-			}
-		);
-	}
-
-
-	/**
-	 * @param {number} nConnectionID
-	 * 
-	 * @returns {JSONRPC.Client}
-	 */
-	connectionIDToClientWebSocketPlugin(nConnectionID)
-	{
-		if(!this._objSessions.hasOwnProperty(nConnectionID))
-		{
-			throw new Error("initConnection was not called with connection id " + JSON.stringify(nConnectionID) + " or the connection was closed in the meantime.");
-		}
-
-		return this._objSessions[nConnectionID].clientWebSocketPlugin;
-	}
-
-
-	/**
-	 * @param {number} nConnectionID
-	 * 
-	 * @returns {JSONRPC.Client}
-	 */
-	connectionIDToClient(nConnectionID)
-	{
-		if(!this._objSessions.hasOwnProperty(nConnectionID))
-		{
-			throw new Error("initConnection was not called with connection id " + JSON.stringify(nConnectionID) + " or the connection was closed in the meantime.");
-		}
-
-		return this._objSessions[nConnectionID].clientReverseCalls;
 	}
 
 

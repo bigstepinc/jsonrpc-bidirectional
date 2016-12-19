@@ -2,6 +2,7 @@ const sleep = require("sleep-promise");
 
 const JSONRPC = {};
 JSONRPC.Exception = require("../src/Exception");
+JSONRPC.Client = require("../src/Client");
 JSONRPC.EndpointBase = require("../src/EndpointBase");
 
 module.exports =
@@ -12,7 +13,8 @@ class TestEndpoint extends JSONRPC.EndpointBase
 		super(
 			/*strName*/ "Test", 
 			/*strPath*/ "/api", 
-			/*objReflection*/ {}
+			/*objReflection*/ {},
+			/*classReverseCallsClient*/ JSONRPC.Client
 		);
 
 		this._serverPluginAuthorizeWebSocketAndClientMultitonSiteA = null;
@@ -32,13 +34,14 @@ class TestEndpoint extends JSONRPC.EndpointBase
 	/**
 	 * Hello world?
 	 * 
+	 * @param {JSONRPC.IncomingRequest} incomingRequest
 	 * @param {string} strReturn
 	 * @param {boolean} bRandomSleep
 	 * @param {string|null} strATeamCharacterName
 	 * 
 	 * @returns {string}
 	 */
-	async ping(strReturn, bRandomSleep, strATeamCharacterName)
+	async ping(incomingRequest, strReturn, bRandomSleep, strATeamCharacterName)
 	{
 		if(bRandomSleep)
 		{
@@ -47,10 +50,8 @@ class TestEndpoint extends JSONRPC.EndpointBase
 
 		if(typeof strATeamCharacterName === "string")
 		{
-			const nConnectionID = this._serverPluginAuthorizeWebSocketAndClientMultitonSiteA.aTeamMemberToConnectionID(strATeamCharacterName);
-
-			const reverseCallsClient = this._serverPluginAuthorizeWebSocketAndClientMultitonSiteA.connectionIDToClient(nConnectionID);
-
+			const reverseCallsClient = incomingRequest.bidirectionalWebsocketRouter.connectionIDToClient(incomingRequest.connectionID, JSONRPC.Client);
+			
 			await reverseCallsClient.rpc("ping", [strATeamCharacterName + " called back to confirm this: " + strReturn + "!", /*bRandomSleep*/ true]);
 		}
 
@@ -61,9 +62,11 @@ class TestEndpoint extends JSONRPC.EndpointBase
 	/**
 	 * Hello world?
 	 * 
+	 * @param {JSONRPC.IncomingRequest} incomingRequest
+	 * 
 	 * @returns {string}
 	 */
-	async throwJSONRPCException()
+	async throwJSONRPCException(incomingRequest)
 	{
 		throw new JSONRPC.Exception("JSONRPC.Exception", JSONRPC.Exception.INTERNAL_ERROR);
 	}
@@ -72,9 +75,11 @@ class TestEndpoint extends JSONRPC.EndpointBase
 	/**
 	 * Hello world?
 	 * 
+	 * @param {JSONRPC.IncomingRequest} incomingRequest
+	 * 
 	 * @returns {string}
 	 */
-	async throwError()
+	async throwError(incomingRequest)
 	{
 		throw new Error("Error");
 	}
@@ -86,13 +91,14 @@ class TestEndpoint extends JSONRPC.EndpointBase
 	 * It is intercepted by ServerPluginAuthorizeWebSocketAndClientMultiton.
 	 * If it doesn't throw, it will remember that the websocket connection is authenticated.
 	 * 
+	 * @param {JSONRPC.IncomingRequest} incomingRequest
 	 * @param {string} strTeamMember
 	 * @param {string} strSecretKnock
 	 * @param {boolean} bDoNotAuthorizeMe
 	 * 
 	 * @returns {{teamMember: {string}}}
 	 */
-	async ImHereForTheParty(strTeamMember, strSecretKnock, bDoNotAuthorizeMe)
+	async ImHereForTheParty(incomingRequest, strTeamMember, strSecretKnock, bDoNotAuthorizeMe)
 	{
 		const arrTheATeam = ["Hannibal", "Face", "Baracus", "Murdock", "Lynch"];
 		

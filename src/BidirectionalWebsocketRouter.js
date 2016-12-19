@@ -10,22 +10,148 @@ JSONRPC.Plugins = {};
 JSONRPC.Plugins.Client = require("./Plugins/Client/index");
 JSONRPC.Utils = require("./Utils");
 
+
+const WebSocket = require("ws");
+
+const EventEmitter = require("events");
+
 module.exports =
-class BidirectionalWebsocketRouter
+class BidirectionalWebsocketRouter extends EventEmitter
 {
 	/**
 	 * If both the client and server plugins are specified, bi-directional JSONRPC over the same websocket is enabled.
 	 * 
-	 * @param {Function|null} fnConnectionIDToClientWebSocketPlugin
 	 * @param {JSONRPC.Server|null} jsonrpcServer
 	 */
-	constructor(fnConnectionIDToClientWebSocketPlugin, jsonrpcServer)
+	constructor(jsonrpcServer)
 	{
-		assert(fnConnectionIDToClientWebSocketPlugin === null || typeof fnConnectionIDToClientWebSocketPlugin === "function");
+		super();
+
 		assert(jsonrpcServer === null || jsonrpcServer instanceof JSONRPC.Server);
 
-		this._fnConnectionIDToClientWebSocketPlugin = fnConnectionIDToClientWebSocketPlugin;
 		this._jsonrpcServer = jsonrpcServer;
+
+		this._nServerWebSocketConnectionIDCounter = 0;
+		this._objSessions = {};
+	}
+
+
+	/**
+	 * Returns the connection ID.
+	 * 
+	 * @param {WebSocket} webSocket
+	 * 
+	 * @returns {Number}
+	 */
+	async addWebSocket(webSocket)
+	{
+		if(webSocket.readyState !== WebSocket.OPEN)
+		{
+			console.log("addWebSocket ignoring webSocket which is not in open state.");
+			return;
+		}
+
+		const nWebSocketConnectionID = ++this._nServerWebSocketConnectionIDCounter;
+
+
+		const objSession = {
+			webSocket: webSocket,
+			nWebSocketConnectionID: nWebSocketConnectionID,
+			clientReverseCalls: null,
+			clientWebSocketTransportPlugin: null
+		};
+
+		this._objSessions[nWebSocketConnectionID] = objSession;
+
+		webSocket.on(
+			"close",
+			(code, message) => {
+				delete this._objSessions[nWebSocketConnectionID];
+			}
+		);
+
+		webSocket.on(
+			"error",
+			(error) => {
+				delete this._objSessions[nWebSocketConnectionID];
+
+				if(webSocket.readyState === WebSocket.OPEN)
+				{
+					webSocket.close(
+						/* CloseEvent.Internal Error */ 1011, 
+						error.message
+					);
+				}
+			}
+		);
+
+		webSocket.on(
+			"message", 
+			async (strMessage) => 
+			{
+				await this._routeMessage(strMessage, objSession);//.then(() => {}).catch(console.error);
+			}
+		);
+
+		return nWebSocketConnectionID;
+	}
+
+
+	/**
+	 * @param {number} nConnectionID
+	 * @param {Class} ClientClass
+	 * 
+	 * @returns {JSONRPC.Client}
+	 */
+	connectionIDToClient(nConnectionID, ClientClass)
+	{
+		assert(typeof nConnectionID === "number");
+		assert(typeof ClientClass === "function", "Invalid ClientClass value: " + (typeof ClientClass));
+
+		if(!this._objSessions.hasOwnProperty(nConnectionID))
+		{
+			throw new Error("Connection " + JSON.stringify(nConnectionID) + " not found in BidirectionalWebsocketRouter.");
+		}
+
+		if(this._objSessions[nConnectionID].clientReverseCalls === null)
+		{
+			this._objSessions[nConnectionID].clientReverseCalls = this._makeReverseCallsClient(
+				this._objSessions[nConnectionID].webSocket,
+				ClientClass,
+				this._objSessions[nConnectionID]
+			);
+		}
+		else
+		{
+			assert(
+				this._objSessions[nConnectionID].clientReverseCalls instanceof ClientClass, 
+				"clientReverseCalls already initialized with a different JSONRPC.Client subclass."
+			);
+		}
+
+		return this._objSessions[nConnectionID].clientReverseCalls;
+	}
+
+
+	/**
+	 * Overridable to allow configuring the client further.
+	 * 
+	 * @param {WebSocket} webSocket
+	 * @param {Class} ClientClass
+	 * @param {Object} objSession
+	 * 
+	 * @returns {JSONRPC.Client}
+	 */
+	_makeReverseCallsClient(webSocket, ClientClass, objSession)
+	{
+		const clientReverseCalls = new ClientClass(webSocket.url ? webSocket.url : webSocket.upgradeReq.url);
+		
+		objSession.clientWebSocketTransportPlugin = new JSONRPC.Plugins.Client.WebSocketTransport(webSocket);
+		clientReverseCalls.addPlugin(objSession.clientWebSocketTransportPlugin);
+
+		this.emit("madeReverseCallsClient", clientReverseCalls);
+
+		return clientReverseCalls;
 	}
 
 
@@ -33,12 +159,14 @@ class BidirectionalWebsocketRouter
 	 * Routes websocket messages to either the client or the server websocket plugin.
 	 * 
 	 * @param {string} strMessage
-	 * @param {WebSocket} webSocket
-	 * @param {number} nWebSocketConnectionID
+	 * @param {Object} objSession
 	 */
-	async routeMessage(strMessage, webSocket, nWebSocketConnectionID)
+	async _routeMessage(strMessage, objSession)
 	{
-		if(!strMessage.length)
+		const webSocket = objSession.webSocket;
+		const nWebSocketConnectionID = objSession.nWebSocketConnectionID;
+
+		if(!strMessage.trim().length)
 		{
 			console.log("WebSocketBidirectionalRouter: Received empty message. Ignoring.");
 			return;
@@ -55,13 +183,13 @@ class BidirectionalWebsocketRouter
 			console.error(error);
 			console.error("Unable to parse JSON. RAW remote message: " + strMessage);
 
-			if(this._jsonrpcServer && !this._fnConnectionIDToClientWebSocketPlugin)
+			if(this._jsonrpcServer && this._objSessions[nWebSocketConnectionID].clientWebSocketTransportPlugin === null)
 			{
 				webSocket.send(JSON.stringify({
 					id: null,
 					jsonrpc: "2.0",
 					error: {
-						message: "Invalid request: " + JSON.stringify(strMessage) + ".",
+						message: "Invalid JSON: " + JSON.stringify(strMessage) + ".",
 						code: JSONRPC.Exception.PARSE_ERROR
 					}
 				}, undefined, "\t"));
@@ -82,20 +210,26 @@ class BidirectionalWebsocketRouter
 			{
 				if(!this._jsonrpcServer)
 				{
-					webSocket.send(JSON.stringify({
-						id: null,
-						jsonrpc: "2.0",
-						error: {
-							message: "Invalid JSON: " + JSON.stringify(strMessage) + ".",
-							code: JSONRPC.Exception.PARSE_ERROR
-						}
-					}, undefined, "\t"));
+					if(webSocket.readyState === WebSocket.OPEN)
+					{
+						webSocket.send(JSON.stringify({
+							id: null,
+							jsonrpc: "2.0",
+							error: {
+								message: "JSONRPC.Server not initialized on this WebSocket. Raw request: " + strMessage + ".",
+								code: JSONRPC.Exception.PARSE_ERROR
+							}
+						}, undefined, "\t"));
+					}
+
+					throw new Error("JSONRPC.Server not initialized on this WebSocket");
 				}
 
 
 				const incomingRequest = new JSONRPC.IncomingRequest();
 
 				incomingRequest.connectionID = nWebSocketConnectionID;
+				incomingRequest.bidirectionalWebsocketRouter = this;
 
 
 				// Move this somewhere in a state tracking class instance of the websocket connection so it is only executed on an incoming connection,
@@ -125,7 +259,15 @@ class BidirectionalWebsocketRouter
 			}
 			else if(objMessage.hasOwnProperty("result") || objMessage.hasOwnProperty("error"))
 			{
-				await this._fnConnectionIDToClientWebSocketPlugin(nWebSocketConnectionID).processResponse(strMessage, objMessage);
+				if(this._objSessions[nWebSocketConnectionID].clientWebSocketTransportPlugin === null)
+				{
+					webSocket.close(
+						/* CloseEvent.Internal Error */ 1011, 
+						"How can the client be not initialized, while receiveing responses to requests? Closing websocket."
+					);
+					throw new Error("How can the client be not initialized, while receiveing responses to requests?");
+				}
+				await this._objSessions[nWebSocketConnectionID].clientWebSocketTransportPlugin.processResponse(strMessage, objMessage);
 			}
 			else
 			{
@@ -137,23 +279,29 @@ class BidirectionalWebsocketRouter
 			console.error(error);
 			console.error("Uncaught error. RAW remote message: " + strMessage);
 
-			if(this._jsonrpcServer && !this._fnConnectionIDToClientWebSocketPlugin)
+			if(this._jsonrpcServer && this._objSessions[nWebSocketConnectionID].clientWebSocketTransportPlugin === null)
 			{
-				webSocket.send(JSON.stringify({
-					id: null,
-					jsonrpc: "2.0",
-					error: {
-						message: "Internal error: " + error.message + ".",
-						code: JSONRPC.Exception.INTERNAL_ERROR
-					}
-				}, undefined, "\t"));
+				if(webSocket.readyState === WebSocket.OPEN)
+				{
+					webSocket.send(JSON.stringify({
+						id: null,
+						jsonrpc: "2.0",
+						error: {
+							message: "Internal error: " + error.message + ".",
+							code: JSONRPC.Exception.INTERNAL_ERROR
+						}
+					}, undefined, "\t"));
+				}
 			}
 
-			console.log("Unclean state. Closing websocket.");
-			webSocket.close(
-				/* CloseEvent.Internal Error */ 1011, 
-				"Unclean state. Closing websocket."
-			);
+			if(webSocket.readyState === WebSocket.OPEN)
+			{
+				console.log("Unclean state. Closing websocket.");
+				webSocket.close(
+					/* CloseEvent.Internal Error */ 1011, 
+					"Unclean state. Closing websocket."
+				);
+			}
 
 			return;
 		}

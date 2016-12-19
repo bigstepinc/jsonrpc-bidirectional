@@ -17,6 +17,6 @@ class DebugLogger extends JSONRPC.ClientPluginBase
 	 */
 	async beforeJSONDecode(outgoingRequest)
 	{
-		console.log("[" + (new Date()).toISOString() + "] Received JSONRPC response at: " + outgoingRequest.responseBody + "\n");
+		console.log("[" + (new Date()).toISOString() + "] Received JSONRPC response: " + outgoingRequest.responseBody + "\n");
 	}
 };

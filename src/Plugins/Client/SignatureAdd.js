@@ -40,51 +40,51 @@ class SignatureAdd extends JSONRPC.ClientPluginBase
 	
 
 	/**
-	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
+	 * @param {JSONRPC.OutgoingRequest} outgoingRequest
 	 */
-	async beforeJSONEncode(jsonrpcRequest)
+	async beforeJSONEncode(outgoingRequest)
 	{
 		// Not setting expires to allow HTTP caching AND because the browser machine's UTC time is wrong for a lot of users.
 		// Unknowingly users are setting the wrong timezone with the wrong UTC time, while the local time *appears* to be correct.
 
-		jsonrpcRequest.requestObject["expires"] = parseInt((new Date().getTime()) + 86400, 10);
+		outgoingRequest.requestObject["expires"] = parseInt((new Date().getTime()) + 86400, 10);
 	}
 
 
 	/**
-	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
+	 * @param {JSONRPC.OutgoingRequest} outgoingRequest
 	 */
-	async afterJSONEncode(jsonrpcRequest)
+	async afterJSONEncode(outgoingRequest)
 	{
-		let strVerifyHash = HMAC_SHA256(jsonrpcRequest.requestBody, this.strAPIKey);
+		let strVerifyHash = HMAC_SHA256(outgoingRequest.requestBody, this.strAPIKey);
 
 		if(this.strKeyMetaData !== null)
 		{
 			strVerifyHash = this.strKeyMetaData + ":" + strVerifyHash;
 		}
 
-		if(jsonrpcRequest.endpointURL.indexOf("?") > -1)
+		if(outgoingRequest.endpointURL.indexOf("?") > -1)
 		{
-			jsonrpcRequest.endpointURL += "&"; 
+			outgoingRequest.endpointURL += "&"; 
 		}
 		else
 		{
-			jsonrpcRequest.endpointURL += "?"; 
+			outgoingRequest.endpointURL += "?"; 
 		}
 
-		if(jsonrpcRequest.endpointURL.indexOf("verify") === -1)
+		if(outgoingRequest.endpointURL.indexOf("verify") === -1)
 		{
-			jsonrpcRequest.endpointURL += "verify=" + (strVerifyHash);
+			outgoingRequest.endpointURL += "verify=" + (strVerifyHash);
 		}
 
-		if(jsonrpcRequest.endpointURL.charAt(jsonrpcRequest.endpointURL.length - 1) === "&")
+		if(outgoingRequest.endpointURL.charAt(outgoingRequest.endpointURL.length - 1) === "&")
 		{
-			jsonrpcRequest.endpointURL = jsonrpcRequest.endpointURL.slice(0, -1); 
+			outgoingRequest.endpointURL = outgoingRequest.endpointURL.slice(0, -1); 
 		}
 
 		for(let strName in this._arrExtraURLVariables)
 		{
-			jsonrpcRequest.endpointURL += "&" + strName + "=" + this._arrExtraURLVariables[strName]; 
+			outgoingRequest.endpointURL += "&" + strName + "=" + this._arrExtraURLVariables[strName]; 
 		}
 	}
 };
