@@ -29,31 +29,31 @@ class ServerPluginAuthorizeWebSocketAndClientMultiton extends JSONRPC.ServerPlug
 	 * 
 	 * @override
 	 * 
-	 * @param {JSONRPC.IncomingRequest} jsonrpcRequest
+	 * @param {JSONRPC.IncomingRequest} incomingRequest
 	 */
-	async afterJSONDecode(jsonrpcRequest)
+	async afterJSONDecode(incomingRequest)
 	{
-		if(jsonrpcRequest.isAuthenticated && jsonrpcRequest.isAuthorized)
+		if(incomingRequest.isAuthenticated && incomingRequest.isAuthorized)
 		{
 			// Nothing to do.
 		}
-		else if(jsonrpcRequest.requestObject.method === "ImHereForTheParty")
+		else if(incomingRequest.requestObject.method === "ImHereForTheParty")
 		{
-			jsonrpcRequest.isAuthenticated = true;
-			jsonrpcRequest.isAuthorized = true;
+			incomingRequest.isAuthenticated = true;
+			incomingRequest.isAuthorized = true;
 
 			// The ImHereForTheParty is an authentication function. 
 			// It will throw if not authenticated.
 		}
 		else if(
-			typeof jsonrpcRequest.connectionID === "number" 
-			&& this._objSessions.hasOwnProperty(jsonrpcRequest.connectionID)
-			&& this._objSessions[jsonrpcRequest.connectionID]
-			&& this._objSessions[jsonrpcRequest.connectionID].partyMembership !== null
+			typeof incomingRequest.connectionID === "number" 
+			&& this._objSessions.hasOwnProperty(incomingRequest.connectionID)
+			&& this._objSessions[incomingRequest.connectionID]
+			&& this._objSessions[incomingRequest.connectionID].partyMembership !== null
 		)
 		{
-			jsonrpcRequest.isAuthenticated = true;
-			jsonrpcRequest.isAuthorized = this._objSessions[jsonrpcRequest.connectionID].authorized;
+			incomingRequest.isAuthenticated = true;
+			incomingRequest.isAuthorized = this._objSessions[incomingRequest.connectionID].authorized;
 		}
 	}
 
@@ -61,37 +61,37 @@ class ServerPluginAuthorizeWebSocketAndClientMultiton extends JSONRPC.ServerPlug
 	/**
 	 * This is called after a function has been called successfully.
 	 * 
-	 * @param {JSONRPC.IncomingRequest} jsonrpcRequest
+	 * @param {JSONRPC.IncomingRequest} incomingRequest
 	 */
-	async result(jsonrpcRequest)
+	async result(incomingRequest)
 	{
-		if(jsonrpcRequest.requestObject.method === "ImHereForTheParty")
+		if(incomingRequest.requestObject.method === "ImHereForTheParty")
 		{
-			assert(typeof jsonrpcRequest.connectionID === "number");
+			assert(typeof incomingRequest.connectionID === "number");
 			
 			if(
-				this._objSessions.hasOwnProperty(jsonrpcRequest.connectionID)
-				&& this._objSessions[jsonrpcRequest.connectionID].partyMembership !== null
+				this._objSessions.hasOwnProperty(incomingRequest.connectionID)
+				&& this._objSessions[incomingRequest.connectionID].partyMembership !== null
 			)
 			{
-				jsonrpcRequest.callResult = new JSONRPC.Exception("Not authorized. Current connnection " + jsonrpcRequest.connectionID + " was already authenticated.", JSONRPC.Exception.NOT_AUTHORIZED);
+				incomingRequest.callResult = new JSONRPC.Exception("Not authorized. Current connnection " + incomingRequest.connectionID + " was already authenticated.", JSONRPC.Exception.NOT_AUTHORIZED);
 
 				return;
 			}
 
-			if(!this._objSessions.hasOwnProperty(jsonrpcRequest.connectionID))
+			if(!this._objSessions.hasOwnProperty(incomingRequest.connectionID))
 			{
-				throw new Error("initConnection was not called with connection id " + JSON.stringify(jsonrpcRequest.connectionID) + ".");
+				throw new Error("initConnection was not called with connection id " + JSON.stringify(incomingRequest.connectionID) + ".");
 			}
 			
-			assert(!(jsonrpcRequest.callResult instanceof Error));
-			this._objSessions[jsonrpcRequest.connectionID].partyMembership = jsonrpcRequest.callResult;
+			assert(!(incomingRequest.callResult instanceof Error));
+			this._objSessions[incomingRequest.connectionID].partyMembership = incomingRequest.callResult;
 			
 			// bDoNotAuthorizeMe param.
-			assert(typeof jsonrpcRequest.requestObject.params[2] === "boolean");
-			this._objSessions[jsonrpcRequest.connectionID].authorized = !jsonrpcRequest.requestObject.params[2];
+			assert(typeof incomingRequest.requestObject.params[2] === "boolean");
+			this._objSessions[incomingRequest.connectionID].authorized = !incomingRequest.requestObject.params[2];
 
-			this._objATeamMemberToConnectionID[jsonrpcRequest.callResult.teamMember] = jsonrpcRequest.connectionID;
+			this._objATeamMemberToConnectionID[incomingRequest.callResult.teamMember] = incomingRequest.connectionID;
 		}
 	}
 

@@ -5,18 +5,18 @@ module.exports =
 class DebugLogger extends JSONRPC.ClientPluginBase
 {
 	/**
-	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
+	 * @param {JSONRPC.OutgoingRequest} outgoingRequest
 	 */
-	async afterJSONEncode(jsonrpcRequest)
+	async afterJSONEncode(outgoingRequest)
 	{
-		console.log("[" + (new Date()).toISOString() + "] Sent JSONRPC request: " + jsonrpcRequest.requestBody + "\n");
+		console.log("[" + (new Date()).toISOString() + "] Sent JSONRPC request: " + outgoingRequest.requestBody + "\n");
 	}
 
 	/**
-	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
+	 * @param {JSONRPC.OutgoingRequest} outgoingRequest
 	 */
-	async beforeJSONDecode(jsonrpcRequest)
+	async beforeJSONDecode(outgoingRequest)
 	{
-		console.log("[" + (new Date()).toISOString() + "] Received JSONRPC response at: " + jsonrpcRequest.responseBody + "\n");
+		console.log("[" + (new Date()).toISOString() + "] Received JSONRPC response at: " + outgoingRequest.responseBody + "\n");
 	}
 };

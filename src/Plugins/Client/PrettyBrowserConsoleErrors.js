@@ -6,10 +6,10 @@ module.exports =
 class PrettyBrowserConsoleErrors extends JSONRPC.ClientPluginBase
 {
 	/**
-	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
+	 * @param {JSONRPC.OutgoingRequest} outgoingRequest
 	 */
-	async exceptionCatch(jsonrpcRequest)
+	async exceptionCatch(outgoingRequest)
 	{
-		console.error(jsonrpcRequest.callResult);
+		console.error(outgoingRequest.callResult);
 	}
 };

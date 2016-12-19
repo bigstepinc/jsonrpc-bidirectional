@@ -93,9 +93,9 @@ class BidirectionalWebsocketRouter
 				}
 
 
-				const jsonrpcRequest = new JSONRPC.IncomingRequest();
+				const incomingRequest = new JSONRPC.IncomingRequest();
 
-				jsonrpcRequest.connectionID = nWebSocketConnectionID;
+				incomingRequest.connectionID = nWebSocketConnectionID;
 
 
 				// Move this somewhere in a state tracking class instance of the websocket connection so it is only executed on an incoming connection,
@@ -108,19 +108,19 @@ class BidirectionalWebsocketRouter
 					{
 						throw new JSONRPC.Exception("Unknown JSONRPC endpoint " + strPath + ".", JSONRPC.Exception.METHOD_NOT_FOUND);
 					}
-					jsonrpcRequest.endpoint = this._jsonrpcServer.endpoints[strPath];
+					incomingRequest.endpoint = this._jsonrpcServer.endpoints[strPath];
 
 
-					jsonrpcRequest.requestBody = strMessage;
-					jsonrpcRequest.requestObject = objMessage;
+					incomingRequest.requestBody = strMessage;
+					incomingRequest.requestObject = objMessage;
 				}
 				catch(error)
 				{
-					jsonrpcRequest.callResult = error;
+					incomingRequest.callResult = error;
 				}
 
 
-				const objResponse = await this._jsonrpcServer.processRequest(jsonrpcRequest);
+				const objResponse = await this._jsonrpcServer.processRequest(incomingRequest);
 				webSocket.send(JSON.stringify(objResponse, undefined, "\t"));
 			}
 			else if(objMessage.hasOwnProperty("result") || objMessage.hasOwnProperty("error"))
