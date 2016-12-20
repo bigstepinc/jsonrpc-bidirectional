@@ -153,7 +153,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 	{
 		const clientReverseCalls = new ClientClass(webSocket.url ? webSocket.url : webSocket.upgradeReq.url);
 		
-		objSession.clientWebSocketTransportPlugin = new JSONRPC.Plugins.Client.WebSocketTransport(webSocket);
+		objSession.clientWebSocketTransportPlugin = new JSONRPC.Plugins.Client.WebSocketTransport(webSocket, /*bBidirectionalWebSocketMode*/ true);
 		clientReverseCalls.addPlugin(objSession.clientWebSocketTransportPlugin);
 
 		this.emit("madeReverseCallsClient", clientReverseCalls);

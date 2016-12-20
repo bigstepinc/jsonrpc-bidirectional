@@ -251,8 +251,8 @@ class AllTests
 				fnRejectWaitForOpen = fnReject;
 			});
 
-			console.log("Connecting SiteB JSONRPC client to " + TestServer.localEndpointWebSocket + ".");
-			const ws = new WebSocket(TestServer.localEndpointWebSocket);
+			console.log("Connecting SiteB JSONRPC client to " + AllTests.localEndpointWebSocket + ".");
+			const ws = new WebSocket(AllTests.localEndpointWebSocket);
 
 			ws.on("open", fnResolveWaitForOpen);
 			ws.on("error", fnRejectWaitForOpen);
@@ -633,19 +633,12 @@ class AllTests
 		{
 			const webSocket = await this._makeClientWebSocket();
 
-			this._jsonrpcClientNonBidirectional = new JSONRPC.Client(TestServer.localEndpointWebSocket);
+			this._jsonrpcClientNonBidirectional = new JSONRPC.Client(AllTests.localEndpointWebSocket);
 			this._jsonrpcClientNonBidirectional.addPlugin(new ClientDebugMarkerPlugin("NonBidirectionalClient"));
 			this._jsonrpcClientNonBidirectional.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 			
 			const webSocketTransport = new JSONRPC.Plugins.Client.WebSocketTransport(webSocket);
 			this._jsonrpcClientNonBidirectional.addPlugin(webSocketTransport);
-
-			webSocket.on(
-				"message",
-				async (strMessage) => {
-					await webSocketTransport.processResponse(strMessage);
-				}
-			);
 
 			await this._jsonrpcClientNonBidirectional.rpc("ImHereForTheParty", ["Face", "Face does the harlem shake", /*bDoNotAuthorizeMe*/ false]);
 		}
@@ -764,8 +757,8 @@ class AllTests
 			fnRejectWaitForOpen = fnReject;
 		});
 
-		console.log("Connecting WebSocket to " + TestServer.localEndpointWebSocket + ".");
-		const webSocket = new WebSocket(TestServer.localEndpointWebSocket);
+		console.log("Connecting WebSocket to " + AllTests.localEndpointWebSocket + ".");
+		const webSocket = new WebSocket(AllTests.localEndpointWebSocket);
 
 		webSocket.on("open", fnResolveWaitForOpen);
 		webSocket.on("error", fnRejectWaitForOpen);

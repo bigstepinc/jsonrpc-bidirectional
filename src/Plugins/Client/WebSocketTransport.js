@@ -42,8 +42,8 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 		{
 			this._webSocket.on(
 				"message",
-				(strMessage) => {
-					
+				async (strMessage) => {
+					await this.processResponse(strMessage);
 				}
 			);
 		}
