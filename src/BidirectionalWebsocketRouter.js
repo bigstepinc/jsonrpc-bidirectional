@@ -15,6 +15,10 @@ const WebSocket = require("ws");
 
 const EventEmitter = require("events");
 
+
+/**
+ * The "madeReverseCallsClient" event offers automatically instantiated API clients (API clients are instantiated for each connection, lazily).
+ */
 module.exports =
 class BidirectionalWebsocketRouter extends EventEmitter
 {
@@ -41,7 +45,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 	 * 
 	 * @param {WebSocket} webSocket
 	 * 
-	 * @returns {Number}
+	 * @returns {number}
 	 */
 	async addWebSocket(webSocket)
 	{
@@ -98,6 +102,9 @@ class BidirectionalWebsocketRouter extends EventEmitter
 
 
 	/**
+	 * If the client does not exist, it will be generated and saved on the session.
+	 * Another client will not be generated automatically, regardless of the accessed endpoint's defined client class for reverse calls.
+	 * 
 	 * @param {number} nConnectionID
 	 * @param {Class} ClientClass
 	 * 
@@ -261,11 +268,30 @@ class BidirectionalWebsocketRouter extends EventEmitter
 			{
 				if(this._objSessions[nWebSocketConnectionID].clientWebSocketTransportPlugin === null)
 				{
-					webSocket.close(
-						/* CloseEvent.Internal Error */ 1011, 
-						"How can the client be not initialized, while receiveing responses to requests? Closing websocket."
-					);
-					throw new Error("How can the client be not initialized, while receiveing responses to requests?");
+					if(!this._jsonrpcServer)
+					{
+						if(webSocket.readyState === WebSocket.OPEN)
+						{
+							webSocket.send(JSON.stringify({
+								id: null,
+								jsonrpc: "2.0",
+								error: {
+									message: "JSONRPC.Client not initialized on this WebSocket. Raw message: " + strMessage + ".",
+									code: JSONRPC.Exception.PARSE_ERROR
+								}
+							}, undefined, "\t"));
+						}
+					}
+
+					if(webSocket.readyState === WebSocket.OPEN)
+					{
+						webSocket.close(
+							/* CloseEvent.Internal Error */ 1011, 
+							"How can the client be not initialized, and yet getting responses from phantom requests? Closing websocket."
+						);
+					}
+
+					throw new Error("How can the client be not initialized, and yet getting responses from phantom requests?");
 				}
 				await this._objSessions[nWebSocketConnectionID].clientWebSocketTransportPlugin.processResponse(strMessage, objMessage);
 			}

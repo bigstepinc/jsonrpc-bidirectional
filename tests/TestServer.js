@@ -45,6 +45,10 @@ class TestServer
 		this._jsonrpcClientSiteC = null;
 		this._jsonrpcServerSiteC = null; // reverse calls, TCP client using a JSONRPC server accepts requests from a TCP server with an attached JSONRPC client.
 
+		
+		// JSONRPC client on WebSocket client, nothing else.
+		this._jsonrpcClientNonBidirectional = null;
+		
 
 		// Used by SiteB and SiteC, which trusts the remote server based on SSL certificates.
 		this._serverAuthenticationSkipPlugin = new JSONRPC.Plugins.Server.AuthenticationSkip();
@@ -100,6 +104,8 @@ class TestServer
 
 		await this.callRPCMethodSiteBWhichThrowsJSONRPCException();
 		await this.callRPCMethodSiteBWhichThrowsSimpleError();
+
+		await this.callRPCMethodNonBidirectionalClient();
 
 		await this.manyCallsInParallel();
 
@@ -238,8 +244,6 @@ class TestServer
 				this._webSocketClientSiteB = null;
 			}
 
-			const strEndpointURL = "ws://localhost:8325/api";
-
 			let fnResolveWaitForOpen;
 			let fnRejectWaitForOpen;
 			const promiseWaitForOpen = new Promise((fnResolve, fnReject) => {
@@ -247,8 +251,8 @@ class TestServer
 				fnRejectWaitForOpen = fnReject;
 			});
 
-			console.log("Connecting SiteB JSONRPC client to " + strEndpointURL + ".");
-			const ws = new WebSocket(strEndpointURL);
+			console.log("Connecting SiteB JSONRPC client to " + TestServer.localEndpointWebSocket + ".");
+			const ws = new WebSocket(TestServer.localEndpointWebSocket);
 
 			ws.on("open", fnResolveWaitForOpen);
 			ws.on("error", fnRejectWaitForOpen);
@@ -307,25 +311,7 @@ class TestServer
 				this._webSocketClientSiteC = null;
 			}
 
-			const strEndpointURL = "ws://localhost:8325/api";
-
-			let fnResolveWaitForOpen;
-			let fnRejectWaitForOpen;
-			const promiseWaitForOpen = new Promise((fnResolve, fnReject) => {
-				fnResolveWaitForOpen = fnResolve;
-				fnRejectWaitForOpen = fnReject;
-			});
-
-			console.log("Connecting SiteC JSONRPC client to " + strEndpointURL + ".");
-			const ws = new WebSocket(strEndpointURL);
-
-			ws.on("open", fnResolveWaitForOpen);
-			ws.on("error", fnRejectWaitForOpen);
-
-			await promiseWaitForOpen;
-
-			this._webSocketClientSiteC = ws;
-
+			this._webSocketClientSiteC = await this._makeClientWebSocket();
 
 			this._jsonrpcServerSiteC = new JSONRPC.Server();
 			this._jsonrpcServerSiteC.registerEndpoint(new TestEndpoint());
@@ -627,6 +613,51 @@ class TestServer
 
 
 	/**
+	 * @param {boolean} bDoNotSleep
+	 * 
+	 * @returns {undefined}
+	 */
+	async callRPCMethodNonBidirectionalClient(bDoNotSleep)
+	{
+		if(!this._bWebSocketMode)
+		{
+			return;
+		}
+
+		console.log("callRPCMethodNonBidirectionalClient");
+
+		const bRandomSleep = !bDoNotSleep;
+
+
+		if(this._jsonrpcClientNonBidirectional === null)
+		{
+			const webSocket = await this._makeClientWebSocket();
+
+			this._jsonrpcClientNonBidirectional = new JSONRPC.Client(TestServer.localEndpointWebSocket);
+			this._jsonrpcClientNonBidirectional.addPlugin(new ClientDebugMarkerPlugin("NonBidirectionalClient"));
+			this._jsonrpcClientNonBidirectional.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
+			
+			const webSocketTransport = new JSONRPC.Plugins.Client.WebSocketTransport(webSocket);
+			this._jsonrpcClientNonBidirectional.addPlugin(webSocketTransport);
+
+			webSocket.on(
+				"message",
+				async (strMessage) => {
+					await webSocketTransport.processResponse(strMessage);
+				}
+			);
+
+			await this._jsonrpcClientNonBidirectional.rpc("ImHereForTheParty", ["Face", "Face does the harlem shake", /*bDoNotAuthorizeMe*/ false]);
+		}
+		
+		const strParam = "pong_one_way";
+		const arrParams = [strParam, bRandomSleep];
+
+		assert.strictEqual(strParam, await this._jsonrpcClientNonBidirectional.rpc("ping", arrParams));
+	}
+
+
+	/**
 	 * @returns {undefined}
 	 */
 	async callRPCMethodSiteBWhichThrowsJSONRPCException()
@@ -692,11 +723,15 @@ class TestServer
 		const arrMethods = [
 			this.callRPCMethodSiteB,
 			this.callRPCMethodSiteC,
+			this.callRPCMethodNonBidirectionalClient,
 
 			this.callRPCMethodSiteBWhichThrowsSimpleError,
 			this.callRPCMethodSiteBWhichThrowsJSONRPCException,
 			
 			this.callRPCMethodSiteC,
+
+			this.callRPCMethodNonBidirectionalClient,
+			this.callRPCMethodNonBidirectionalClient,
 
 			this.callRPCMethodSiteB,
 			this.callRPCMethodSiteB
@@ -714,5 +749,38 @@ class TestServer
 		await Promise.all(arrPromises);
 
 		console.log(nCallCount + " calls executed in " + ((new Date()).getTime() - nStartTime) + " milliseconds.");
+	}
+
+
+	/**
+	 * @returns {WebSocket}
+	 */
+	async _makeClientWebSocket()
+	{
+		let fnResolveWaitForOpen;
+		let fnRejectWaitForOpen;
+		const promiseWaitForOpen = new Promise((fnResolve, fnReject) => {
+			fnResolveWaitForOpen = fnResolve;
+			fnRejectWaitForOpen = fnReject;
+		});
+
+		console.log("Connecting WebSocket to " + TestServer.localEndpointWebSocket + ".");
+		const webSocket = new WebSocket(TestServer.localEndpointWebSocket);
+
+		webSocket.on("open", fnResolveWaitForOpen);
+		webSocket.on("error", fnRejectWaitForOpen);
+
+		await promiseWaitForOpen;
+
+		return webSocket;
+	}
+
+
+	/**
+	 * @returns {string}
+	 */
+	static get localEndpointWebSocket()
+	{
+		return "ws://localhost:8325/api";
 	}
 };

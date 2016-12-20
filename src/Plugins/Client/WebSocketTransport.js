@@ -1,5 +1,6 @@
 const JSONRPC = {};
 JSONRPC.ClientPluginBase = require("../../ClientPluginBase");
+JSONRPC.Utils = require("../../Utils");
 
 const assert = require("assert");
 const WebSocket = require("ws");
@@ -51,10 +52,29 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 	 * objResponse is the object obtained after JSON parsing for strResponse.
 	 * 
 	 * @param {string} strResponse
-	 * @param {Object} objResponse
+	 * @param {Object|undefined} objResponse
 	 */
 	async processResponse(strResponse, objResponse)
 	{
+		if(!objResponse)
+		{
+			try
+			{
+				objResponse = JSONRPC.Utils.jsonDecodeSafe(strResponse);
+			}
+			catch(error)
+			{
+				console.error(error);
+				console.error("Unable to parse JSON. RAW remote response: " + strResponse);
+				this._webSocket.close(
+					/* CloseEvent.Internal Error */ 1011, 
+					"Unable to parse JSON. RAW remote response: " + strResponse
+				);
+
+				return;
+			}
+		}
+
 		if(
 			typeof objResponse.id !== "number"
 			|| !this._objWebSocketRequestsPromises[objResponse.id]
