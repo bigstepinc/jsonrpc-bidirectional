@@ -16,7 +16,7 @@ const assert = require("assert");
 
 
 module.exports =
-class TestServer
+class AllTests
 {
 	/**
 	 * @param {boolean} bWebSocketMode

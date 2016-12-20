@@ -1,4 +1,4 @@
-const TestServer = require("./TestServer");
+const AllTests = require("./AllTests");
 
 process.on(
 	"unhandledRejection", 
@@ -13,8 +13,8 @@ process.on(
 (
 	async () =>
 	{
-		await (new TestServer(/*bWebSocketMode*/ false)).runTests();
-		await (new TestServer(/*bWebSocketMode*/ true)).runTests();
+		await (new AllTests(/*bWebSocketMode*/ false)).runTests();
+		await (new AllTests(/*bWebSocketMode*/ true)).runTests();
 
 		console.log("Finished all tests!!!");
 

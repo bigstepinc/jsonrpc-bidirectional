@@ -9,12 +9,14 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 {
 	/**
 	 * @param {WebSocket} webSocket
+	 * @param {boolean|undefined} bBidirectionalWebSocketMode
 	 */
-	constructor(webSocket)
+	constructor(webSocket, bBidirectionalWebSocketMode)
 	{
 		super();
 
 		assert(webSocket instanceof WebSocket);
+		bBidirectionalWebSocketMode = !!bBidirectionalWebSocketMode;
 
 		this._webSocket = webSocket;
 
@@ -34,6 +36,16 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 				this.rejectAllPromises(error);
 			}
 		);
+
+		if(!bBidirectionalWebSocketMode)
+		{
+			this._webSocket.on(
+				"message",
+				(strMessage) => {
+					
+				}
+			);
+		}
 	}
 
 
