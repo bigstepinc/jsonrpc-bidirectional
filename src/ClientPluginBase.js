@@ -9,70 +9,70 @@ class ClientPluginBase
 	 * 
 	 * Normally, this allows extending the protocol.
 	 * 
-	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
+	 * @param {JSONRPC.OutgoingRequest} outgoingRequest
 	 */
-	async beforeJSONEncode(jsonrpcRequest)
+	async beforeJSONEncode(outgoingRequest)
 	{
-		// jsonrpcRequest.requestObject is available here.
+		// outgoingRequest.requestObject is available here.
 
-		// jsonrpcRequest.headers and jsonrpcRequest.enpointURL may be modified here.
+		// outgoingRequest.headers and outgoingRequest.enpointURL may be modified here.
 	}
 
 
 	/**
 	 * Gives a chance to encrypt, sign or log RAW outgoing requests.
 	 * 
-	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
+	 * @param {JSONRPC.OutgoingRequest} outgoingRequest
 	 */
-	async afterJSONEncode(jsonrpcRequest)
+	async afterJSONEncode(outgoingRequest)
 	{
-		// jsonrpcRequest.requestBody is available here.
+		// outgoingRequest.requestBody is available here.
 
-		// jsonrpcRequest.headers and jsonrpcRequest.enpointURL may be modified here.
+		// outgoingRequest.headers and outgoingRequest.enpointURL may be modified here.
 	}
 
 
 	/**
 	 * If a plugin chooses to actually make the call here, 
-	 * it must set the result in the jsonrpcRequest.callResult property.
+	 * it must set the result in the outgoingRequest.callResult property.
 	 * 
-	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
+	 * @param {JSONRPC.OutgoingRequest} outgoingRequest
 	 * 
 	 * @returns {Promise.<null>}
 	 */
-	async makeRequest(jsonrpcRequest)
+	async makeRequest(outgoingRequest)
 	{
-		// jsonrpcRequest.callResult may be written here.
+		// outgoingRequest.callResult may be written here.
 	}
 
 
 	/**
-	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
+	 * @param {JSONRPC.OutgoingRequest} outgoingRequest
 	 */
-	async beforeJSONDecode(jsonrpcRequest)
+	async beforeJSONDecode(outgoingRequest)
 	{
-		// jsonrpcRequest.responseBody is available here.
+		// outgoingRequest.responseBody is available here.
 	}
 
 
 	/**
-	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
+	 * @param {JSONRPC.OutgoingRequest} outgoingRequest
 	 */
-	async afterJSONDecode(jsonrpcRequest)
+	async afterJSONDecode(outgoingRequest)
 	{
-		// jsonrpcRequest.responseObject is available here.
+		// outgoingRequest.responseObject is available here.
 	}
 
 
 	/**
 	 * Should be used to log exceptions or replace exceptions with other exceptions.
 	 * 
-	 * This is only called if jsonrpcRequest.callResult is a subclass of Error or an instance of Error.
+	 * This is only called if outgoingRequest.callResult is a subclass of Error or an instance of Error.
 	 * 
-	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
+	 * @param {JSONRPC.OutgoingRequest} outgoingRequest
 	 */
-	async exceptionCatch(jsonrpcRequest)
+	async exceptionCatch(outgoingRequest)
 	{
-		// jsonrpcRequest.callResult is available here, and it is a subclass of Error.
+		// outgoingRequest.callResult is available here, and it is a subclass of Error.
 	}
 };

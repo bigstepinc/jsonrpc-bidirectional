@@ -4,60 +4,60 @@ class ServerPluginBase
 	/**
 	 * Called before JSON parsing of the JSONRPC request.
 	 * 
-	 * @param {JSONRPC.IncomingRequest} jsonrpcRequest
+	 * @param {JSONRPC.IncomingRequest} incomingRequest
 	 */
-	async beforeJSONDecode(jsonrpcRequest)
+	async beforeJSONDecode(incomingRequest)
 	{
-		// jsonrpcRequest.body has been populated or may be populated here.
+		// incomingRequest.body has been populated or may be populated here.
 	}
 
 
 	/**
 	 * Called after JSON parsing of the JSONRPC request.
 	 * 
-	 * @param {JSONRPC.IncomingRequest} jsonrpcRequest
+	 * @param {JSONRPC.IncomingRequest} incomingRequest
 	 */
-	async afterJSONDecode(jsonrpcRequest)
+	async afterJSONDecode(incomingRequest)
 	{
-		// jsonrpcRequest.requestObject has been populated.
+		// incomingRequest.requestObject has been populated.
 	}
 
 
 	/**
 	 * If a plugin chooses to actually make the call here, 
-	 * it must set the result in the jsonrpcRequest.callResult property.
+	 * it must set the result in the incomingRequest.callResult property.
 	 * 
-	 * @param {JSONRPC.IncomingRequest} jsonrpcRequest
+	 * @param {JSONRPC.IncomingRequest} incomingRequest
 	 */
-	async callFunction(jsonrpcRequest)
+	async callFunction(incomingRequest)
 	{
 		// Useful here:
-		// jsonrpcRequest.requestObject.method
-		// jsonrpcRequest.requestObject.params
+		// incomingRequest.requestObject.method
+		// incomingRequest.requestObject.params
 
-		// jsonrpcRequest.callResult may be populated here with an Error class instance, or the function return.
+		// incomingRequest.callResult may be populated here with an Error class instance, or the function return.
 	}
 
 
 	/**
 	 * This is called after a function has been called successfully.
 	 * 
-	 * @param {JSONRPC.IncomingRequest} jsonrpcRequest
+	 * @param {JSONRPC.IncomingRequest} incomingRequest
 	 */
-	async result(jsonrpcRequest)
+	async result(incomingRequest)
 	{
-		// jsonrpcRequest.callResult contains what the function call returned. 
+		// incomingRequest.callResult contains what the function call returned. 
 	}
 
 
 	/**
 	 * This is called if a function was not called successfully.
 	 * 
-	 * @param {JSONRPC.IncomingRequest} jsonrpcRequest
+	 * @param {JSONRPC.IncomingRequest} incomingRequest
 	 */
-	async exceptionCatch(jsonrpcRequest)
+	async exceptionCatch(incomingRequest)
 	{
-		// jsonrpcRequest.callResult contains a subclass instance of Error.
+		// incomingRequest.callResult contains a subclass instance of Error.
 	}
 
 

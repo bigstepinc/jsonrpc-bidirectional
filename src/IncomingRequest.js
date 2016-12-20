@@ -16,11 +16,14 @@ class IncomingRequest
 		this._strRequestBody = null;
 		this._requestObject = null;
 		this._endpoint = null;
+		this._bidirectionalWebsocketRouter = null;
 		
 		this._mxResult = null;
 		this._bMethodCalled = false;
 
 		this._nConnectionID = null;
+
+		this._classClient = null;
 
 		//this._webSocket
 		//this._httpRequest
@@ -154,6 +157,9 @@ class IncomingRequest
 
 
 	/**
+	 * endpoint.ReverseCallsClientClass may be null or a class for an API client.
+	 * See .bidirectionalWebsocketRouter
+	 * 
 	 * @param {JSONRPC.EndpointBase} endpoint
 	 */
 	set endpoint(endpoint)
@@ -161,6 +167,38 @@ class IncomingRequest
 		assert(endpoint instanceof JSONRPC.EndpointBase);
 
 		this._endpoint = endpoint;
+	}
+
+
+	/**
+	 * @param {JSONRPC.BidirectionalWebsocketRouter} bidirectionalWebsocketRouter
+	 */
+	set bidirectionalWebsocketRouter(bidirectionalWebsocketRouter)
+	{
+		assert(bidirectionalWebsocketRouter.constructor.name === "BidirectionalWebsocketRouter");
+
+		this._bidirectionalWebsocketRouter = bidirectionalWebsocketRouter;
+	}
+
+
+	/**
+	 * @returns {Class}
+	 */
+	get reverseCallsClient()
+	{
+		if(this._classClient === null)
+		{
+			if(
+				this.connectionID !== null
+				&& this.endpoint
+				&& this.endpoint.ReverseCallsClientClass
+			)
+			{
+				this._classClient = this._bidirectionalWebsocketRouter.connectionIDToClient(this.connectionID, this.endpoint.ReverseCallsClientClass);
+			}
+		}
+
+		return this._classClient;
 	}
 
 

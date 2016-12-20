@@ -1,7 +1,5 @@
 const url = require("url");
 
-const WebSocket = require("ws");
-
 const JSONRPC = {};
 JSONRPC.Exception = require("./Exception");
 
@@ -35,8 +33,10 @@ class Client extends EventEmitter
 		this._arrPlugins = [];
 		this._strJSONRPCEndpointURL = strEndpointURL;
 		this._nCallID = 1;
+
 		this._strHTTPUser = null;
 		this._strHTTPPassword = null;
+		this._strBase64BasicAuthentication = null;
 
 		const strProtocol = url.parse(strEndpointURL).protocol;
 
@@ -65,6 +65,7 @@ class Client extends EventEmitter
 	{
 		this._strHTTPUser = strUsername;
 		this._strHTTPPassword = strPassword;
+		this._strBase64BasicAuthentication = new Buffer(strUsername + ":" + strPassword).toString("base64");
 	}
 
 
@@ -78,66 +79,66 @@ class Client extends EventEmitter
 	{
 		assert(Array.isArray(arrParams), "arrParams must be an Array.");
 
-		const jsonrpcRequest = new JSONRPC.OutgoingRequest(strFunctionName, arrParams, this._nCallID);
+		const outgoingRequest = new JSONRPC.OutgoingRequest(strFunctionName, arrParams, this._nCallID);
 		this._nCallID++;
 
 		try
 		{
-			jsonrpcRequest.endpointURL = this.endpointURL;
-			jsonrpcRequest.headers["Content-type"] = "application/json";
+			outgoingRequest.endpointURL = this.endpointURL;
+			outgoingRequest.headers["Content-Type"] = "application/json";
 
 			if(this.httpUser !== null && this.httpPassword !== null)
 			{
-				jsonrpcRequest.headers["Authorization"] = "Basic " + this.httpUser + ":" + this.httpPassword;
+				outgoingRequest.headers["Authorization"] = "Basic " + this._strBase64BasicAuthentication;
 			}
 
 
-			jsonrpcRequest.requestObject = jsonrpcRequest.toRequestObject();
+			outgoingRequest.requestObject = outgoingRequest.toRequestObject();
 
-			this.emit("beforeJSONEncode", jsonrpcRequest);
+			this.emit("beforeJSONEncode", outgoingRequest);
 			for(let plugin of this._arrPlugins)
 			{
-				await plugin.beforeJSONEncode(jsonrpcRequest);
+				await plugin.beforeJSONEncode(outgoingRequest);
 			}
 
 
-			jsonrpcRequest.requestBody = JSON.stringify(jsonrpcRequest.requestObject, null, "\t");
-			// console.log(jsonrpcRequest.requestObject);
-			// console.log(jsonrpcRequest.requestBody);
+			outgoingRequest.requestBody = JSON.stringify(outgoingRequest.requestObject, null, "\t");
+			// console.log(outgoingRequest.requestObject);
+			// console.log(outgoingRequest.requestBody);
 
-			this.emit("afterJSONEncode", jsonrpcRequest);
+			this.emit("afterJSONEncode", outgoingRequest);
 			for(let plugin of this._arrPlugins)
 			{
-				await plugin.afterJSONEncode(jsonrpcRequest);
+				await plugin.afterJSONEncode(outgoingRequest);
 			}
 
 
-			if(!jsonrpcRequest.isMethodCalled)
+			if(!outgoingRequest.isMethodCalled)
 			{
-				this.emit("makeRequest", jsonrpcRequest);
+				this.emit("makeRequest", outgoingRequest);
 			}
 			for(let plugin of this._arrPlugins)
 			{
-				if(jsonrpcRequest.isMethodCalled)
+				if(outgoingRequest.isMethodCalled)
 				{
 					break;
 				}
 
-				await plugin.makeRequest(jsonrpcRequest);
+				await plugin.makeRequest(outgoingRequest);
 			}
 
 
 			let response = null;
 			let bHTTPErrorMode = false;
-			if(!jsonrpcRequest.isMethodCalled)
+			if(!outgoingRequest.isMethodCalled)
 			{
 				const request = new Request(
-					jsonrpcRequest.endpointURL,
+					outgoingRequest.endpointURL,
 					{
 						method: "POST",
 						mode: "cors",
-						headers: new Headers(jsonrpcRequest.headers),
-						body: jsonrpcRequest.requestBody,
+						headers: new Headers(outgoingRequest.headers),
+						body: outgoingRequest.requestBody,
 						cache: "no-cache",
 						credentials: "include"
 					}
@@ -152,62 +153,62 @@ class Client extends EventEmitter
 					&& parseInt(response.status, 10) === 0
 				)
 				{
-					jsonrpcRequest.responseObject = {
+					outgoingRequest.responseObject = {
 						"jsonrpc": Client.JSONRPC_VERSION,
 						"error": {
 							"code": JSONRPC.Exception.NETWORK_ERROR,
 							"message": "Network error. The internet connection may have failed."
 						},
-						"id": jsonrpcRequest.callID
+						"id": outgoingRequest.callID
 					}; 
-					jsonrpcRequest.responseBody = JSON.stringify(jsonrpcRequest.responseObject, undefined, "\t");
+					outgoingRequest.responseBody = JSON.stringify(outgoingRequest.responseObject, undefined, "\t");
 				}
 				else
 				{
-					jsonrpcRequest.responseBody = await response.text();
+					outgoingRequest.responseBody = await response.text();
 				}
 			}
 
+
+			this.emit("beforeJSONDecode", outgoingRequest);
+			for(let plugin of this._arrPlugins)
+			{
+				await plugin.beforeJSONDecode(outgoingRequest);
+			}
+
+
+			if(outgoingRequest.responseObject === null)
+			{
+				outgoingRequest.responseObject = JSONRPC.Utils.jsonDecodeSafe(outgoingRequest.responseBody);
+			}
 			
-			this.emit("beforeJSONDecode", jsonrpcRequest);
+
+			this.emit("afterJSONDecode", outgoingRequest);
 			for(let plugin of this._arrPlugins)
 			{
-				await plugin.beforeJSONDecode(jsonrpcRequest);
+				await plugin.afterJSONDecode(outgoingRequest);
 			}
 
 
-			if(jsonrpcRequest.responseObject === null)
-			{
-				jsonrpcRequest.responseObject = JSONRPC.Utils.jsonDecodeSafe(jsonrpcRequest.responseBody);
-			}
-
-
-			this.emit("afterJSONDecode", jsonrpcRequest);
-			for(let plugin of this._arrPlugins)
-			{
-				await plugin.afterJSONDecode(jsonrpcRequest);
-			}
-
-
-			if(jsonrpcRequest.responseObject.hasOwnProperty("error"))
+			if(outgoingRequest.responseObject.hasOwnProperty("error"))
 			{
 				if(
-					!jsonrpcRequest.responseObject.error.hasOwnProperty("message")
-					|| typeof jsonrpcRequest.responseObject.error.message !== "string"
-					|| !jsonrpcRequest.responseObject.error.hasOwnProperty("code")
-					|| typeof jsonrpcRequest.responseObject.error.code !== "number"
+					!outgoingRequest.responseObject.error.hasOwnProperty("message")
+					|| typeof outgoingRequest.responseObject.error.message !== "string"
+					|| !outgoingRequest.responseObject.error.hasOwnProperty("code")
+					|| typeof outgoingRequest.responseObject.error.code !== "number"
 				)
 				{
-					jsonrpcRequest.callResult = new JSONRPC.Exception("Invalid error object on JSONRPC protocol response. Response: " + JSON.stringify(jsonrpcRequest.responseObject), JSONRPC.Exception.INTERNAL_ERROR);
+					outgoingRequest.callResult = new JSONRPC.Exception("Invalid error object on JSONRPC protocol response. Response: " + JSON.stringify(outgoingRequest.responseObject), JSONRPC.Exception.INTERNAL_ERROR);
 				}
 				else
 				{
-					jsonrpcRequest.callResult = new JSONRPC.Exception(jsonrpcRequest.responseObject.error.message, jsonrpcRequest.responseObject.error.code);
+					outgoingRequest.callResult = new JSONRPC.Exception(outgoingRequest.responseObject.error.message, outgoingRequest.responseObject.error.code);
 				}
 			}
-			else if(jsonrpcRequest.responseObject.hasOwnProperty("result"))
+			else if(outgoingRequest.responseObject.hasOwnProperty("result"))
 			{
-				jsonrpcRequest.callResult = jsonrpcRequest.responseObject.result; 
+				outgoingRequest.callResult = outgoingRequest.responseObject.result; 
 			}
 			else
 			{
@@ -217,35 +218,35 @@ class Client extends EventEmitter
 
 			if(
 				bHTTPErrorMode
-				&& !(jsonrpcRequest.callResult instanceof Error)
+				&& !(outgoingRequest.callResult instanceof Error)
 			)
 			{
-				jsonrpcRequest.callResult = new JSONRPC.Exception(
-					"Invalid error object on JSONRPC protocol response. Response object: " + JSON.stringify(jsonrpcRequest.responseObject) + ". HTTP response class instance: " + JSON.stringify(response) + ".", 
+				outgoingRequest.callResult = new JSONRPC.Exception(
+					"Invalid error object on JSONRPC protocol response. Response object: " + JSON.stringify(outgoingRequest.responseObject) + ". HTTP response class instance: " + JSON.stringify(response) + ".", 
 					JSONRPC.Exception.INTERNAL_ERROR
 				);
 			}
 		}
 		catch(error)
 		{
-			jsonrpcRequest.callResult = error;
+			outgoingRequest.callResult = error;
 		}
 
 
-		if(jsonrpcRequest.callResult instanceof Error)
+		if(outgoingRequest.callResult instanceof Error)
 		{
-			this.emit("exceptionCatch", jsonrpcRequest);
+			this.emit("exceptionCatch", outgoingRequest);
 			for(let plugin of this._arrPlugins)
 			{
-				await plugin.exceptionCatch(jsonrpcRequest);
+				await plugin.exceptionCatch(outgoingRequest);
 			}
-			assert(jsonrpcRequest.callResult instanceof Error, " A plugin has reset the jsonrpcRequest.callResult to a non-error.");
+			//assert(outgoingRequest.callResult instanceof Error, " A plugin has reset the outgoingRequest.callResult to a non-error.");
 
-			throw jsonrpcRequest.callResult;
+			throw outgoingRequest.callResult;
 		}
 
 
-		return jsonrpcRequest.callResult;
+		return outgoingRequest.callResult;
 	}
 
 

@@ -1,5 +1,6 @@
 const JSONRPC = {};
 JSONRPC.ClientPluginBase = require("../../ClientPluginBase");
+JSONRPC.Utils = require("../../Utils");
 
 const assert = require("assert");
 const WebSocket = require("ws");
@@ -20,7 +21,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 
 		this._webSocket = webSocket;
 
-		// JSONRPC call ID as key, {promise: {Promise}, fnResolve: {Function}, fnReject: {Function}, jsonrpcRequest: {OutgoingRequest}} as values.
+		// JSONRPC call ID as key, {promise: {Promise}, fnResolve: {Function}, fnReject: {Function}, outgoingRequest: {OutgoingRequest}} as values.
 		this._objWebSocketRequestsPromises = {};
 
 		this._webSocket.on(
@@ -63,16 +64,35 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 	 * objResponse is the object obtained after JSON parsing for strResponse.
 	 * 
 	 * @param {string} strResponse
-	 * @param {Object} objResponse
+	 * @param {Object|undefined} objResponse
 	 */
 	async processResponse(strResponse, objResponse)
 	{
+		if(!objResponse)
+		{
+			try
+			{
+				objResponse = JSONRPC.Utils.jsonDecodeSafe(strResponse);
+			}
+			catch(error)
+			{
+				console.error(error);
+				console.error("Unable to parse JSON. RAW remote response: " + strResponse);
+				this._webSocket.close(
+					/* CloseEvent.Internal Error */ 1011, 
+					"Unable to parse JSON. RAW remote response: " + strResponse
+				);
+
+				return;
+			}
+		}
+
 		if(
 			typeof objResponse.id !== "number"
 			|| !this._objWebSocketRequestsPromises[objResponse.id]
 		)
 		{
-			console.error(new Error("Couldn't find JSONRPC response call ID in this._objWebSocketRequestsPromises."));
+			console.error(new Error("Couldn't find JSONRPC response call ID in this._objWebSocketRequestsPromises. RAW response: " + strResponse));
 			console.error(new Error("RAW remote message: " + strResponse));
 			console.log("Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request.");
 			this.webSocket.close(
@@ -83,8 +103,8 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 			return;
 		}
 
-		this._objWebSocketRequestsPromises[objResponse.id].jsonrpcRequest.responseBody = strResponse;
-		this._objWebSocketRequestsPromises[objResponse.id].jsonrpcRequest.responseObject = objResponse;
+		this._objWebSocketRequestsPromises[objResponse.id].outgoingRequest.responseBody = strResponse;
+		this._objWebSocketRequestsPromises[objResponse.id].outgoingRequest.responseObject = objResponse;
 
 		this._objWebSocketRequestsPromises[objResponse.id].fnResolve(null);
 		// Sorrounding code will parse the result and throw if necessary. fnReject is not going to be used in this function.
@@ -94,15 +114,15 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 
 
 	/**
-	 * Populates the the OutgoingRequest class instance (jsonrpcRequest) with the RAW JSON response and the JSON parsed response object.
+	 * Populates the the OutgoingRequest class instance (outgoingRequest) with the RAW JSON response and the JSON parsed response object.
 	 * 
-	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
+	 * @param {JSONRPC.OutgoingRequest} outgoingRequest
 	 * 
 	 * @returns {Promise.<null>}
 	 */
-	async makeRequest(jsonrpcRequest)
+	async makeRequest(outgoingRequest)
 	{
-		if(jsonrpcRequest.isMethodCalled)
+		if(outgoingRequest.isMethodCalled)
 		{
 			return;
 		}
@@ -112,22 +132,22 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 			throw new Error("WebSocket not connected.");
 		}
 
-		jsonrpcRequest.isMethodCalled = true;
+		outgoingRequest.isMethodCalled = true;
 
-		assert(typeof jsonrpcRequest.requestObject.id === "number");
+		assert(typeof outgoingRequest.requestObject.id === "number");
 		
-		this._objWebSocketRequestsPromises[jsonrpcRequest.requestObject.id] = {
+		this._objWebSocketRequestsPromises[outgoingRequest.requestObject.id] = {
 			unixtimeMilliseconds: (new Date()).getTime(),
-			jsonrpcRequest: jsonrpcRequest
+			outgoingRequest: outgoingRequest
 		};
-		this._objWebSocketRequestsPromises[jsonrpcRequest.requestObject.id].promise = new Promise((fnResolve, fnReject) => {
-			this._objWebSocketRequestsPromises[jsonrpcRequest.requestObject.id].fnResolve = fnResolve;
-			this._objWebSocketRequestsPromises[jsonrpcRequest.requestObject.id].fnReject = fnReject;
+		this._objWebSocketRequestsPromises[outgoingRequest.requestObject.id].promise = new Promise((fnResolve, fnReject) => {
+			this._objWebSocketRequestsPromises[outgoingRequest.requestObject.id].fnResolve = fnResolve;
+			this._objWebSocketRequestsPromises[outgoingRequest.requestObject.id].fnReject = fnReject;
 		});
 
-		this.webSocket.send(jsonrpcRequest.requestBody);
+		this.webSocket.send(outgoingRequest.requestBody);
 
-		return await this._objWebSocketRequestsPromises[jsonrpcRequest.requestObject.id].promise;
+		return await this._objWebSocketRequestsPromises[outgoingRequest.requestObject.id].promise;
 	}
 
 

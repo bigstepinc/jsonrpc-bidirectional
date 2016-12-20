@@ -5,10 +5,10 @@ module.exports =
 class AuthenticationSkip extends JSONRPC.ServerPluginBase
 {
 	/**
-	 * @param {JSONRPC.IncomingRequest} jsonrpcRequest
+	 * @param {JSONRPC.IncomingRequest} incomingRequest
 	 */
-	beforeJSONDecode(jsonrpcRequest)
+	beforeJSONDecode(incomingRequest)
 	{
-		jsonrpcRequest.isAuthorized = true;
+		incomingRequest.isAuthorized = true;
 	}
 };

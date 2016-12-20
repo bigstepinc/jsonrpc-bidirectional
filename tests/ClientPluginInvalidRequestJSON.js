@@ -6,10 +6,10 @@ module.exports =
 class ClientPluginInvalidRequestJSON extends JSONRPC.ClientPluginBase
 {
 	/**
-	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
+	 * @param {JSONRPC.OutgoingRequest} outgoingRequest
 	 */
-	async afterJSONEncode(jsonrpcRequest)
+	async afterJSONEncode(outgoingRequest)
 	{
-		jsonrpcRequest.requestBody = jsonrpcRequest.requestBody.substr(0, jsonrpcRequest.requestBody.length - 2);
+		outgoingRequest.requestBody = outgoingRequest.requestBody.substr(0, outgoingRequest.requestBody.length - 2);
 	}
 };

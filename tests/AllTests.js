@@ -8,7 +8,7 @@ const WebSocketServer = WebSocket.Server;
 const TestEndpoint = require("./TestEndpoint");
 const ClientPluginInvalidRequestJSON = require("./ClientPluginInvalidRequestJSON");
 const ServerPluginInvalidResponseJSON = require("./ServerPluginInvalidResponseJSON");
-const ServerPluginAuthorizeWebSocketAndClientMultiton = require("./ServerPluginAuthorizeWebSocketAndClientMultiton");
+const ServerPluginAuthorizeWebSocket = require("./ServerPluginAuthorizeWebSocket");
 const ServerDebugMarkerPlugin = require("./ServerDebugMarkerPlugin");
 const ClientDebugMarkerPlugin = require("./ClientDebugMarkerPlugin");
 
@@ -29,8 +29,7 @@ class AllTests
 		this._httpServerSiteA = null;
 		this._webSocketServerSiteA = null;
 		this._jsonrpcServerSiteA = null;
-		this._serverPluginAuthorizeWebSocketAndClientMultitonSiteA = null;
-		//Use this._serverPluginAuthorizeWebSocketAndClientMultitonSiteA.connectionIDToclient() to obtain a JSONRPC client.
+		this._serverPluginAuthorizeWebSocketSiteA = null;
 
 
 		// SiteB does not have to be reachable (it can be firewalled, private IP or simply not listening for connections).
@@ -46,6 +45,10 @@ class AllTests
 		this._jsonrpcClientSiteC = null;
 		this._jsonrpcServerSiteC = null; // reverse calls, TCP client using a JSONRPC server accepts requests from a TCP server with an attached JSONRPC client.
 
+		
+		// JSONRPC client on WebSocket client, nothing else.
+		this._jsonrpcClientNonBidirectional = null;
+		
 
 		// Used by SiteB and SiteC, which trusts the remote server based on SSL certificates.
 		this._serverAuthenticationSkipPlugin = new JSONRPC.Plugins.Server.AuthenticationSkip();
@@ -74,8 +77,8 @@ class AllTests
 			await this.setupWebsocketServerSiteA();
 		}
 
-		await this.setupClientSiteB();
-		await this.setupClientSiteC();
+		await this.setupSiteB();
+		await this.setupSiteC();
 
 		await this.endpointNotFoundError();
 		await this.outsideJSONRPCPathError();
@@ -101,6 +104,8 @@ class AllTests
 
 		await this.callRPCMethodSiteBWhichThrowsJSONRPCException();
 		await this.callRPCMethodSiteBWhichThrowsSimpleError();
+
+		await this.callRPCMethodNonBidirectionalClient();
 
 		await this.manyCallsInParallel();
 
@@ -187,45 +192,32 @@ class AllTests
 		);
 
 
-		console.log("Instantiating ServerPluginAuthorizeWebSocketAndClientMultiton on SiteA.");
-		this._serverPluginAuthorizeWebSocketAndClientMultitonSiteA = new ServerPluginAuthorizeWebSocketAndClientMultiton();
-		this._testEndpoint.serverPluginAuthorizeWebSocketAndClientMultitonSiteA = this._serverPluginAuthorizeWebSocketAndClientMultitonSiteA;
+		console.log("Instantiating ServerPluginAuthorizeWebSocket on SiteA.");
+		this._serverPluginAuthorizeWebSocketSiteA = new ServerPluginAuthorizeWebSocket();
+		this._testEndpoint.serverPluginAuthorizeWebSocketSiteA = this._serverPluginAuthorizeWebSocketSiteA;
 
-		this._jsonrpcServerSiteA.addPlugin(this._serverPluginAuthorizeWebSocketAndClientMultitonSiteA);
+		this._jsonrpcServerSiteA.addPlugin(this._serverPluginAuthorizeWebSocketSiteA);
 
 
 		console.log("Instantiating JSONRPC.BidirectionalWebsocketRouter on SiteA.");
-		const wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(
-			/*fnConnectionIDToClientWebSocketPlugin*/ (nConnectionID) => {
-				return this._serverPluginAuthorizeWebSocketAndClientMultitonSiteA.connectionIDToClientWebSocketPlugin(nConnectionID); 
-			}, 
-			this._jsonrpcServerSiteA
+		const wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(this._jsonrpcServerSiteA);
+
+		wsJSONRPCRouter.on(
+			"madeReverseCallsClient",
+			(clientReverseCalls) => {
+				clientReverseCalls.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
+				clientReverseCalls.addPlugin(new ClientDebugMarkerPlugin("SiteA; reverse calls;"));				
+			}
 		);
 
-
-		let nConnectionID = 0;
 		this._webSocketServerSiteA.on(
 			"connection", 
-			(ws) => 
+			async (webSocket) => 
 			{
-				const nWebSocketConnectionID = ++nConnectionID;
+				const nWebSocketConnectionID = await wsJSONRPCRouter.addWebSocket(webSocket);
 
-				console.log("Making a new JSONRPC.Client for the new incoming connection, which is about to be passed to ServerPluginAuthorizeWebSocketAndClientMultiton.");
-				const clientReverseCalls = new JSONRPC.Client(ws.upgradeReq.url);
-				clientReverseCalls.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
-				clientReverseCalls.addPlugin(new ClientDebugMarkerPlugin("SiteA; reverse calls; connection ID: " + nWebSocketConnectionID));
-				clientReverseCalls.addPlugin(new JSONRPC.Plugins.Client.WebSocketTransport(ws));
-				
-				console.log("Passing a new incoming connection to ServerPluginAuthorizeWebSocketAndClientMultiton.");
-				this._serverPluginAuthorizeWebSocketAndClientMultitonSiteA.initConnection(nWebSocketConnectionID, clientReverseCalls, ws);
-
-				ws.on(
-					"message", 
-					async (strMessage) => 
-					{
-						await wsJSONRPCRouter.routeMessage(strMessage, ws, nWebSocketConnectionID);
-					}
-				);
+				console.log("Passing a new incoming connection to ServerPluginAuthorizeWebSocket.");
+				this._serverPluginAuthorizeWebSocketSiteA.addConnection(nWebSocketConnectionID, webSocket);
 			}
 		);
 	}
@@ -234,9 +226,9 @@ class AllTests
 	/**
 	 * @returns {undefined}
 	 */
-	async setupClientSiteB()
+	async setupSiteB()
 	{
-		console.log("setupClientSiteB.");
+		console.log("setupSiteB.");
 		if(this._bWebSocketMode)
 		{
 			if(
@@ -252,8 +244,6 @@ class AllTests
 				this._webSocketClientSiteB = null;
 			}
 
-			const strEndpointURL = "ws://localhost:8325/api";
-
 			let fnResolveWaitForOpen;
 			let fnRejectWaitForOpen;
 			const promiseWaitForOpen = new Promise((fnResolve, fnReject) => {
@@ -261,22 +251,35 @@ class AllTests
 				fnRejectWaitForOpen = fnReject;
 			});
 
-			console.log("Connecting SiteB JSONRPC client to " + strEndpointURL + ".");
-			const ws = new WebSocket(strEndpointURL);
+			console.log("Connecting SiteB JSONRPC client to " + TestServer.localEndpointWebSocket + ".");
+			const ws = new WebSocket(TestServer.localEndpointWebSocket);
 
 			ws.on("open", fnResolveWaitForOpen);
 			ws.on("error", fnRejectWaitForOpen);
 
 			await promiseWaitForOpen;
 
-			this._jsonrpcClientSiteB = new JSONRPC.Client(strEndpointURL);
-			this._jsonrpcClientSiteB.addPlugin(new ClientDebugMarkerPlugin("SiteB"));
-			this._jsonrpcClientSiteB.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
-			this._jsonrpcClientSiteB.addPlugin(new JSONRPC.Plugins.Client.WebSocketTransport(ws));
-
 			this._webSocketClientSiteB = ws;
 
-			await this.setupWebSocketJSONRPCServerSiteB();
+			this._jsonrpcServerSiteB = new JSONRPC.Server();
+			this._jsonrpcServerSiteB.registerEndpoint(new TestEndpoint());
+
+			this._jsonrpcServerSiteB.addPlugin(this._serverAuthenticationSkipPlugin);
+			this._jsonrpcServerSiteB.addPlugin(this._serverAuthorizeAllPlugin);
+			this._jsonrpcServerSiteB.addPlugin(new ServerDebugMarkerPlugin("SiteB"));
+
+			console.log("Instantiating JSONRPC.BidirectionalWebsocketRouter on SiteB.");
+			const wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(
+				this._jsonrpcServerSiteB
+			);
+
+			const nWebSocketConnectionID = await wsJSONRPCRouter.addWebSocket(this._webSocketClientSiteB);
+
+			// Alternatively, the madeReverseCallsClient event can be used.
+			// In this case however, only a single client is suposed to exist.
+			this._jsonrpcClientSiteB = wsJSONRPCRouter.connectionIDToClient(nWebSocketConnectionID, JSONRPC.Client);
+			this._jsonrpcClientSiteB.addPlugin(new ClientDebugMarkerPlugin("SiteB"));
+			this._jsonrpcClientSiteB.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 		}
 		else
 		{
@@ -290,9 +293,9 @@ class AllTests
 	/**
 	 * @returns {undefined}
 	 */
-	async setupClientSiteC()
+	async setupSiteC()
 	{
-		console.log("setupClientSiteC.");
+		console.log("setupSiteC.");
 		if(this._bWebSocketMode)
 		{
 			if(
@@ -308,31 +311,27 @@ class AllTests
 				this._webSocketClientSiteC = null;
 			}
 
-			const strEndpointURL = "ws://localhost:8325/api";
+			this._webSocketClientSiteC = await this._makeClientWebSocket();
 
-			let fnResolveWaitForOpen;
-			let fnRejectWaitForOpen;
-			const promiseWaitForOpen = new Promise((fnResolve, fnReject) => {
-				fnResolveWaitForOpen = fnResolve;
-				fnRejectWaitForOpen = fnReject;
-			});
+			this._jsonrpcServerSiteC = new JSONRPC.Server();
+			this._jsonrpcServerSiteC.registerEndpoint(new TestEndpoint());
 
-			console.log("Connecting SiteC JSONRPC client to " + strEndpointURL + ".");
-			const ws = new WebSocket(strEndpointURL);
+			this._jsonrpcServerSiteC.addPlugin(this._serverAuthenticationSkipPlugin);
+			this._jsonrpcServerSiteC.addPlugin(this._serverAuthorizeAllPlugin);
+			this._jsonrpcServerSiteC.addPlugin(new ServerDebugMarkerPlugin("SiteC"));
 
-			ws.on("open", fnResolveWaitForOpen);
-			ws.on("error", fnRejectWaitForOpen);
+			console.log("Instantiating JSONRPC.BidirectionalWebsocketRouter on SiteC.");
+			const wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(
+				this._jsonrpcServerSiteC
+			);
 
-			await promiseWaitForOpen;
+			const nWebSocketConnectionID = await wsJSONRPCRouter.addWebSocket(this._webSocketClientSiteC);
 
-			this._jsonrpcClientSiteC = new JSONRPC.Client(strEndpointURL);
+			// Alternatively, the madeReverseCallsClient event can be used.
+			// In this case however, only a single client is suposed to exist.
+			this._jsonrpcClientSiteC = wsJSONRPCRouter.connectionIDToClient(nWebSocketConnectionID, JSONRPC.Client);
 			this._jsonrpcClientSiteC.addPlugin(new ClientDebugMarkerPlugin("SiteC"));
 			this._jsonrpcClientSiteC.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
-			this._jsonrpcClientSiteC.addPlugin(new JSONRPC.Plugins.Client.WebSocketTransport(ws));
-
-			this._webSocketClientSiteC = ws;
-
-			await this.setupWebSocketJSONRPCServerSiteC();
 		}
 		else
 		{
@@ -340,84 +339,6 @@ class AllTests
 			this._jsonrpcClientSiteC.addPlugin(new ClientDebugMarkerPlugin("SiteC"));
 			this._jsonrpcClientSiteC.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 		}
-	}
-
-
-	/**
-	 * JSONRPC server that sits on a client WebSocket connection.
-	 * 
-	 * @returns {undefined} 
-	 */
-	async setupWebSocketJSONRPCServerSiteB()
-	{
-		this._jsonrpcServerSiteB = new JSONRPC.Server();
-		this._jsonrpcServerSiteB.registerEndpoint(new TestEndpoint());
-
-		this._jsonrpcServerSiteB.addPlugin(this._serverAuthenticationSkipPlugin);
-		this._jsonrpcServerSiteB.addPlugin(this._serverAuthorizeAllPlugin);
-		this._jsonrpcServerSiteB.addPlugin(new ServerDebugMarkerPlugin("SiteB"));
-
-		console.log("Instantiating JSONRPC.BidirectionalWebsocketRouter on SiteB.");
-		const wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(
-			/*connectionIDToClientWebSocketPlugin*/ (nConnectionID) => {
-				for(let plugin of this._jsonrpcClientSiteB.plugins)
-				{
-					if(plugin instanceof JSONRPC.Plugins.Client.WebSocketTransport)
-					{
-						return plugin;
-					}
-				}
-				
-				throw new Error("The client must have the WebSocketTransport plugin added."); 
-			}, 
-			this._jsonrpcServerSiteB
-		);
-
-		this._webSocketClientSiteB.on(
-			"message",
-			async (strMessage) => {
-				await wsJSONRPCRouter.routeMessage(strMessage, this._webSocketClientSiteB, /*nWebSocketConnectionID*/ 0);
-			}
-		);
-	}
-
-
-	/**
-	 * JSONRPC server that sits on a client WebSocket connection.
-	 * 
-	 * @returns {undefined} 
-	 */
-	async setupWebSocketJSONRPCServerSiteC()
-	{
-		this._jsonrpcServerSiteC = new JSONRPC.Server();
-		this._jsonrpcServerSiteC.registerEndpoint(new TestEndpoint());
-
-		this._jsonrpcServerSiteC.addPlugin(this._serverAuthenticationSkipPlugin);
-		this._jsonrpcServerSiteC.addPlugin(this._serverAuthorizeAllPlugin);
-		this._jsonrpcServerSiteC.addPlugin(new ServerDebugMarkerPlugin("SiteC"));
-
-		console.log("Instantiating JSONRPC.BidirectionalWebsocketRouter on SiteC.");
-		const wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(
-			/*connectionIDToClientWebSocketPlugin*/ (nConnectionID) => {
-				for(let plugin of this._jsonrpcClientSiteC.plugins)
-				{
-					if(plugin instanceof JSONRPC.Plugins.Client.WebSocketTransport)
-					{
-						return plugin;
-					}
-				}
-				
-				throw new Error("The client must have the WebSocketTransport plugin added."); 
-			}, 
-			this._jsonrpcServerSiteC
-		);
-
-		this._webSocketClientSiteC.on(
-			"message",
-			async (strMessage) => {
-				await wsJSONRPCRouter.routeMessage(strMessage, this._webSocketClientSiteC, /*nWebSocketConnectionID*/ 0);
-			}
-		);
 	}
 
 
@@ -433,7 +354,7 @@ class AllTests
 
 		try
 		{
-			await this.setupClientSiteB();
+			await this.setupSiteB();
 			await this._jsonrpcClientSiteB.rpc("ping", ["triggerConnectionRefused", /*bRandomSleep*/ false]);
 			assert.throws(() => {});
 		}
@@ -560,7 +481,7 @@ class AllTests
 			
 			if(this._bWebSocketMode)
 			{
-				await this.setupClientSiteB();
+				await this.setupSiteB();
 			}
 			else
 			{
@@ -595,7 +516,7 @@ class AllTests
 			
 			if(this._bWebSocketMode)
 			{
-				await this.setupClientSiteB();
+				await this.setupSiteB();
 			}
 			else
 			{
@@ -692,6 +613,51 @@ class AllTests
 
 
 	/**
+	 * @param {boolean} bDoNotSleep
+	 * 
+	 * @returns {undefined}
+	 */
+	async callRPCMethodNonBidirectionalClient(bDoNotSleep)
+	{
+		if(!this._bWebSocketMode)
+		{
+			return;
+		}
+
+		console.log("callRPCMethodNonBidirectionalClient");
+
+		const bRandomSleep = !bDoNotSleep;
+
+
+		if(this._jsonrpcClientNonBidirectional === null)
+		{
+			const webSocket = await this._makeClientWebSocket();
+
+			this._jsonrpcClientNonBidirectional = new JSONRPC.Client(TestServer.localEndpointWebSocket);
+			this._jsonrpcClientNonBidirectional.addPlugin(new ClientDebugMarkerPlugin("NonBidirectionalClient"));
+			this._jsonrpcClientNonBidirectional.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
+			
+			const webSocketTransport = new JSONRPC.Plugins.Client.WebSocketTransport(webSocket);
+			this._jsonrpcClientNonBidirectional.addPlugin(webSocketTransport);
+
+			webSocket.on(
+				"message",
+				async (strMessage) => {
+					await webSocketTransport.processResponse(strMessage);
+				}
+			);
+
+			await this._jsonrpcClientNonBidirectional.rpc("ImHereForTheParty", ["Face", "Face does the harlem shake", /*bDoNotAuthorizeMe*/ false]);
+		}
+		
+		const strParam = "pong_one_way";
+		const arrParams = [strParam, bRandomSleep];
+
+		assert.strictEqual(strParam, await this._jsonrpcClientNonBidirectional.rpc("ping", arrParams));
+	}
+
+
+	/**
 	 * @returns {undefined}
 	 */
 	async callRPCMethodSiteBWhichThrowsJSONRPCException()
@@ -757,11 +723,15 @@ class AllTests
 		const arrMethods = [
 			this.callRPCMethodSiteB,
 			this.callRPCMethodSiteC,
+			this.callRPCMethodNonBidirectionalClient,
 
 			this.callRPCMethodSiteBWhichThrowsSimpleError,
 			this.callRPCMethodSiteBWhichThrowsJSONRPCException,
 			
 			this.callRPCMethodSiteC,
+
+			this.callRPCMethodNonBidirectionalClient,
+			this.callRPCMethodNonBidirectionalClient,
 
 			this.callRPCMethodSiteB,
 			this.callRPCMethodSiteB
@@ -779,5 +749,38 @@ class AllTests
 		await Promise.all(arrPromises);
 
 		console.log(nCallCount + " calls executed in " + ((new Date()).getTime() - nStartTime) + " milliseconds.");
+	}
+
+
+	/**
+	 * @returns {WebSocket}
+	 */
+	async _makeClientWebSocket()
+	{
+		let fnResolveWaitForOpen;
+		let fnRejectWaitForOpen;
+		const promiseWaitForOpen = new Promise((fnResolve, fnReject) => {
+			fnResolveWaitForOpen = fnResolve;
+			fnRejectWaitForOpen = fnReject;
+		});
+
+		console.log("Connecting WebSocket to " + TestServer.localEndpointWebSocket + ".");
+		const webSocket = new WebSocket(TestServer.localEndpointWebSocket);
+
+		webSocket.on("open", fnResolveWaitForOpen);
+		webSocket.on("error", fnRejectWaitForOpen);
+
+		await promiseWaitForOpen;
+
+		return webSocket;
+	}
+
+
+	/**
+	 * @returns {string}
+	 */
+	static get localEndpointWebSocket()
+	{
+		return "ws://localhost:8325/api";
 	}
 };

@@ -21,14 +21,14 @@ class ClientDebugMarkerPlugin extends JSONRPC.ClientPluginBase
 	 * 
 	 * Normally, this allows extending the protocol.
 	 * 
-	 * @param {JSONRPC.OutgoingRequest} jsonrpcRequest
+	 * @param {JSONRPC.OutgoingRequest} outgoingRequest
 	 */
-	async beforeJSONEncode(jsonrpcRequest)
+	async beforeJSONEncode(outgoingRequest)
 	{
-		// jsonrpcRequest.requestObject is available here.
+		// outgoingRequest.requestObject is available here.
 
-		// jsonrpcRequest.headers and jsonrpcRequest.enpointURL may be modified here.
+		// outgoingRequest.headers and outgoingRequest.enpointURL may be modified here.
 
-		jsonrpcRequest.requestObject.from = this._strSite;
+		outgoingRequest.requestObject.from = this._strSite;
 	}
 };
