@@ -3,7 +3,6 @@ JSONRPC.ClientPluginBase = require("../../ClientPluginBase");
 JSONRPC.Utils = require("../../Utils");
 
 const assert = require("assert");
-const WebSocket = require("ws");
 
 module.exports =
 class WebSocketTransport extends JSONRPC.ClientPluginBase
@@ -16,7 +15,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 	{
 		super();
 
-		assert(webSocket instanceof WebSocket);
+		//assert(webSocket.constructor.name === "WebSocket");
 		bBidirectionalWebSocketMode = !!bBidirectionalWebSocketMode;
 
 		this._webSocket = webSocket;
@@ -127,7 +126,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 			return;
 		}
 
-		if(this.webSocket.readyState !== WebSocket.OPEN)
+		if(this.webSocket.readyState !== this.webSocket.constructor.OPEN)
 		{
 			throw new Error("WebSocket not connected.");
 		}

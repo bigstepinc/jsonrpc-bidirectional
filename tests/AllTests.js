@@ -453,6 +453,7 @@ class AllTests
 				throw error;
 			}
 			
+			//console.log(error);
 			assert(error instanceof JSONRPC.Exception);
 			assert.strictEqual(error.code, JSONRPC.Exception.NOT_AUTHENTICATED);
 			assert.strictEqual(error.message, "Not authenticated.");

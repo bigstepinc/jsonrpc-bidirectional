@@ -10,9 +10,6 @@ JSONRPC.Plugins = {};
 JSONRPC.Plugins.Client = require("./Plugins/Client/index");
 JSONRPC.Utils = require("./Utils");
 
-
-const WebSocket = require("ws");
-
 const EventEmitter = require("events");
 
 
@@ -53,7 +50,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 	 */
 	async addWebSocket(webSocket)
 	{
-		if(webSocket.readyState === WebSocket.CLOSED)
+		if(webSocket.readyState === webSocket.constructor.CLOSED)
 		{
 			// WebSocket.CLOSING should be followed by a closed event.
 			// WebSocket.OPEN is desired.
@@ -89,7 +86,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 			(error) => {
 				delete this._objSessions[nWebSocketConnectionID];
 
-				if(webSocket.readyState === WebSocket.OPEN)
+				if(webSocket.readyState === webSocket.constructor.OPEN)
 				{
 					webSocket.close(
 						/* CloseEvent.Internal Error */ 1011, 
@@ -227,7 +224,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 			{
 				if(!this._jsonrpcServer)
 				{
-					if(webSocket.readyState === WebSocket.OPEN)
+					if(webSocket.readyState === webSocket.constructor.OPEN)
 					{
 						webSocket.send(JSON.stringify({
 							id: null,
@@ -280,7 +277,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 				{
 					if(!this._jsonrpcServer)
 					{
-						if(webSocket.readyState === WebSocket.OPEN)
+						if(webSocket.readyState === webSocket.constructor.OPEN)
 						{
 							webSocket.send(JSON.stringify({
 								id: null,
@@ -293,7 +290,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 						}
 					}
 
-					if(webSocket.readyState === WebSocket.OPEN)
+					if(webSocket.readyState === webSocket.constructor.OPEN)
 					{
 						webSocket.close(
 							/* CloseEvent.Internal Error */ 1011, 
@@ -317,7 +314,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 
 			if(this._jsonrpcServer && this._objSessions[nWebSocketConnectionID].clientWebSocketTransportPlugin === null)
 			{
-				if(webSocket.readyState === WebSocket.OPEN)
+				if(webSocket.readyState === webSocket.constructor.OPEN)
 				{
 					webSocket.send(JSON.stringify({
 						id: null,
@@ -330,7 +327,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 				}
 			}
 
-			if(webSocket.readyState === WebSocket.OPEN)
+			if(webSocket.readyState === webSocket.constructor.OPEN)
 			{
 				console.log("Unclean state. Closing websocket.");
 				webSocket.close(

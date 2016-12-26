@@ -6,8 +6,6 @@ JSONRPC.Plugins = {};
 JSONRPC.Plugins.Client = require("../src/Plugins/Client/index");
 JSONRPC.Utils = require("../src/Utils");
 
-const WebSocket = require("ws");
-
 const assert = require("assert");
 
 module.exports =
