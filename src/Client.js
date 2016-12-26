@@ -1,4 +1,4 @@
-const url = require("url");
+//const url = require("url");
 
 const JSONRPC = {};
 JSONRPC.Exception = require("./Exception");
@@ -38,7 +38,7 @@ class Client extends EventEmitter
 		this._strHTTPPassword = null;
 		this._strBase64BasicAuthentication = null;
 
-		const strProtocol = url.parse(strEndpointURL).protocol;
+		/*const strProtocol = url.parse(strEndpointURL).protocol;
 
 		if(strProtocol === "http:" || strProtocol === "https:")
 		{
@@ -51,7 +51,7 @@ class Client extends EventEmitter
 		else
 		{
 			// throw new Error("Unsupported protocol " + JSON.stringify(strProtocol) + ", URL: " + strEndpointURL + ".");
-		}
+		}*/
 	}
 
 
