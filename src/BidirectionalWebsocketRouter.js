@@ -43,15 +43,25 @@ class BidirectionalWebsocketRouter extends EventEmitter
 	/**
 	 * Returns the connection ID.
 	 * 
+	 * WebSocket instances which will emit an error or close event will get automatically removed.
+	 * 
+	 * Already closed WebSocket instances are ignored by this function.
+	 * 
 	 * @param {WebSocket} webSocket
 	 * 
 	 * @returns {number}
 	 */
 	async addWebSocket(webSocket)
 	{
-		if(webSocket.readyState !== WebSocket.OPEN)
+		if(webSocket.readyState === WebSocket.CLOSED)
 		{
-			console.log("addWebSocket ignoring webSocket which is not in open state.");
+			// WebSocket.CLOSING should be followed by a closed event.
+			// WebSocket.OPEN is desired.
+			// WebSocket.CONNECTING should emit an error event if it will not become open.
+			// @TODO: test cases for the above, somehow.
+
+			// WebSocket.CLOSED would not recover and should never be added, because it would not get cleaned up.
+			console.log("addWebSocket ignoring closed webSocket.");
 			return;
 		}
 
