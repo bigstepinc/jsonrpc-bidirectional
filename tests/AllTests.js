@@ -2,8 +2,11 @@ const JSONRPC = require("../index").JSONRPC;
 
 const http = require("http");
 
+
+// @TODO: Test with https://github.com/uWebSockets/uWebSockets as well. They claim magnitudes of extra performance (memory, CPU, network connections).
 const WebSocket = require("ws");
 const WebSocketServer = WebSocket.Server;
+
 
 const TestEndpoint = require("./TestEndpoint");
 const ClientPluginInvalidRequestJSON = require("./ClientPluginInvalidRequestJSON");
