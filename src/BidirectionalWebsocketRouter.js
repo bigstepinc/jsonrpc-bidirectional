@@ -20,7 +20,10 @@ module.exports =
 class BidirectionalWebsocketRouter extends EventEmitter
 {
 	/**
-	 * If both the client and server plugins are specified, bi-directional JSONRPC over the same websocket is enabled.
+	 * Clients are automatically instantiated per connection and are available as a property of the first param of the exported functions,
+	 * if the JSONRPC.EndpointBase constructor param classReverseCallsClient was set to a JSONRPC.Client subclass.
+	 * 
+	 * If both jsonrpcServer and classReverseCallsClient are set, then bi-directional JSONRPC over the same websocket is enabled.
 	 * 
 	 * @param {JSONRPC.Server|null} jsonrpcServer
 	 */
