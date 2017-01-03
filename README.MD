@@ -1,10 +1,12 @@
 # JSON-RPC 2.0 server and client
 
+A main goal of this project is to have __the JSONRPC server and client support bi-directional requests over a single WebSocket connection.__
+
 Both the server and client support two transports, HTTP and WebSocket (websockets/ws compatible API), and allow more through plugin extensibility. 
 
 Plugins are allowed to replace the JSON-RPC protocol altogether, extend the protocol or wrap it.
 
-Plugins for the server or the client may also be custom middle layers, for example: authentication, authorization, validation, routing, backward compatibility translation, advanced error logging, automatic retries, caching, etc.
+__Plugins for the server or the client may also be custom middle layers__, for example: authentication, authorization, validation, routing, backward compatibility translation, advanced error logging, automatic retries, caching, etc.
 
 See `JSONRPC.ClientPluginBase` and `JSONRPC.ServerPluginBase`. Plugins may be added on `JSONRPC.Server` and `JSONRPC.Client` instances using the `.addPlugin()` method.
 
