@@ -235,12 +235,7 @@ await new Promise((fnResolve, fnReject) => {
 });
 
 
-
 const wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(jsonrpcServer);
-
-
-const webSocketServer = new WebSocketServer({port: 8080});
-webSocketServer.on("error", (error) => {console.error(error); process.exit(1);});
 
 
 const nWebSocketConnectionID = await wsJSONRPCRouter.addWebSocket(webSocket);
