@@ -26,7 +26,7 @@ For example, both these URLs point to the same endpoint: `ws://localhost/api`, `
 
 ```JavaScript
 
-const JSONRPC = require("jsonrpc-javascriptes7");
+const JSONRPC = require("jsonrpc-bidirectional");
 
 module.exports =
 class TestEndpoint extends JSONRPC.EndpointBase 
@@ -75,7 +75,7 @@ Extending the `JSONRPC.Client` base class makes the code more readable.
 This client's function names and params correspond to what `TestEndpoint` exports, defined above.
 
 ```JavaScript
-const JSONRPC = require("jsonrpc-javascriptes7");
+const JSONRPC = require("jsonrpc-bidirectional");
 
 module.exports =
 class TestClient extends JSONRPC.Client
@@ -108,7 +108,7 @@ class TestClient extends JSONRPC.Client
 
 ## Simple JSONRPC.Server over HTTP
 ```JavaScript
-const JSONRPC = require("jsonrpc-javascriptes7");
+const JSONRPC = require("jsonrpc-bidirectional");
 
 const httpServer = http.createServer();
 const jsonrpcServer = new JSONRPC.Server();
@@ -127,7 +127,7 @@ httpServer.listen(80);
 
 ## Simple JSONRPC.Client over HTTP
 ```JavaScript
-const JSONRPC = require("jsonrpc-javascriptes7");
+const JSONRPC = require("jsonrpc-bidirectional");
 
 
 const testClient = new TestClient("http://localhost/api");
@@ -140,7 +140,7 @@ const nDivisionResult = await testClient.divide(2, 1);
 Non-bidirectional JSONRPC.Client over a WebSocket client connection.
 
 ```JavaScript
-const JSONRPC = require("jsonrpc-javascriptes7");
+const JSONRPC = require("jsonrpc-bidirectional");
 const WebSocket = require("ws");
 
 
@@ -183,7 +183,7 @@ Common:
 
 // BidirectionalWebsocketRouter also uses properties on WebSocket instances to get the URL path (needed to determine the endpoint), like this: `webSocket.url ? webSocket.url : webSocket.upgradeReq.url`.
 
-const JSONRPC = require("jsonrpc-javascriptes7");
+const JSONRPC = require("jsonrpc-bidirectional");
 const WebSocket = require("ws");
 const WebSocketServer = WebSocket.Server;
 ```
