@@ -9,8 +9,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/bigstepinc/jsonrpc-bidirectional.git"
+    "url": "git+https://github.com/bigstepinc/jsonrpc-bidirectional.git"
   },
+  "homepage": "https://github.com/bigstepinc/jsonrpc-bidirectional", 
   "author": "Ionut Stan <Ionut.Stan@bigstep.com>",
   "license": "MIT",
   "contributors": [
