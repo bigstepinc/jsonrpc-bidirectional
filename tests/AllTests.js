@@ -280,7 +280,7 @@ class AllTests
 
 			// Alternatively, the madeReverseCallsClient event can be used.
 			// In this case however, only a single client is suposed to exist.
-			this._jsonrpcClientSiteB = wsJSONRPCRouter.connectionIDToClient(nWebSocketConnectionID, TestClient);
+			this._jsonrpcClientSiteB = wsJSONRPCRouter.connectionIDToSingletonClient(nWebSocketConnectionID, TestClient);
 			this._jsonrpcClientSiteB.addPlugin(new ClientDebugMarkerPlugin("SiteB"));
 			this._jsonrpcClientSiteB.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 		}
@@ -332,7 +332,7 @@ class AllTests
 
 			// Alternatively, the madeReverseCallsClient event can be used.
 			// In this case however, only a single client is suposed to exist.
-			this._jsonrpcClientSiteC = wsJSONRPCRouter.connectionIDToClient(nWebSocketConnectionID, TestClient);
+			this._jsonrpcClientSiteC = wsJSONRPCRouter.connectionIDToSingletonClient(nWebSocketConnectionID, TestClient);
 			this._jsonrpcClientSiteC.addPlugin(new ClientDebugMarkerPlugin("SiteC"));
 			this._jsonrpcClientSiteC.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 		}

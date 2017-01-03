@@ -194,7 +194,7 @@ class IncomingRequest
 				&& this.endpoint.ReverseCallsClientClass
 			)
 			{
-				this._classClient = this._bidirectionalWebsocketRouter.connectionIDToClient(this.connectionID, this.endpoint.ReverseCallsClientClass);
+				this._classClient = this._bidirectionalWebsocketRouter.connectionIDToSingletonClient(this.connectionID, this.endpoint.ReverseCallsClientClass);
 			}
 		}
 
