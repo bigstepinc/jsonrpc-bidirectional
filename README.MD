@@ -1,4 +1,4 @@
-# JSON-RPC 2.0 server and client
+# Bi-directional JSON-RPC 2.0 server and client
 
 A main goal of this project is to have __the JSONRPC server and client support bi-directional requests over a single WebSocket connection.__
 
