@@ -1,6 +1,6 @@
 {
-  "name": "jsonrpc-javascriptes7",
-  "description": "JavaScriptES7 JSONRPC Client",
+  "name": "jsonrpc-bidirectional",
+  "description": "Bidirectional JSONRPC over web sockets or HTTP with extensive plugin support.",
   "version": "1.0.0",
   "scripts": {
     "transpile": "babel src --out-dir src",
@@ -9,20 +9,27 @@
   },
   "repository": {
     "type": "git",
-    "url": "ssh://git@gitlab.bigstep.com:17734/json-rpc-2-0/JSONRPC-JavaScript6.git"
+    "url": "https://github.com/bigstepinc/jsonrpc-bidirectional.git"
   },
-  "author": "BSI Team",
-  "license": "LicenseRef-LICENSE",
+  "author": "Ionut Stan <Ionut.Stan@bigstep.com>",
+  "license": "MIT",
   "contributors": [
     {
-      "name": "BSI Team",
-      "email": "bsiteam@bigstep.com"
+      "name": "Ionut Stan",
+      "email": "Ionut.Stan@bigstep.com"
+    },
+    {
+      "name": "Ionut Stan",
+      "email": "oxygenus@gmail.com"
+    },
+    {
+      "name": "Ovidiu Giorgi",
+      "email": "ovidiu.giorgi@bigstep.com"
     }
   ],
   "preferGlobal": false,
-  "private": true,
   "engines": {
-    "node": ">=7.10"
+    "node": ">=7.30"
   },
   "dependencies": {
     "crypto-js": "^3.1.8",
