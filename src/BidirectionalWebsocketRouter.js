@@ -120,7 +120,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 	 * 
 	 * @returns {JSONRPC.Client}
 	 */
-	connectionIDToClient(nConnectionID, ClientClass)
+	connectionIDToSingletonClient(nConnectionID, ClientClass)
 	{
 		assert(typeof nConnectionID === "number");
 		assert(typeof ClientClass === "function", "Invalid ClientClass value: " + (typeof ClientClass));

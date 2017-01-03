@@ -212,35 +212,28 @@ class Server extends EventEmitter
 		{
 			if(httpRequest.method === "POST")
 			{
-				let fnReject;
-				let fnResolve;
-				const promiseWaitForData = new Promise(
-					(_fnResolve, _fnReject) => {
-						fnReject = _fnReject;
-						fnResolve = _fnResolve;
+				const arrBody = [];
+
+				incomingRequest.requestBody = await new Promise(
+					(fnResolve, fnReject) => {
+						httpRequest.on("error",	fnReject);
+						httpResponse.on("error", fnReject);
+
+						httpRequest.on(
+							"end",
+							() => {
+								fnResolve(Buffer.concat(arrBody).toString());
+							}
+						);
+
+						httpRequest.on(
+							"data", 
+							(bufferChunk) => {
+								arrBody.push(bufferChunk);
+							}
+						);
 					}
 				);
-
-				let arrBody = [];
-
-				httpRequest.on(
-					"data", 
-					(bufferChunk) => {
-						arrBody.push(bufferChunk);
-					}
-				);
-
-				httpRequest.on("error",	fnReject);
-				httpResponse.on("error", fnReject);
-
-				httpRequest.on(
-					"end",
-					() => {
-						fnResolve(Buffer.concat(arrBody).toString());
-					}
-				);
-
-				incomingRequest.requestBody = await promiseWaitForData;
 			}
 			else
 			{

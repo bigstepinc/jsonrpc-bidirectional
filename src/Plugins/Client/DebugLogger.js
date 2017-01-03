@@ -9,7 +9,14 @@ class DebugLogger extends JSONRPC.ClientPluginBase
 	 */
 	async afterJSONEncode(outgoingRequest)
 	{
-		console.log("[" + (new Date()).toISOString() + "] Sent JSONRPC request: " + outgoingRequest.requestBody + "\n");
+		if(outgoingRequest.requestBody.length > 1024 * 1024)
+		{
+			console.log("[" + (new Date()).toISOString() + "] Sent JSONRPC request, " + outgoingRequest.requestObject.method + "(). Larger than 1 MB, not logging. \n");
+		}
+		else
+		{
+			console.log("[" + (new Date()).toISOString() + "] Sent JSONRPC request: " + outgoingRequest.requestBody + "\n");
+		}
 	}
 
 	/**
@@ -17,6 +24,13 @@ class DebugLogger extends JSONRPC.ClientPluginBase
 	 */
 	async beforeJSONDecode(outgoingRequest)
 	{
-		console.log("[" + (new Date()).toISOString() + "] Received JSONRPC response: " + outgoingRequest.responseBody + "\n");
+		if(outgoingRequest.responseBody.length > 1024 * 1024)
+		{
+			console.log("[" + (new Date()).toISOString() + "] Received JSONRPC response, " + outgoingRequest.requestObject.method + "(). Larger than 1 MB, not logging. \n");
+		}
+		else
+		{
+			console.log("[" + (new Date()).toISOString() + "] Received JSONRPC response: " + outgoingRequest.responseBody + "\n");
+		}
 	}
 };

@@ -4,6 +4,11 @@ JSONRPC.ClientPluginBase = require("../../ClientPluginBase");
 const HMAC_SHA256 = require("crypto-js/hmac-sha256");
 
 
+/**
+ * This has purpose at Bigstep (the company which originally created this project).
+ * It is intended to be used only together with Bigstep extending API clients.
+ * Please ignore otherwise.
+ */
 module.exports =
 class SignatureAdd extends JSONRPC.ClientPluginBase
 {

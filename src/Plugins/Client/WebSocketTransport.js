@@ -14,38 +14,17 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 	constructor(webSocket, bBidirectionalWebSocketMode)
 	{
 		super();
-
-		//assert(webSocket.constructor.name === "WebSocket");
-		bBidirectionalWebSocketMode = !!bBidirectionalWebSocketMode;
-
-		this._webSocket = webSocket;
+		
 
 		// JSONRPC call ID as key, {promise: {Promise}, fnResolve: {Function}, fnReject: {Function}, outgoingRequest: {OutgoingRequest}} as values.
 		this._objWebSocketRequestsPromises = {};
 
-		this._webSocket.on(
-			"close", 
-			(code, message) => {
-				this.rejectAllPromises(new Error("WebSocket closed. Code: " + JSON.stringify(code) + ". Message: " + JSON.stringify(message) + "."));
-			}
-		);
-		
-		this._webSocket.on(
-			"error",
-			(error) => {
-				this.rejectAllPromises(error);
-			}
-		);
 
-		if(!bBidirectionalWebSocketMode)
-		{
-			this._webSocket.on(
-				"message",
-				async (strMessage) => {
-					await this.processResponse(strMessage);
-				}
-			);
-		}
+		this._bBidirectionalWebSocketMode = !!bBidirectionalWebSocketMode;
+		this._webSocket = webSocket;
+
+		
+		this._setupWebSocket();
 	}
 
 
@@ -146,7 +125,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 
 		this.webSocket.send(outgoingRequest.requestBody);
 
-		return await this._objWebSocketRequestsPromises[outgoingRequest.requestObject.id].promise;
+		return this._objWebSocketRequestsPromises[outgoingRequest.requestObject.id].promise;
 	}
 
 
@@ -162,6 +141,39 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 		{
 			this._objWebSocketRequestsPromises[nCallID].fnReject(error);
 			delete this._objWebSocketRequestsPromises[nCallID];
+		}
+	}
+
+
+	/**
+	 * @protected
+	 */
+	_setupWebSocket()
+	{
+		//assert(webSocket.constructor.name === "WebSocket");
+
+		this._webSocket.on(
+			"close", 
+			(code, message) => {
+				this.rejectAllPromises(new Error("WebSocket closed. Code: " + JSON.stringify(code) + ". Message: " + JSON.stringify(message) + "."));
+			}
+		);
+		
+		this._webSocket.on(
+			"error",
+			(error) => {
+				this.rejectAllPromises(error);
+			}
+		);
+
+		if(!this._bBidirectionalWebSocketMode)
+		{
+			this._webSocket.on(
+				"message",
+				async (strMessage) => {
+					await this.processResponse(strMessage);
+				}
+			);
 		}
 	}
 };

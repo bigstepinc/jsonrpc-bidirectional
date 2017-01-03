@@ -5,11 +5,14 @@ const http = require("http");
 
 // @TODO: Test with https://github.com/uWebSockets/uWebSockets as well. They claim magnitudes of extra performance (memory, CPU, network connections).
 // Read first: https://github.com/uWebSockets/uWebSockets#deviations-from-ws
+// @TODO: Test with other WebSocket implementations.
+
 const WebSocket = require("ws");
 const WebSocketServer = WebSocket.Server;
 
 
 const TestEndpoint = require("./TestEndpoint");
+const TestClient = require("./TestClient");
 const ClientPluginInvalidRequestJSON = require("./ClientPluginInvalidRequestJSON");
 const ServerPluginInvalidResponseJSON = require("./ServerPluginInvalidResponseJSON");
 const ServerPluginAuthorizeWebSocket = require("./ServerPluginAuthorizeWebSocket");
@@ -105,6 +108,7 @@ class AllTests
 		}
 
 		await this.callRPCMethodSiteB(/*bDoNotSleep*/ true);
+		await this.callRPCMethodSiteB(/*bDoNotSleep*/ true, /*bVeryLargePayload*/ true);
 
 		await this.callRPCMethodSiteBWhichThrowsJSONRPCException();
 		await this.callRPCMethodSiteBWhichThrowsSimpleError();
@@ -192,7 +196,10 @@ class AllTests
 
 		this._webSocketServerSiteA.on(
 			"error",
-			console.error
+			(error) => {
+				console.log(error);
+				process.exit(1);
+			}
 		);
 
 
@@ -248,20 +255,12 @@ class AllTests
 				this._webSocketClientSiteB = null;
 			}
 
-			let fnResolveWaitForOpen;
-			let fnRejectWaitForOpen;
-			const promiseWaitForOpen = new Promise((fnResolve, fnReject) => {
-				fnResolveWaitForOpen = fnResolve;
-				fnRejectWaitForOpen = fnReject;
-			});
-
 			console.log("Connecting SiteB JSONRPC client to " + AllTests.localEndpointWebSocket + ".");
 			const ws = new WebSocket(AllTests.localEndpointWebSocket);
-
-			ws.on("open", fnResolveWaitForOpen);
-			ws.on("error", fnRejectWaitForOpen);
-
-			await promiseWaitForOpen;
+			await new Promise((fnResolve, fnReject) => {
+				ws.on("open", fnResolve);
+				ws.on("error", fnReject);
+			});
 
 			this._webSocketClientSiteB = ws;
 
@@ -281,13 +280,13 @@ class AllTests
 
 			// Alternatively, the madeReverseCallsClient event can be used.
 			// In this case however, only a single client is suposed to exist.
-			this._jsonrpcClientSiteB = wsJSONRPCRouter.connectionIDToClient(nWebSocketConnectionID, JSONRPC.Client);
+			this._jsonrpcClientSiteB = wsJSONRPCRouter.connectionIDToClient(nWebSocketConnectionID, TestClient);
 			this._jsonrpcClientSiteB.addPlugin(new ClientDebugMarkerPlugin("SiteB"));
 			this._jsonrpcClientSiteB.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 		}
 		else
 		{
-			this._jsonrpcClientSiteB = new JSONRPC.Client("http://localhost:8324/api");
+			this._jsonrpcClientSiteB = new TestClient("http://localhost:8324/api");
 			this._jsonrpcClientSiteB.addPlugin(new ClientDebugMarkerPlugin("SiteB"));
 			this._jsonrpcClientSiteB.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 		}
@@ -333,13 +332,13 @@ class AllTests
 
 			// Alternatively, the madeReverseCallsClient event can be used.
 			// In this case however, only a single client is suposed to exist.
-			this._jsonrpcClientSiteC = wsJSONRPCRouter.connectionIDToClient(nWebSocketConnectionID, JSONRPC.Client);
+			this._jsonrpcClientSiteC = wsJSONRPCRouter.connectionIDToClient(nWebSocketConnectionID, TestClient);
 			this._jsonrpcClientSiteC.addPlugin(new ClientDebugMarkerPlugin("SiteC"));
 			this._jsonrpcClientSiteC.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 		}
 		else
 		{
-			this._jsonrpcClientSiteC = new JSONRPC.Client("http://localhost:8324/api");
+			this._jsonrpcClientSiteC = new TestClient("http://localhost:8324/api");
 			this._jsonrpcClientSiteC.addPlugin(new ClientDebugMarkerPlugin("SiteC"));
 			this._jsonrpcClientSiteC.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 		}
@@ -385,7 +384,7 @@ class AllTests
 	{
 		console.log("endpointNotFoundError");
 
-		const client = new JSONRPC.Client("http://localhost:8324/api/bad-endpoint-path");
+		const client = new TestClient("http://localhost:8324/api/bad-endpoint-path");
 		client.addPlugin(new ClientDebugMarkerPlugin("SiteB"));
 		client.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 
@@ -415,7 +414,7 @@ class AllTests
 	{
 		console.log("outsideJSONRPCPathError");
 
-		const client = new JSONRPC.Client("http://localhost:8324/unhandled-path");
+		const client = new TestClient("http://localhost:8324/unhandled-path");
 		client.addPlugin(new ClientDebugMarkerPlugin("SiteB"));
 		client.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 
@@ -573,16 +572,28 @@ class AllTests
 
 	/**
 	 * @param {boolean} bDoNotSleep
+	 * @param {boolean|undefined} bVeryLargePayload
 	 * 
 	 * @returns {undefined}
 	 */
-	async callRPCMethodSiteB(bDoNotSleep)
+	async callRPCMethodSiteB(bDoNotSleep, bVeryLargePayload)
 	{
 		const bRandomSleep = !bDoNotSleep;
+		bVeryLargePayload = !!bVeryLargePayload;
 
 		console.log("callRPCMethodSiteB");
 
-		const strParam = "pong_" + (this._jsonrpcClientSiteB.callID);
+		let strParam = "pong_" + (this._jsonrpcClientSiteB.callID);
+
+		if(bVeryLargePayload)
+		{
+			let nIterator = 0;
+			while(strParam.length < 10 * 1024 * 1024 /*10 MB*/)
+			{
+				strParam += strParam + "_" + (++nIterator);
+			}
+		}
+
 		const arrParams = [strParam, bRandomSleep];
 
 		if(this._bWebSocketMode)
@@ -638,7 +649,7 @@ class AllTests
 		{
 			const webSocket = await this._makeClientWebSocket();
 
-			this._jsonrpcClientNonBidirectional = new JSONRPC.Client(AllTests.localEndpointWebSocket);
+			this._jsonrpcClientNonBidirectional = new TestClient(AllTests.localEndpointWebSocket);
 			this._jsonrpcClientNonBidirectional.addPlugin(new ClientDebugMarkerPlugin("NonBidirectionalClient"));
 			this._jsonrpcClientNonBidirectional.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 			
@@ -755,20 +766,12 @@ class AllTests
 	 */
 	async _makeClientWebSocket()
 	{
-		let fnResolveWaitForOpen;
-		let fnRejectWaitForOpen;
-		const promiseWaitForOpen = new Promise((fnResolve, fnReject) => {
-			fnResolveWaitForOpen = fnResolve;
-			fnRejectWaitForOpen = fnReject;
-		});
-
 		console.log("Connecting WebSocket to " + AllTests.localEndpointWebSocket + ".");
 		const webSocket = new WebSocket(AllTests.localEndpointWebSocket);
-
-		webSocket.on("open", fnResolveWaitForOpen);
-		webSocket.on("error", fnRejectWaitForOpen);
-
-		await promiseWaitForOpen;
+		await new Promise((fnResolve, fnReject) => {
+			webSocket.on("open", fnResolve);
+			webSocket.on("error", fnReject);
+		});
 
 		return webSocket;
 	}
