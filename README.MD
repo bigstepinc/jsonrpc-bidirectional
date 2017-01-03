@@ -2,7 +2,7 @@
 
 A main goal of this project is to have the JSONRPC server and client support __bi-directional requests over a single WebSocket connection.__
 
-Both the server and client support two transports, HTTP and WebSocket ([websockets/ws](https://github.com/websockets/ws) compatible API), and allow more through plugin extensibility. 
+Both the server and client support two __transports, HTTP and WebSocket__ ([websockets/ws](https://github.com/websockets/ws) compatible API), and allow more through plugin extensibility. 
 
 Plugins are allowed to replace the JSON-RPC protocol altogether, extend the protocol or wrap it.
 
