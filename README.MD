@@ -1,6 +1,6 @@
-# Bi-directional JSON-RPC 2.0 server and client
+# Bidirectional JSON-RPC 2.0 server and client
 
-A main goal of this project is to have the JSONRPC server and client support __bi-directional requests over a single WebSocket connection.__
+A main goal of this project is to have the JSONRPC server and client support __bidirectional requests over a single WebSocket connection.__
 
 Both the server and client support two __transports, HTTP and WebSocket__ ([websockets/ws](https://github.com/websockets/ws) compatible API), and allow more through plugin extensibility. 
 
@@ -40,7 +40,7 @@ class TestEndpoint extends JSONRPC.EndpointBase
 			/*classReverseCallsClient*/ JSONRPC.Client // This may be left undefined
 		);
 
-		// incomingRequest.reverseCallsClient must be specified to enable bi-directional JSON-RPC over a single WebSocket connection.
+		// incomingRequest.reverseCallsClient must be specified to enable bidirectional JSON-RPC over a single WebSocket connection.
 		// If may be left undefined for one-way interrogation.
 		// It must contain a subclass of JSONRPC.Client or an instance of JSONRPC.Client itself.
 	}
@@ -52,7 +52,7 @@ class TestEndpoint extends JSONRPC.EndpointBase
 			throw new JSONRPC.Exception("You asked me to throw.");
 		}
 
-		// If using bi-directional JSON-RPC over a single WebSocket connection, a JSONRPC.Client subclass instance is available.
+		// If using bidirectional JSON-RPC over a single WebSocket connection, a JSONRPC.Client subclass instance is available.
 		// It is an instance of the class specified in the constructor of this EndpointBase subclass, `classReverseCallsClient`.
 		// Also, it is attached to the same WebSocket connection of the current request.
 		await incomingRequest.reverseCallsClient.rpc("methodOnTheOtherSide", ["paramValue", true, false]);
@@ -166,9 +166,9 @@ const nDivisionResult = await testClient.divide(2, 1);
 ```
 
 
-## Bi-directional JSON-RPC over WebSocket
+## Bidirectional JSON-RPC over WebSocket
 
-This JSONRPC server and client can be bi-directional over __a single WebSocket connection__. 
+This JSONRPC server and client can be bidirectional over __a single WebSocket connection__. 
 
 In other words, there may be a `JSONRPC.Server` instance __and__ a `JSONRPC.Client` instance at one end, and another pair (or more) at the other end.
 
@@ -213,7 +213,7 @@ webSocketServer.on(
 	async (webSocket) => 
 	{
 		const nWebSocketConnectionID = await wsJSONRPCRouter.addWebSocket(webSocket);
-		// Do something with nWebSocketConnectionID and webSocket here, like register them as a pair with an authorization plugin .
+		// Do something with nWebSocketConnectionID and webSocket here, like register them as a pair with an authorization plugin.
 	}
 );
 ```
