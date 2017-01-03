@@ -24,7 +24,7 @@ On an incoming request, endpoints are identified by the URL path of the HTTP req
 
 For example, both these URLs point to the same endpoint: `ws://localhost/api`, `http://localhost/api`, as both have `/api` as path.
 
-```javascript
+```JavaScript
 
 const JSONRPC = require("jsonrpc-javascriptes7");
 
@@ -74,7 +74,7 @@ Extending the `JSONRPC.Client` base class makes the code more readable.
 
 This client's function names and params correspond to what `TestEndpoint` exports, defined above.
 
-```javascript
+```JavaScript
 const JSONRPC = require("jsonrpc-javascriptes7");
 
 module.exports =
@@ -107,7 +107,7 @@ class TestClient extends JSONRPC.Client
 
 
 ## Simple JSONRPC.Server over HTTP
-```javascript
+```JavaScript
 const JSONRPC = require("jsonrpc-javascriptes7");
 
 const httpServer = http.createServer();
@@ -126,7 +126,7 @@ httpServer.listen(80);
 
 
 ## Simple JSONRPC.Client over HTTP
-```javascript
+```JavaScript
 const JSONRPC = require("jsonrpc-javascriptes7");
 
 
@@ -139,7 +139,7 @@ const nDivisionResult = await testClient.divide(2, 1);
 ## Simple JSONRPC.Client over WebSocket
 Non-bidirectional JSONRPC.Client over a WebSocket client connection.
 
-```javascript
+```JavaScript
 const JSONRPC = require("jsonrpc-javascriptes7");
 const WebSocket = require("ws");
 
@@ -177,7 +177,7 @@ At the WebSocket or __TCP/HTTP server__ connection end, the `JSONRPC.Server` wil
 
 Common:
 
-```javascript
+```JavaScript
 // BidirectionalWebsocketRouter and the WebSocketTransport plugin both require that the WebSocket connection instance supports the `close`, `error` and `message` events of the https://github.com/websockets/ws API.
 // If not using `websockets/ws`, a wrapping adapter which emits the above events must be provided (if the WebSocket implementation is not already compatible with `websockets/ws`).
 
@@ -191,7 +191,7 @@ const WebSocketServer = WebSocket.Server;
 
 __Site A. WebSocket server (accepts incoming TCP connections):__
 
-```javascript
+```JavaScript
 const jsonrpcServer = new JSONRPC.Server();
 jsonrpcServer.registerEndpoint(new TestEndpoint()); // See "Define an endpoint" section above.
 
@@ -221,7 +221,7 @@ webSocketServer.on(
 
 __Site B. WebSocket client (connects to the above WebSocket TCP server):__
 
-```javascript
+```JavaScript
 const jsonrpcServer = new JSONRPC.Server();
 jsonrpcServer.registerEndpoint(new TestEndpoint()); // See "Define an endpoint" section above.
 
