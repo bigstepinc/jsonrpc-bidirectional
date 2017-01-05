@@ -17,17 +17,7 @@ class TestEndpoint extends JSONRPC.EndpointBase
 			/*classReverseCallsClient*/ JSONRPC.Client
 		);
 
-		this._serverPluginAuthorizeWebSocketAndClientMultitonSiteA = null;
 		//Object.seal(this);
-	}
-
-
-	/**
-	 * @param {ServerPluginAuthorizeWebSocketAndClientMultiton} serverPluginAuthorizeWebSocketAndClientMultitonSiteA
-	 */
-	set serverPluginAuthorizeWebSocketAndClientMultitonSiteA(serverPluginAuthorizeWebSocketAndClientMultitonSiteA)
-	{
-		this._serverPluginAuthorizeWebSocketAndClientMultitonSiteA = serverPluginAuthorizeWebSocketAndClientMultitonSiteA;
 	}
 
 

@@ -205,7 +205,6 @@ class AllTests
 
 		console.log("Instantiating ServerPluginAuthorizeWebSocket on SiteA.");
 		this._serverPluginAuthorizeWebSocketSiteA = new ServerPluginAuthorizeWebSocket();
-		this._testEndpoint.serverPluginAuthorizeWebSocketSiteA = this._serverPluginAuthorizeWebSocketSiteA;
 
 		this._jsonrpcServerSiteA.addPlugin(this._serverPluginAuthorizeWebSocketSiteA);
 
