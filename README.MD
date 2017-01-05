@@ -1,6 +1,6 @@
 # Bidirectional JSON-RPC 2.0 server and client
 
-A main goal of this project is to have the JSONRPC server and client support __bidirectional requests over a single WebSocket connection.__
+A main goal of this project is to have the JSONRPC server and client support __bidirectional JSON-RPC requests over a single WebSocket connection.__
 
 Both the server and client support two __transports, HTTP and WebSocket__ ([websockets/ws](https://github.com/websockets/ws) compatible API), and allow more through plugin extensibility. 
 
@@ -40,9 +40,9 @@ class TestEndpoint extends JSONRPC.EndpointBase
 			/*classReverseCallsClient*/ JSONRPC.Client // This may be left undefined
 		);
 
-		// incomingRequest.reverseCallsClient must be specified to enable bidirectional JSON-RPC over a single WebSocket connection.
+		// The class reference classReverseCallsClient must be specified to enable bidirectional JSON-RPC over a single WebSocket connection.
 		// If may be left undefined for one-way interrogation.
-		// It must contain a subclass of JSONRPC.Client or an instance of JSONRPC.Client itself.
+		// It must contain a reference to a subclass of JSONRPC.Client or a reference to the JSONRPC.Client class itself.
 	}
 
 	async ping(incomingRequest, strReturn, bThrow)
