@@ -130,7 +130,7 @@ class ServerPluginAuthorizeWebSocket extends JSONRPC.ServerPluginBase
 	/**
 	 * @param {string} strATeamMember
 	 * 
-	 * @returns {JSONRPC.Client}
+	 * @returns {number}
 	 */
 	aTeamMemberToConnectionID(strATeamMember)
 	{
