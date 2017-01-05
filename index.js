@@ -9,6 +9,7 @@ objExports.JSONRPC.Exception = require("./src/Exception");
 
 objExports.JSONRPC.EndpointBase = require("./src/EndpointBase.js");
 objExports.JSONRPC.Server = require("./src/Server.js");
+objExports.JSONRPC.ServerPluginBase = require("./src/ServerPluginBase");
 
 objExports.JSONRPC.BidirectionalWebsocketRouter = require("./src/BidirectionalWebsocketRouter.js");
 
