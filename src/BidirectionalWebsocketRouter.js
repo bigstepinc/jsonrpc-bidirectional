@@ -37,7 +37,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 
 		if(!BidirectionalWebsocketRouter.hasOwnProperty("_nServerWebSocketConnectionIDCounter"))
 		{
-			BidirectionalWebsocketRouter._nServerWebSocketConnectionIDCounter = parseInt(new Date().getTime() / 1000, 10) * -1;
+			BidirectionalWebsocketRouter._nServerWebSocketConnectionIDCounter = Math.max(parseInt(new Date().getTime() / 1000, 10) - 1483826328, 0);
 		}
 
 		this._objSessions = {};
