@@ -23,7 +23,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 	 * Clients are automatically instantiated per connection and are available as a property of the first param of the exported functions,
 	 * if the JSONRPC.EndpointBase constructor param classReverseCallsClient was set to a JSONRPC.Client subclass.
 	 * 
-	 * If both jsonrpcServer and classReverseCallsClient are set, then bi-directional JSONRPC over the same websocket is enabled.
+	 * If jsonrpcServer is non-null and and classReverseCallsClient is set on at least one endpoint, then bi-directional JSONRPC over the same websocket is enabled.
 	 * 
 	 * @param {JSONRPC.Server|null} jsonrpcServer
 	 */
@@ -35,7 +35,11 @@ class BidirectionalWebsocketRouter extends EventEmitter
 
 		this._jsonrpcServer = jsonrpcServer;
 
-		this._nServerWebSocketConnectionIDCounter = 0;
+		if(!BidirectionalWebsocketRouter.hasOwnProperty("_nServerWebSocketConnectionIDCounter"))
+		{
+			BidirectionalWebsocketRouter._nServerWebSocketConnectionIDCounter = parseInt(new Date().getTime() / 1000, 10) * -1;
+		}
+
 		this._objSessions = {};
 	}
 
@@ -65,7 +69,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 			return;
 		}
 
-		const nWebSocketConnectionID = ++this._nServerWebSocketConnectionIDCounter;
+		const nWebSocketConnectionID = ++BidirectionalWebsocketRouter._nServerWebSocketConnectionIDCounter;
 
 
 		const objSession = {
