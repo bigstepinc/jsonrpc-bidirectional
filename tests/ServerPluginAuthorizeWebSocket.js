@@ -72,6 +72,7 @@ class ServerPluginAuthorizeWebSocket extends JSONRPC.ServerPluginBase
 				&& this._objSessions[incomingRequest.connectionID].partyMembership !== null
 			)
 			{
+				// Maybe race condition somewhere from alternating authenticated IDs.
 				incomingRequest.callResult = new JSONRPC.Exception("Not authorized. Current connnection " + incomingRequest.connectionID + " was already authenticated.", JSONRPC.Exception.NOT_AUTHORIZED);
 
 				return;
@@ -111,6 +112,15 @@ class ServerPluginAuthorizeWebSocket extends JSONRPC.ServerPluginBase
 		webSocket.on(
 			"close",
 			(code, message) => {
+				if(
+					this._objSessions.hasOwnProperty(nWebSocketConnectionID)
+					&& this._objSessions[nWebSocketConnectionID].partyMembership
+					&& this._objATeamMemberToConnectionID.hasOwnProperty(this._objSessions[nWebSocketConnectionID].partyMembership.teamMember)
+				)
+				{
+					delete this._objATeamMemberToConnectionID[this._objSessions[nWebSocketConnectionID].partyMembership.teamMember];
+				}
+
 				delete this._objSessions[nWebSocketConnectionID];
 			}
 		);
@@ -120,7 +130,7 @@ class ServerPluginAuthorizeWebSocket extends JSONRPC.ServerPluginBase
 	/**
 	 * @param {string} strATeamMember
 	 * 
-	 * @returns {JSONRPC.Client}
+	 * @returns {number}
 	 */
 	aTeamMemberToConnectionID(strATeamMember)
 	{
