@@ -1,20 +1,19 @@
 const objExports = {};
-objExports.JSONRPC = {};
 
-objExports.JSONRPC.Client = require("./src/Client");
-objExports.JSONRPC.ClientPluginBase = require("./src/ClientPluginBase");
+objExports.Client = require("./src/Client");
+objExports.ClientPluginBase = require("./src/ClientPluginBase");
 
-objExports.JSONRPC.Utils = require("./src/Utils.js");
-objExports.JSONRPC.Exception = require("./src/Exception");
+objExports.Utils = require("./src/Utils.js");
+objExports.Exception = require("./src/Exception");
 
-objExports.JSONRPC.EndpointBase = require("./src/EndpointBase.js");
-objExports.JSONRPC.Server = require("./src/Server.js");
-objExports.JSONRPC.ServerPluginBase = require("./src/ServerPluginBase");
+objExports.EndpointBase = require("./src/EndpointBase.js");
+objExports.Server = require("./src/Server.js");
+objExports.ServerPluginBase = require("./src/ServerPluginBase");
 
-objExports.JSONRPC.BidirectionalWebsocketRouter = require("./src/BidirectionalWebsocketRouter.js");
+objExports.BidirectionalWebsocketRouter = require("./src/BidirectionalWebsocketRouter.js");
 
-objExports.JSONRPC.Plugins = objExports.JSONRPC.Plugins || {};
-objExports.JSONRPC.Plugins.Client = require("./src/Plugins/Client/index");
-objExports.JSONRPC.Plugins.Server = require("./src/Plugins/Server/index");
+objExports.Plugins = objExports.Plugins || {};
+objExports.Plugins.Client = require("./src/Plugins/Client/index");
+objExports.Plugins.Server = require("./src/Plugins/Server/index");
 
 module.exports = objExports;

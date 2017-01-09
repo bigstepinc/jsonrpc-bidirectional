@@ -1,4 +1,4 @@
-const JSONRPC = require("../index").JSONRPC;
+const JSONRPC = require("../index");
 
 const http = require("http");
 
