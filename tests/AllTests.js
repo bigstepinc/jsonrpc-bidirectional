@@ -122,6 +122,10 @@ class AllTests
 		if(this._bWebSocketMode)
 		{
 			await this.callRPCMethodSiteDisconnecter();
+			await this.setupSiteDisconnecter();
+			await this._jsonrpcClientSiteDisconnecter.rpc("ImHereForTheParty", ["Murdock", "Murdock does the harlem shake", /*bDoNotAuthorizeMe*/ false]);
+			await this.callRPCMethodSiteDisconnecter(/*bTerminate*/ true);
+
 		}
 
 		await this.callRPCMethodSiteBWhichThrowsJSONRPCException();
@@ -700,15 +704,19 @@ class AllTests
 
 
 	/**
+	 * @param {boolean} bTerminate
+	 * 
 	 * @returns {undefined}
 	 */
-	async callRPCMethodSiteDisconnecter()
+	async callRPCMethodSiteDisconnecter(bTerminate)
 	{
 		console.log("callRPCMethodSiteDisconnecter");
 
+		bTerminate = !!bTerminate;
+
 		try
 		{
-			await this._jsonrpcClientSiteDisconnecter.rpc("closeConnection", []);
+			await this._jsonrpcClientSiteDisconnecter.rpc(bTerminate ? "terminateConnection" : "closeConnection", []);
 			assert.throws(() => {});
 		}
 		catch(error)
@@ -720,6 +728,15 @@ class AllTests
 			
 			assert(error instanceof Error, error.constructor.name);
 			assert(error.message.startsWith("WebSocket closed"));
+
+			if(bTerminate)
+			{
+				assert(error.message.includes("Code: 1006" /*CLOSE_ABNORMAL*/));
+			}
+			else
+			{
+				assert(error.message.includes("Code: 1011" /*Internal error. (TestEndpoint specifies 1011 close event error code)*/));
+			}
 		}
 	}
 

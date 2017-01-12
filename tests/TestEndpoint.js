@@ -77,29 +77,56 @@ class TestEndpoint extends JSONRPC.EndpointBase
 
 
 	/**
-	 * If a reverseCallsClient is available, obtain the websocket from it and close it.
+	 * If a reverseCallsClient is available, obtain the WebSocket from it and close it.
+	 * 
+	 * If bTerminate is true, terminate the WebSocket instead of closing it.
 	 * 
 	 * @param {JSONRPC.IncomingRequest} incomingRequest
+	 * @param {boolean} bTerminate
 	 * 
 	 * @returns {null}
 	 */
-	async closeConnection(incomingRequest)
+	async closeConnection(incomingRequest, bTerminate)
 	{
+		bTerminate = !!bTerminate;
+
+
 		if(incomingRequest.reverseCallsClient)
 		{
 			for(let plugin of incomingRequest.reverseCallsClient.plugins)
 			{
 				if(plugin instanceof JSONRPC.Plugins.Client.WebSocketTransport)
 				{
-					plugin.webSocket.close(
-						/* CloseEvent.Internal Error */ 1011, 
-						"[TestEndpoint.closeConnection()] Intentionally closing websocket for testing."
-					);
+					if(bTerminate)
+					{
+						plugin.webSocket.terminate();
+					}
+					else
+					{
+						plugin.webSocket.close(
+							/* CloseEvent.Internal Error */ 1011, 
+							"[TestEndpoint.closeConnection()] Intentionally closing websocket for testing."
+						);
+					}
 				}
 			}
 		}
 
+
 		return null;
+	}
+
+
+	/**
+	 * If a reverseCallsClient is available, obtain the WebSocket from it and terminate it (send FIN packet).
+	 * 
+	 * @param {JSONRPC.IncomingRequest} incomingRequest
+	 * 
+	 * @returns {null}
+	 */
+	async terminateConnection(incomingRequest)
+	{
+		return this.closeConnection(incomingRequest, /*bTerminate*/ true);
 	}
 
 
