@@ -23,7 +23,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 	 * Clients are automatically instantiated per connection and are available as a property of the first param of the exported functions,
 	 * if the JSONRPC.EndpointBase constructor param classReverseCallsClient was set to a JSONRPC.Client subclass.
 	 * 
-	 * If jsonrpcServer is non-null and and classReverseCallsClient is set on at least one endpoint, then bi-directional JSONRPC over the same websocket is enabled.
+	 * If jsonrpcServer is non-null and classReverseCallsClient is set on at least one endpoint, then bi-directional JSONRPC over the same websocket is enabled.
 	 * 
 	 * @param {JSONRPC.Server|null} jsonrpcServer
 	 */
@@ -276,6 +276,12 @@ class BidirectionalWebsocketRouter extends EventEmitter
 
 
 				const objResponse = await this._jsonrpcServer.processRequest(incomingRequest);
+				
+				if(webSocket.readyState !== webSocket.constructor.OPEN)
+				{
+					console.error("webSocket.readyState: " + JSON.stringify(webSocket.readyState) + ". Request was " + strMessage + ". Attempted responding with " + JSON.stringify(objResponse, undefined, "\t") + ".");
+				}
+
 				webSocket.send(JSON.stringify(objResponse, undefined, "\t"));
 			}
 			else if(objMessage.hasOwnProperty("result") || objMessage.hasOwnProperty("error"))

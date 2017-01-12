@@ -52,6 +52,13 @@ class AllTests
 		this._jsonrpcClientSiteC = null;
 		this._jsonrpcServerSiteC = null; // reverse calls, TCP client using a JSONRPC server accepts requests from a TCP server with an attached JSONRPC client.
 
+
+		// SiteDisconnecter does not have to be reachable (it can be firewalled, private IP or simply not listening for connections).
+		// It is akin to a browser.
+		this._webSocketClientSiteDisconnecter = null;
+		this._jsonrpcClientSiteDisconnecter = null;
+		this._jsonrpcServerSiteDisconnecter = null; // reverse calls, TCP client using a JSONRPC server accepts requests from a TCP server with an attached JSONRPC client.
+
 		
 		// JSONRPC client on WebSocket client, nothing else.
 		this._jsonrpcClientNonBidirectional = null;
@@ -86,6 +93,7 @@ class AllTests
 
 		await this.setupSiteB();
 		await this.setupSiteC();
+		await this.setupSiteDisconnecter();
 
 		await this.endpointNotFoundError();
 		await this.outsideJSONRPCPathError();
@@ -105,10 +113,16 @@ class AllTests
 		{
 			await this._jsonrpcClientSiteB.rpc("ImHereForTheParty", ["Hannibal", "Hannibal does the harlem shake", /*bDoNotAuthorizeMe*/ false]);
 			await this._jsonrpcClientSiteC.rpc("ImHereForTheParty", ["Baracus", "Baracus does the harlem shake", /*bDoNotAuthorizeMe*/ false]);
+			await this._jsonrpcClientSiteDisconnecter.rpc("ImHereForTheParty", ["Murdock", "Murdock does the harlem shake", /*bDoNotAuthorizeMe*/ false]);
 		}
 
 		await this.callRPCMethodSiteB(/*bDoNotSleep*/ true);
 		await this.callRPCMethodSiteB(/*bDoNotSleep*/ true, /*bVeryLargePayload*/ true);
+
+		if(this._bWebSocketMode)
+		{
+			await this.callRPCMethodSiteDisconnecter();
+		}
 
 		await this.callRPCMethodSiteBWhichThrowsJSONRPCException();
 		await this.callRPCMethodSiteBWhichThrowsSimpleError();
@@ -345,6 +359,58 @@ class AllTests
 
 
 	/**
+	 * @returns {undefined}
+	 */
+	async setupSiteDisconnecter()
+	{
+		console.log("setupSiteDisconnecter.");
+		if(this._bWebSocketMode)
+		{
+			if(
+				this._webSocketClientSiteDisconnecter
+				&& this._webSocketClientSiteDisconnecter.readyState === WebSocket.OPEN
+			)
+			{
+				this._webSocketClientSiteDisconnecter.close(
+					/*CloseEvent.CLOSE_NORMAL*/ 1000,
+					"Normal close."
+				);
+
+				this._webSocketClientSiteDisconnecter = null;
+			}
+
+			this._webSocketClientSiteDisconnecter = await this._makeClientWebSocket();
+
+			this._jsonrpcServerSiteDisconnecter = new JSONRPC.Server();
+			this._jsonrpcServerSiteDisconnecter.registerEndpoint(new TestEndpoint());
+
+			this._jsonrpcServerSiteDisconnecter.addPlugin(this._serverAuthenticationSkipPlugin);
+			this._jsonrpcServerSiteDisconnecter.addPlugin(this._serverAuthorizeAllPlugin);
+			this._jsonrpcServerSiteDisconnecter.addPlugin(new ServerDebugMarkerPlugin("SiteDisconnecter"));
+
+			console.log("Instantiating JSONRPC.BidirectionalWebsocketRouter on SiteDisconnecter.");
+			const wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(
+				this._jsonrpcServerSiteDisconnecter
+			);
+
+			const nWebSocketConnectionID = await wsJSONRPCRouter.addWebSocket(this._webSocketClientSiteDisconnecter);
+
+			// Alternatively, the madeReverseCallsClient event can be used.
+			// In this case however, only a single client is suposed to exist.
+			this._jsonrpcClientSiteDisconnecter = wsJSONRPCRouter.connectionIDToSingletonClient(nWebSocketConnectionID, TestClient);
+			this._jsonrpcClientSiteDisconnecter.addPlugin(new ClientDebugMarkerPlugin("SiteDisconnecter"));
+			this._jsonrpcClientSiteDisconnecter.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
+		}
+		else
+		{
+			this._jsonrpcClientSiteDisconnecter = new TestClient("http://localhost:8324/api");
+			this._jsonrpcClientSiteDisconnecter.addPlugin(new ClientDebugMarkerPlugin("SiteDisconnecter"));
+			this._jsonrpcClientSiteDisconnecter.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
+		}
+	}
+
+
+	/**
 	 * @returns {undefined} 
 	 */
 	async triggerConnectionRefused()
@@ -463,6 +529,9 @@ class AllTests
 	}
 
 
+	/**
+	 * @returns {undefined}
+	 */
 	async requestParseError()
 	{
 		console.log("requestParseError");
@@ -498,6 +567,9 @@ class AllTests
 	}
 
 
+	/**
+	 * @returns {undefined}
+	 */
 	async responseParseError()
 	{
 		console.log("responseParseError");
@@ -624,6 +696,31 @@ class AllTests
 		}
 
 		assert.strictEqual(strParam, await this._jsonrpcClientSiteC.rpc("ping", arrParams));
+	}
+
+
+	/**
+	 * @returns {undefined}
+	 */
+	async callRPCMethodSiteDisconnecter()
+	{
+		console.log("callRPCMethodSiteDisconnecter");
+
+		try
+		{
+			await this._jsonrpcClientSiteDisconnecter.rpc("closeConnection", []);
+			assert.throws(() => {});
+		}
+		catch(error)
+		{
+			if(error.constructor.name === "AssertionError")
+			{
+				throw error;
+			}
+			
+			assert(error instanceof Error, error.constructor.name);
+			assert(error.message.startsWith("WebSocket closed"));
+		}
 	}
 
 

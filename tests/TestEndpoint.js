@@ -5,6 +5,9 @@ JSONRPC.Exception = require("../src/Exception");
 JSONRPC.Client = require("../src/Client");
 JSONRPC.EndpointBase = require("../src/EndpointBase");
 
+JSONRPC.Plugins = {};
+JSONRPC.Plugins.Client = require("../src/Plugins/Client/index");
+
 module.exports =
 class TestEndpoint extends JSONRPC.EndpointBase 
 {
@@ -70,6 +73,33 @@ class TestEndpoint extends JSONRPC.EndpointBase
 	async throwError(incomingRequest)
 	{
 		throw new Error("Error");
+	}
+
+
+	/**
+	 * If a reverseCallsClient is available, obtain the websocket from it and close it.
+	 * 
+	 * @param {JSONRPC.IncomingRequest} incomingRequest
+	 * 
+	 * @returns {null}
+	 */
+	async closeConnection(incomingRequest)
+	{
+		if(incomingRequest.reverseCallsClient)
+		{
+			for(let plugin of incomingRequest.reverseCallsClient.plugins)
+			{
+				if(plugin instanceof JSONRPC.Plugins.Client.WebSocketTransport)
+				{
+					plugin.webSocket.close(
+						/* CloseEvent.Internal Error */ 1011, 
+						"[TestEndpoint.closeConnection()] Intentionally closing websocket for testing."
+					);
+				}
+			}
+		}
+
+		return null;
 	}
 
 
