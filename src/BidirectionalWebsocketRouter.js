@@ -204,7 +204,11 @@ class BidirectionalWebsocketRouter extends EventEmitter
 			console.error(error);
 			console.error("Unable to parse JSON. RAW remote message: " + strMessage);
 
-			if(this._jsonrpcServer && this._objSessions[nWebSocketConnectionID].clientWebSocketTransportPlugin === null)
+			if(
+				this._jsonrpcServer 
+				&& this._objSessions.hasOwnProperty(nWebSocketConnectionID)
+				&& this._objSessions[nWebSocketConnectionID].clientWebSocketTransportPlugin === null
+			)
 			{
 				webSocket.send(JSON.stringify({
 					id: null,
@@ -286,7 +290,10 @@ class BidirectionalWebsocketRouter extends EventEmitter
 			}
 			else if(objMessage.hasOwnProperty("result") || objMessage.hasOwnProperty("error"))
 			{
-				if(this._objSessions[nWebSocketConnectionID].clientWebSocketTransportPlugin === null)
+				if(
+					this._objSessions.hasOwnProperty(nWebSocketConnectionID)
+					&& this._objSessions[nWebSocketConnectionID].clientWebSocketTransportPlugin === null
+				)
 				{
 					if(!this._jsonrpcServer)
 					{
@@ -313,7 +320,15 @@ class BidirectionalWebsocketRouter extends EventEmitter
 
 					throw new Error("How can the client be not initialized, and yet getting responses from phantom requests?");
 				}
-				await this._objSessions[nWebSocketConnectionID].clientWebSocketTransportPlugin.processResponse(strMessage, objMessage);
+				
+				if(this._objSessions.hasOwnProperty(nWebSocketConnectionID))
+				{
+					await this._objSessions[nWebSocketConnectionID].clientWebSocketTransportPlugin.processResponse(strMessage, objMessage);
+				}
+				else
+				{
+					console.error("Connection ID " + nWebSocketConnectionID + " is closed and session is missing. Ignoring response: " + strMessage);
+				}
 			}
 			else
 			{
@@ -325,7 +340,11 @@ class BidirectionalWebsocketRouter extends EventEmitter
 			console.error(error);
 			console.error("Uncaught error. RAW remote message: " + strMessage);
 
-			if(this._jsonrpcServer && this._objSessions[nWebSocketConnectionID].clientWebSocketTransportPlugin === null)
+			if(
+				this._jsonrpcServer 
+				&& this._objSessions.hasOwnProperty(nWebSocketConnectionID)
+				&& this._objSessions[nWebSocketConnectionID].clientWebSocketTransportPlugin === null
+			)
 			{
 				if(webSocket.readyState === webSocket.constructor.OPEN)
 				{
