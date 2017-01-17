@@ -24,6 +24,8 @@ On an incoming request, endpoints are identified by the URL path of the HTTP req
 
 For example, both these URLs point to the same endpoint: `ws://localhost/api`, `http://localhost/api`, as both have `/api` as path.
 
+:warning: When in bidirectional mode, the endpoints at both ends of a connection must be initialized with the same path value (even if exporting different functions). The reverse calls client will connect to the same endpoint path as the one indicated by the current WebSocket connection URL.
+
 ```JavaScript
 
 const JSONRPC = require("jsonrpc-bidirectional");
