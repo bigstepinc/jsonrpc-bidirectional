@@ -26,6 +26,7 @@ class IncomingRequest
 		this._classClient = null;
 
 		this._objHeaders = {};
+		this._strRemoteAddress = "";
 
 		//this._webSocket
 		//this._httpRequest
@@ -257,6 +258,24 @@ class IncomingRequest
 	set headers(objHeaders)
 	{
 		this._objHeaders = objHeaders;
+	}
+
+
+	/**
+	 * @returns {string}
+	 */
+	get remoteAddress()
+	{
+		return this._strRemoteAddress;
+	}
+
+
+	/**
+	 * @param {string} strRemoteAddress
+	 */
+	set remoteAddress(strRemoteAddress)
+	{
+		this._strRemoteAddress = strRemoteAddress;
 	}
 
 

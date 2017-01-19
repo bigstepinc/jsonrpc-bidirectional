@@ -241,6 +241,7 @@ class Server extends EventEmitter
 			}
 
 			incomingRequest.headers = httpRequest.headers;
+			incomingRequest.remoteAddress = httpRequest.socket.remoteAddress;
 
 			const strPath = JSONRPC.EndpointBase.normalizePath(httpRequest.url);
 

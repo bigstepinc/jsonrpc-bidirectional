@@ -261,6 +261,8 @@ class BidirectionalWebsocketRouter extends EventEmitter
 				{
 					// upgradeReq is a http.IncomingMessage
 					incomingRequest.headers = webSocket.upgradeReq.headers;
+
+					incomingRequest.remoteAddress = webSocket.upgradeReq.socket.remoteAddress;
 				}
 
 
