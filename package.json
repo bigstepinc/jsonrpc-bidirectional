@@ -1,7 +1,7 @@
 {
   "name": "jsonrpc-bidirectional",
   "description": "Bidirectional JSONRPC over web sockets or HTTP with extensive plugin support.",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "scripts": {
     "transpile": "babel src --out-dir src",
     "test": "node --harmony_async_await tests/main.js",
