@@ -36,8 +36,6 @@ class ProcessStdIOTransport extends JSONRPC.ClientPluginBase
 
 		outgoingRequest.isMethodCalled = true;
 		
-		// Without new lines or indent.
-		outgoingRequest.requestBody = JSON.stringify(outgoingRequest.requestObject);
 
 		const objExecOptions = {
 			cwd: this._strWorkingDirectoryPath,
@@ -49,7 +47,7 @@ class ProcessStdIOTransport extends JSONRPC.ClientPluginBase
 		
 		const child = ChildProcess.spawn(strExePath, [strArguments], objExecOptions);
 
-		await new Promise((fnResolve, fnReject) => {
+		return new Promise((fnResolve, fnReject) => {
 			child.on(
 				"close", 
 				(code) => {
