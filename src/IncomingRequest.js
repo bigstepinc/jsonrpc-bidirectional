@@ -25,6 +25,8 @@ class IncomingRequest
 
 		this._classClient = null;
 
+		this._objHeaders = {};
+
 		//this._webSocket
 		//this._httpRequest
 
@@ -237,6 +239,24 @@ class IncomingRequest
 	{
 		this.isMethodCalled = true;
 		this._mxResult = mxResult;
+	}
+
+
+	/**
+	 * @returns {Object}
+	 */
+	get headers()
+	{
+		return this._objHeaders;
+	}
+
+
+	/**
+	 * @param {Object} objHeaders
+	 */
+	set headers(objHeaders)
+	{
+		this._objHeaders = objHeaders;
 	}
 
 

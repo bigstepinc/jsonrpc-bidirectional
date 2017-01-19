@@ -257,6 +257,13 @@ class BidirectionalWebsocketRouter extends EventEmitter
 				incomingRequest.bidirectionalWebsocketRouter = this;
 
 
+				if(webSocket.upgradeReq)
+				{
+					// upgradeReq is a http.IncomingMessage
+					incomingRequest.headers = webSocket.upgradeReq.headers;
+				}
+
+
 				// Move this somewhere in a state tracking class instance of the websocket connection so it is only executed on an incoming connection,
 				// for efficiency.
 				try

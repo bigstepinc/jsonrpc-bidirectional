@@ -240,6 +240,8 @@ class Server extends EventEmitter
 				throw new Error("JSONRPC does not handle HTTP " + httpRequest.method + " requests.");
 			}
 
+			incomingRequest.headers = httpRequest.headers;
+
 			const strPath = JSONRPC.EndpointBase.normalizePath(httpRequest.url);
 
 			if(!this._objEndpoints.hasOwnProperty(strPath))
