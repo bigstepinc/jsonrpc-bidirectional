@@ -2,8 +2,6 @@ const JSONRPC = {};
 JSONRPC.ClientPluginBase = require("../../ClientPluginBase");
 JSONRPC.Utils = require("../../Utils");
 
-const assert = require("assert");
-
 const ChildProcess = require("child_process");
 
 module.exports =
