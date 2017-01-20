@@ -4,6 +4,7 @@
   "version": "1.4.2",
   "scripts": {
     "transpile": "babel src --out-dir src",
+	"todo": "http://jamesknelson.com/using-es6-in-the-browser-with-babel-6-and-webpack/",
     "test": "node --harmony_async_await tests/main.js",
     "lint": "eslint src tests --quiet"
   },
