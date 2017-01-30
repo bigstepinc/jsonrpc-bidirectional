@@ -49,10 +49,7 @@ class SignatureAdd extends JSONRPC.ClientPluginBase
 	 */
 	async beforeJSONEncode(outgoingRequest)
 	{
-		// Not setting expires to allow HTTP caching AND because the browser machine's UTC time is wrong for a lot of users.
-		// Unknowingly users are setting the wrong timezone with the wrong UTC time, while the local time *appears* to be correct.
-
-		outgoingRequest.requestObject["expires"] = parseInt((new Date().getTime()) + 86400, 10);
+		outgoingRequest.requestObject["expires"] = parseInt((new Date().getTime()) / 1000 + 86400, 10);
 	}
 
 
