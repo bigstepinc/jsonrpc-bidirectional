@@ -62,7 +62,7 @@ class Server extends EventEmitter
 					httpResponse.statusCode = 500;
 
 					const incomingRequest = await this.processHTTPRequest(httpRequest, httpResponse);
-					const objResponse = await this.processRequest(incomingRequest);
+					await this.processRequest(incomingRequest);
 
 					if(incomingRequest.callResult instanceof Error)
 					{
@@ -92,7 +92,7 @@ class Server extends EventEmitter
 					else
 					{
 						httpResponse.setHeader("Content-Type", "application/json");
-						httpResponse.write(JSON.stringify(objResponse, undefined, "\t"));
+						httpResponse.write(incomingRequest.callResultSerialized);
 					}
 				}
 				catch(error)
@@ -265,7 +265,7 @@ class Server extends EventEmitter
 	 * 
 	 * @param {JSONRPC.IncomingRequest} incomingRequest
 	 * 
-	 * @returns {Object|null}
+	 * @returns {null}
 	 */
 	async processRequest(incomingRequest)
 	{
@@ -382,14 +382,25 @@ class Server extends EventEmitter
 			}
 		}
 
-		let objResponse = incomingRequest.toResponseObject();
+		incomingRequest.callResultToBeSerialized = incomingRequest.toResponseObject();
 
-		this.emit("result", objResponse);
+		this.emit("response", incomingRequest);
 		for(let plugin of this._arrPlugins)
 		{
-			await plugin.response(objResponse);
+			await plugin.response(incomingRequest);
 		}
 
-		return objResponse;
+
+		if(incomingRequest.callResultSerialized === null)
+		{
+			incomingRequest.callResultSerialized = JSON.stringify(incomingRequest.callResultToBeSerialized, undefined, "\t");
+		}
+
+
+		this.emit("afterSerialize", incomingRequest);
+		for(let plugin of this._arrPlugins)
+		{
+			await plugin.afterSerialize(incomingRequest);
+		}
 	}
 };

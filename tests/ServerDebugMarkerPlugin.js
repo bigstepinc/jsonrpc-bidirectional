@@ -21,14 +21,14 @@ class ServerDebugMarkerPlugin extends JSONRPC.ServerPluginBase
 	 * 
 	 * objResponse is a standard JSONRPC 2.0 response object.
 	 * 
-	 * @param {Object} objResponse
+	 * @param {JSONRPC.IncomingRequest} incomingRequest
 	 */
-	async response(objResponse)
+	async response(incomingRequest)
 	{
 		// Gives a chance to modify the server response object before sending it out.
 
-		// Normally, this allows extending the protocol.
+		incomingRequest.callResultToBeSerialized.from = this._strSite;
 
-		objResponse.from = this._strSite;
+		// Normally, this allows extending the protocol.
 	}
 };

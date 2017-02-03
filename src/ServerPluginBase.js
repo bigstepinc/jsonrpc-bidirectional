@@ -66,11 +66,30 @@ class ServerPluginBase
 	 * 
 	 * objResponse is a standard JSONRPC 2.0 response object.
 	 * 
-	 * @param {Object} objResponse
+	 * @param {JSONRPC.IncomingRequest} incomingRequest
 	 */
-	async response(objResponse)
+	async response(incomingRequest)
 	{
 		// Gives a chance to modify the server response object before sending it out.
+
+		// incomingRequest.callResultToBeSerialized is available here.
+
+		// Normally, this allows extending the protocol.
+	}
+
+
+	/**
+	 * This is called with the actual response object.
+	 * 
+	 * objResponse is a standard JSONRPC 2.0 response object.
+	 * 
+	 * @param {JSONRPC.IncomingRequest} incomingRequest
+	 */
+	async afterSerialize(incomingRequest)
+	{
+		// Gives a chance to modify the serialized server response string (or something else) before sending it out.
+
+		// incomingRequest.callResultSerialized is available here.
 
 		// Normally, this allows extending the protocol.
 	}

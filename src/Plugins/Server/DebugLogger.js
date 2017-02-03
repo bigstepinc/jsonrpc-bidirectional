@@ -26,7 +26,7 @@ class DebugLogger extends JSONRPC.ServerPluginBase
 	 * 
 	 * @param {JSONRPC.IncomingRequest} incomingRequest
 	 */
-	async afterJSONEncode(incomingRequest)
+	async afterSerialize(incomingRequest)
 	{
 		// @TODO: specify selected endpoint?
 

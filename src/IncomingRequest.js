@@ -19,6 +19,8 @@ class IncomingRequest
 		this._bidirectionalWebsocketRouter = null;
 		
 		this._mxResult = null;
+		this._objResponseToBeSerialized = null;
+		this._mxResultSerialized = null;
 		this._bMethodCalled = false;
 
 		this._nConnectionID = null;
@@ -240,6 +242,42 @@ class IncomingRequest
 	{
 		this.isMethodCalled = true;
 		this._mxResult = mxResult;
+	}
+
+
+	/**
+	 * @returns {Object}
+	 */
+	get callResultToBeSerialized()
+	{
+		return this._objResponseToBeSerialized;
+	}
+
+
+	/**
+	 * @param {Object} objResultToBeSerialized
+	 */
+	set callResultToBeSerialized(objResultToBeSerialized)
+	{
+		this._objResponseToBeSerialized = objResultToBeSerialized;
+	}
+
+
+	/**
+	 * @returns {string|Buffer}
+	 */
+	get callResultSerialized()
+	{
+		return this._mxResultSerialized;
+	}
+
+
+	/**
+	 * @param {string|Buffer} mxResultSerialized
+	 */
+	set callResultSerialized(mxResultSerialized)
+	{
+		this._mxResultSerialized = mxResultSerialized;
 	}
 
 

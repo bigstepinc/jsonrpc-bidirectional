@@ -288,14 +288,14 @@ class BidirectionalWebsocketRouter extends EventEmitter
 				}
 
 
-				const objResponse = await this._jsonrpcServer.processRequest(incomingRequest);
+				await this._jsonrpcServer.processRequest(incomingRequest);
 				
 				if(webSocket.readyState !== webSocket.constructor.OPEN)
 				{
-					console.error("webSocket.readyState: " + JSON.stringify(webSocket.readyState) + ". Request was " + strMessage + ". Attempted responding with " + JSON.stringify(objResponse, undefined, "\t") + ".");
+					console.error("webSocket.readyState: " + JSON.stringify(webSocket.readyState) + ". Request was " + strMessage + ". Attempted responding with " + JSON.stringify(incomingRequest.callResultToBeSerialized, undefined, "\t") + ".");
 				}
 
-				webSocket.send(JSON.stringify(objResponse, undefined, "\t"));
+				webSocket.send(incomingRequest.callResultSerialized);
 			}
 			else if(objMessage.hasOwnProperty("result") || objMessage.hasOwnProperty("error"))
 			{

@@ -5,13 +5,18 @@ JSONRPC.Exception = require("../src/Exception");
 module.exports =
 class ServerPluginInvalidResponseJSON extends JSONRPC.ServerPluginBase
 {
-	async response(objResponse)
+	/**
+	 * @param {JSONRPC.IncomingRequest} incomingRequest
+	 */
+	async response(incomingRequest)
 	{
-		for(let strKey in objResponse)
+		for(let strKey in incomingRequest.callResultToBeSerialized)
 		{
-			delete objResponse[strKey];
+			delete incomingRequest.callResultToBeSerialized[strKey];
 		}
 
-		objResponse.helloFromMars = ".... . .-.. .-.. --- / ..-. .-. --- -- / -- .- .-. ...";
+		incomingRequest.callResultToBeSerialized.helloFromMars = ".... . .-.. .-.. --- / ..-. .-. --- -- / -- .- .-. ...";
+
+		console.log(incomingRequest.callResultToBeSerialized);
 	}
 };
