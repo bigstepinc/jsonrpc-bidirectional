@@ -36,7 +36,7 @@ class DebugLogger extends JSONRPC.ServerPluginBase
 		}
 		else
 		{
-			console.log("[" + (new Date()).toISOString() + "] Sending JSONRPC response: " + incomingRequest.responseBody + "\n");
+			console.log("[" + (new Date()).toISOString() + "] Sending JSONRPC response: " + incomingRequest.callResultSerialized + "\n");
 		}
 	}
 };
