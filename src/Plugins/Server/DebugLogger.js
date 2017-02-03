@@ -9,7 +9,7 @@ class DebugLogger extends JSONRPC.ServerPluginBase
 	 * 
 	 * @param {JSONRPC.IncomingRequest} incomingRequest
 	 */
-	beforeJSONDecode(incomingRequest)
+	async beforeJSONDecode(incomingRequest)
 	{
 		if(incomingRequest.requestBody.length > 1024 * 1024)
 		{
@@ -26,7 +26,7 @@ class DebugLogger extends JSONRPC.ServerPluginBase
 	 * 
 	 * @param {JSONRPC.IncomingRequest} incomingRequest
 	 */
-	afterJSONEncode(incomingRequest)
+	async afterJSONEncode(incomingRequest)
 	{
 		// @TODO: specify selected endpoint?
 

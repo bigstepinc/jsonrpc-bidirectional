@@ -7,7 +7,7 @@ class AuthenticationSkip extends JSONRPC.ServerPluginBase
 	/**
 	 * @param {JSONRPC.IncomingRequest} incomingRequest
 	 */
-	beforeJSONDecode(incomingRequest)
+	async beforeJSONDecode(incomingRequest)
 	{
 		incomingRequest.isAuthorized = true;
 	}
