@@ -1,7 +1,7 @@
 {
   "name": "jsonrpc-bidirectional",
   "description": "Bidirectional JSONRPC over web sockets or HTTP with extensive plugin support.",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "scripts": {
     "transpile": "babel src --out-dir src",
 	"todo": "http://jamesknelson.com/using-es6-in-the-browser-with-babel-6-and-webpack/",
