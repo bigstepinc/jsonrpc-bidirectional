@@ -12,7 +12,7 @@ See `JSONRPC.ClientPluginBase` and `JSONRPC.ServerPluginBase`. Plugins may be ad
 
 Events may be used instead of plugins. Method names in `JSONRPC.ClientPluginBase` and `JSONRPC.ServerPluginBase` are also event names (event handlers have the same params) while `JSONRPC.Server` and `JSONRPC.Client` emit these events.
 
-Events may be more efficient than plugins, if very small performance gains matter. Plugins on the other hand help write readable and maintanable code.
+Events may be more efficient than plugins, if very small performance gains matter. Plugins on the other hand help write readable and maintanable code (and are asynchronous).
 
 
 ## Define an endpoint
@@ -74,7 +74,7 @@ class TestEndpoint extends JSONRPC.EndpointBase
 
 Extending the `JSONRPC.Client` base class makes the code more readable. 
 
-This client's function names and params correspond to what `TestEndpoint` exports, defined above.
+This client's function names and params correspond to what `TestEndpoint` exports (defined above).
 
 ```JavaScript
 const JSONRPC = require("jsonrpc-bidirectional");
@@ -134,7 +134,7 @@ const JSONRPC = require("jsonrpc-bidirectional");
 
 const testClient = new TestClient("http://localhost/api");
 
-const nDivisionResult = await testClient.divide(2, 1);
+const fDivisionResult = await testClient.divide(2, 1);
 ```
 
 
@@ -164,7 +164,7 @@ const webSocketTransport = new JSONRPC.Plugins.Client.WebSocketTransport(ws);
 testClient.addPlugin(webSocketTransport);
 
 
-const nDivisionResult = await testClient.divide(2, 1);
+const fDivisionResult = await testClient.divide(2, 1);
 ```
 
 
