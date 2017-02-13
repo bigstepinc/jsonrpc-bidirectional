@@ -1,10 +1,10 @@
 {
   "name": "jsonrpc-bidirectional",
   "description": "Bidirectional JSONRPC over web sockets or HTTP with extensive plugin support.",
-  "version": "1.5.1",
+  "version": "1.6.0",
   "scripts": {
     "transpile": "babel src --out-dir src",
-	"todo": "http://jamesknelson.com/using-es6-in-the-browser-with-babel-6-and-webpack/",
+    "todo": "http://jamesknelson.com/using-es6-in-the-browser-with-babel-6-and-webpack/",
     "test": "node --harmony_async_await tests/main.js",
     "lint": "eslint src tests --quiet"
   },
@@ -12,7 +12,7 @@
     "type": "git",
     "url": "git+https://github.com/bigstepinc/jsonrpc-bidirectional.git"
   },
-  "homepage": "https://github.com/bigstepinc/jsonrpc-bidirectional", 
+  "homepage": "https://github.com/bigstepinc/jsonrpc-bidirectional",
   "author": "Ionut Stan <Ionut.Stan@bigstep.com>",
   "license": "MIT",
   "contributors": [
@@ -34,24 +34,21 @@
     "node": ">=7.30"
   },
   "dependencies": {
+    "babel-polyfill": "^6.22.0",
     "crypto-js": "^3.1.8",
     "node-fetch": "^1.6.3"
   },
   "devDependencies": {
     "@types/node": "*",
-    "babel-cli": "*",
-    "babel-core": "*",
+    "babel-core": "^6.22.1",
     "babel-eslint": "*",
-    "babel-polyfill": "*",
-    "babel-preset-es2015": "*",
-    "babel-preset-es2016": "*",
-    "babel-preset-es2017": "*",
-    "babel-preset-latest": "*",
-    "babel-preset-stage-0": "*",
-    "browserify": "*",
+    "babel-loader": "^6.2.10",
+    "babel-preset-es2015": "^6.22.0",
+    "babel-preset-stage-0": "^6.22.0",
     "eslint": "*",
     "eslint-plugin-jsdoc": "*",
     "sleep-promise": "*",
+    "webpack": "^2.2.1",
     "ws": "^1.1.1"
   }
 }
