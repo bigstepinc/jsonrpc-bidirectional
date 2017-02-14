@@ -9,15 +9,17 @@ module.exports = {
 	output: {
 		path: path.join(__dirname, "browser"),
 		filename: "bundle.js",
-		libraryTarget: "commonjs2"
+		libraryTarget: "umd"
 	},
 	devtool: "source-map",
-	target: "node",
 	module: {
 		loaders: [
 			{
 				test: /\.js$/,
-				include: path.join(__dirname, "src"),
+				include: [
+					path.resolve(__dirname, "src"),
+					// path.resolve(__dirname, "tests")
+				],
 				loader: "babel-loader",
 				query: {
 					presets: ["es2015", "stage-0"]
