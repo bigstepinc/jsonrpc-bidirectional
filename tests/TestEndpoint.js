@@ -6,7 +6,7 @@ JSONRPC.Client = require("../src/Client");
 JSONRPC.EndpointBase = require("../src/EndpointBase");
 
 JSONRPC.Plugins = {};
-JSONRPC.Plugins.Client = require("../src/Plugins/Client/index");
+JSONRPC.Plugins.Client = require("../src/Plugins/Client");
 
 module.exports =
 class TestEndpoint extends JSONRPC.EndpointBase 

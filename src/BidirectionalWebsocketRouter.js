@@ -7,7 +7,7 @@ JSONRPC.IncomingRequest = require("./IncomingRequest");
 JSONRPC.EndpointBase = require("./EndpointBase");
 
 JSONRPC.Plugins = {};
-JSONRPC.Plugins.Client = require("./Plugins/Client/index");
+JSONRPC.Plugins.Client = require("./Plugins/Client");
 JSONRPC.Utils = require("./Utils");
 
 const EventEmitter = require("events");

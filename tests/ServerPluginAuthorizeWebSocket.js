@@ -3,7 +3,7 @@ JSONRPC.ServerPluginBase = require("../src/ServerPluginBase");
 JSONRPC.Exception = require("../src/Exception");
 
 JSONRPC.Plugins = {};
-JSONRPC.Plugins.Client = require("../src/Plugins/Client/index");
+JSONRPC.Plugins.Client = require("../src/Plugins/Client");
 JSONRPC.Utils = require("../src/Utils");
 
 const assert = require("assert");

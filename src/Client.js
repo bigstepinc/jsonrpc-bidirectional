@@ -4,7 +4,7 @@ const JSONRPC = {};
 JSONRPC.Exception = require("./Exception");
 
 JSONRPC.Plugins = {};
-JSONRPC.Plugins.Client = require("./Plugins/Client/index");
+JSONRPC.Plugins.Client = require("./Plugins/Client");
 JSONRPC.Utils = require("./Utils");
 JSONRPC.OutgoingRequest = require("./OutgoingRequest");
 

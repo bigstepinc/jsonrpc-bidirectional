@@ -3883,10 +3883,10 @@ var inherits = __webpack_require__(36);
 
 inherits(Stream, EE);
 Stream.Readable = __webpack_require__(111);
-Stream.Writable = __webpack_require__(398);
-Stream.Duplex = __webpack_require__(395);
+Stream.Writable = __webpack_require__(399);
+Stream.Duplex = __webpack_require__(396);
 Stream.Transform = __webpack_require__(154);
-Stream.PassThrough = __webpack_require__(397);
+Stream.PassThrough = __webpack_require__(398);
 
 // Backwards-compat with node 0.4.x
 Stream.Stream = Stream;
@@ -5036,7 +5036,7 @@ function objectToString(o) {
 
 
 
-var punycode = __webpack_require__(391);
+var punycode = __webpack_require__(392);
 var util = __webpack_require__(405);
 
 exports.parse = urlParse;
@@ -5112,7 +5112,7 @@ var protocolPattern = /^([a-z0-9.+-]+:)/i,
       'gopher:': true,
       'file:': true
     },
-    querystring = __webpack_require__(394);
+    querystring = __webpack_require__(395);
 
 function urlParse(url, parseQueryString, slashesDenoteHost) {
   if (url && util.isObject(url) && url instanceof Url) return url;
@@ -6757,62 +6757,44 @@ module.exports = function (_EventEmitter) {
 	}, {
 		key: "processHTTPRequest",
 		value: function () {
-			var _ref3 = _asyncToGenerator(regeneratorRuntime.mark(function _callee4(httpRequest, httpResponse) {
-				var _this3 = this;
-
-				var incomingRequest, strPath;
-				return regeneratorRuntime.wrap(function _callee4$(_context4) {
+			var _ref3 = _asyncToGenerator(regeneratorRuntime.mark(function _callee3(httpRequest, httpResponse) {
+				var incomingRequest, arrBody, strPath;
+				return regeneratorRuntime.wrap(function _callee3$(_context3) {
 					while (1) {
-						switch (_context4.prev = _context4.next) {
+						switch (_context3.prev = _context3.next) {
 							case 0:
 								incomingRequest = new JSONRPC.IncomingRequest();
-								_context4.prev = 1;
+								_context3.prev = 1;
 
 								if (!(httpRequest.method === "POST")) {
-									_context4.next = 6;
+									_context3.next = 9;
 									break;
 								}
 
-								return _context4.delegateYield(regeneratorRuntime.mark(function _callee3() {
-									var arrBody;
-									return regeneratorRuntime.wrap(function _callee3$(_context3) {
-										while (1) {
-											switch (_context3.prev = _context3.next) {
-												case 0:
-													arrBody = [];
-													_context3.next = 3;
-													return new Promise(function (fnResolve, fnReject) {
-														httpRequest.on("error", fnReject);
-														httpResponse.on("error", fnReject);
+								arrBody = [];
+								_context3.next = 6;
+								return new Promise(function (fnResolve, fnReject) {
+									httpRequest.on("error", fnReject);
+									httpResponse.on("error", fnReject);
 
-														httpRequest.on("end", function () {
-															fnResolve(Buffer.concat(arrBody).toString());
-														});
+									httpRequest.on("end", function () {
+										fnResolve(Buffer.concat(arrBody).toString());
+									});
 
-														httpRequest.on("data", function (bufferChunk) {
-															arrBody.push(bufferChunk);
-														});
-													});
-
-												case 3:
-													incomingRequest.requestBody = _context3.sent;
-
-												case 4:
-												case "end":
-													return _context3.stop();
-											}
-										}
-									}, _callee3, _this3);
-								})(), "t0", 4);
-
-							case 4:
-								_context4.next = 7;
-								break;
+									httpRequest.on("data", function (bufferChunk) {
+										arrBody.push(bufferChunk);
+									});
+								});
 
 							case 6:
+								incomingRequest.requestBody = _context3.sent;
+								_context3.next = 10;
+								break;
+
+							case 9:
 								throw new Error("JSONRPC does not handle HTTP " + httpRequest.method + " requests.");
 
-							case 7:
+							case 10:
 
 								incomingRequest.headers = httpRequest.headers;
 								incomingRequest.remoteAddress = httpRequest.socket.remoteAddress;
@@ -6820,32 +6802,32 @@ module.exports = function (_EventEmitter) {
 								strPath = JSONRPC.EndpointBase.normalizePath(httpRequest.url);
 
 								if (this._objEndpoints.hasOwnProperty(strPath)) {
-									_context4.next = 12;
+									_context3.next = 15;
 									break;
 								}
 
 								throw new JSONRPC.Exception("Unknown JSONRPC endpoint " + strPath + ".", JSONRPC.Exception.METHOD_NOT_FOUND);
 
-							case 12:
+							case 15:
 								incomingRequest.endpoint = this._objEndpoints[strPath];
-								_context4.next = 18;
+								_context3.next = 21;
 								break;
 
-							case 15:
-								_context4.prev = 15;
-								_context4.t1 = _context4["catch"](1);
-
-								incomingRequest.callResult = _context4.t1;
-
 							case 18:
-								return _context4.abrupt("return", incomingRequest);
+								_context3.prev = 18;
+								_context3.t0 = _context3["catch"](1);
 
-							case 19:
+								incomingRequest.callResult = _context3.t0;
+
+							case 21:
+								return _context3.abrupt("return", incomingRequest);
+
+							case 22:
 							case "end":
-								return _context4.stop();
+								return _context3.stop();
 						}
 					}
-				}, _callee4, this, [[1, 15]]);
+				}, _callee3, this, [[1, 18]]);
 			}));
 
 			function processHTTPRequest(_x5, _x6) {
@@ -6866,17 +6848,17 @@ module.exports = function (_EventEmitter) {
 	}, {
 		key: "processRequest",
 		value: function () {
-			var _ref4 = _asyncToGenerator(regeneratorRuntime.mark(function _callee5(incomingRequest) {
+			var _ref4 = _asyncToGenerator(regeneratorRuntime.mark(function _callee4(incomingRequest) {
 				var _iteratorNormalCompletion, _didIteratorError, _iteratorError, _iterator, _step, plugin, _iteratorNormalCompletion2, _didIteratorError2, _iteratorError2, _iterator2, _step2, _plugin, _iteratorNormalCompletion3, _didIteratorError3, _iteratorError3, _iterator3, _step3, _plugin2, _iteratorNormalCompletion4, _didIteratorError4, _iteratorError4, _iterator4, _step4, _plugin3, _iteratorNormalCompletion5, _didIteratorError5, _iteratorError5, _iterator5, _step5, _plugin4, _iteratorNormalCompletion6, _didIteratorError6, _iteratorError6, _iterator6, _step6, _plugin5, _iteratorNormalCompletion7, _didIteratorError7, _iteratorError7, _iterator7, _step7, _plugin6;
 
-				return regeneratorRuntime.wrap(function _callee5$(_context5) {
+				return regeneratorRuntime.wrap(function _callee4$(_context4) {
 					while (1) {
-						switch (_context5.prev = _context5.next) {
+						switch (_context4.prev = _context4.next) {
 							case 0:
-								_context5.prev = 0;
+								_context4.prev = 0;
 
 								if (incomingRequest.isMethodCalled) {
-									_context5.next = 108;
+									_context4.next = 108;
 									break;
 								}
 
@@ -6884,57 +6866,57 @@ module.exports = function (_EventEmitter) {
 								_iteratorNormalCompletion = true;
 								_didIteratorError = false;
 								_iteratorError = undefined;
-								_context5.prev = 6;
+								_context4.prev = 6;
 								_iterator = this._arrPlugins[Symbol.iterator]();
 
 							case 8:
 								if (_iteratorNormalCompletion = (_step = _iterator.next()).done) {
-									_context5.next = 15;
+									_context4.next = 15;
 									break;
 								}
 
 								plugin = _step.value;
-								_context5.next = 12;
+								_context4.next = 12;
 								return plugin.beforeJSONDecode(incomingRequest);
 
 							case 12:
 								_iteratorNormalCompletion = true;
-								_context5.next = 8;
+								_context4.next = 8;
 								break;
 
 							case 15:
-								_context5.next = 21;
+								_context4.next = 21;
 								break;
 
 							case 17:
-								_context5.prev = 17;
-								_context5.t0 = _context5["catch"](6);
+								_context4.prev = 17;
+								_context4.t0 = _context4["catch"](6);
 								_didIteratorError = true;
-								_iteratorError = _context5.t0;
+								_iteratorError = _context4.t0;
 
 							case 21:
-								_context5.prev = 21;
-								_context5.prev = 22;
+								_context4.prev = 21;
+								_context4.prev = 22;
 
 								if (!_iteratorNormalCompletion && _iterator.return) {
 									_iterator.return();
 								}
 
 							case 24:
-								_context5.prev = 24;
+								_context4.prev = 24;
 
 								if (!_didIteratorError) {
-									_context5.next = 27;
+									_context4.next = 27;
 									break;
 								}
 
 								throw _iteratorError;
 
 							case 27:
-								return _context5.finish(24);
+								return _context4.finish(24);
 
 							case 28:
-								return _context5.finish(21);
+								return _context4.finish(21);
 
 							case 29:
 
@@ -6946,61 +6928,61 @@ module.exports = function (_EventEmitter) {
 								_iteratorNormalCompletion2 = true;
 								_didIteratorError2 = false;
 								_iteratorError2 = undefined;
-								_context5.prev = 34;
+								_context4.prev = 34;
 								_iterator2 = this._arrPlugins[Symbol.iterator]();
 
 							case 36:
 								if (_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done) {
-									_context5.next = 43;
+									_context4.next = 43;
 									break;
 								}
 
 								_plugin = _step2.value;
-								_context5.next = 40;
+								_context4.next = 40;
 								return _plugin.afterJSONDecode(incomingRequest);
 
 							case 40:
 								_iteratorNormalCompletion2 = true;
-								_context5.next = 36;
+								_context4.next = 36;
 								break;
 
 							case 43:
-								_context5.next = 49;
+								_context4.next = 49;
 								break;
 
 							case 45:
-								_context5.prev = 45;
-								_context5.t1 = _context5["catch"](34);
+								_context4.prev = 45;
+								_context4.t1 = _context4["catch"](34);
 								_didIteratorError2 = true;
-								_iteratorError2 = _context5.t1;
+								_iteratorError2 = _context4.t1;
 
 							case 49:
-								_context5.prev = 49;
-								_context5.prev = 50;
+								_context4.prev = 49;
+								_context4.prev = 50;
 
 								if (!_iteratorNormalCompletion2 && _iterator2.return) {
 									_iterator2.return();
 								}
 
 							case 52:
-								_context5.prev = 52;
+								_context4.prev = 52;
 
 								if (!_didIteratorError2) {
-									_context5.next = 55;
+									_context4.next = 55;
 									break;
 								}
 
 								throw _iteratorError2;
 
 							case 55:
-								return _context5.finish(52);
+								return _context4.finish(52);
 
 							case 56:
-								return _context5.finish(49);
+								return _context4.finish(49);
 
 							case 57:
 								if (!Array.isArray(incomingRequest.requestObject)) {
-									_context5.next = 59;
+									_context4.next = 59;
 									break;
 								}
 
@@ -7008,22 +6990,22 @@ module.exports = function (_EventEmitter) {
 
 							case 59:
 								if (incomingRequest.requestObject.hasOwnProperty("params")) {
-									_context5.next = 63;
+									_context4.next = 63;
 									break;
 								}
 
 								incomingRequest.requestObject.params = [];
-								_context5.next = 69;
+								_context4.next = 69;
 								break;
 
 							case 63:
 								if (Array.isArray(incomingRequest.requestObject.params)) {
-									_context5.next = 69;
+									_context4.next = 69;
 									break;
 								}
 
 								if (!(_typeof(incomingRequest.requestObject.params) === "object")) {
-									_context5.next = 68;
+									_context4.next = 68;
 									break;
 								}
 
@@ -7034,7 +7016,7 @@ module.exports = function (_EventEmitter) {
 
 							case 69:
 								if (incomingRequest.isAuthenticated) {
-									_context5.next = 71;
+									_context4.next = 71;
 									break;
 								}
 
@@ -7042,7 +7024,7 @@ module.exports = function (_EventEmitter) {
 
 							case 71:
 								if (incomingRequest.isAuthorized) {
-									_context5.next = 73;
+									_context4.next = 73;
 									break;
 								}
 
@@ -7056,100 +7038,100 @@ module.exports = function (_EventEmitter) {
 								_iteratorNormalCompletion3 = true;
 								_didIteratorError3 = false;
 								_iteratorError3 = undefined;
-								_context5.prev = 77;
+								_context4.prev = 77;
 								_iterator3 = this._arrPlugins[Symbol.iterator]();
 
 							case 79:
 								if (_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done) {
-									_context5.next = 88;
+									_context4.next = 88;
 									break;
 								}
 
 								_plugin2 = _step3.value;
 
 								if (!incomingRequest.isMethodCalled) {
-									_context5.next = 83;
+									_context4.next = 83;
 									break;
 								}
 
-								return _context5.abrupt("break", 88);
+								return _context4.abrupt("break", 88);
 
 							case 83:
-								_context5.next = 85;
+								_context4.next = 85;
 								return _plugin2.callFunction(incomingRequest);
 
 							case 85:
 								_iteratorNormalCompletion3 = true;
-								_context5.next = 79;
+								_context4.next = 79;
 								break;
 
 							case 88:
-								_context5.next = 94;
+								_context4.next = 94;
 								break;
 
 							case 90:
-								_context5.prev = 90;
-								_context5.t2 = _context5["catch"](77);
+								_context4.prev = 90;
+								_context4.t2 = _context4["catch"](77);
 								_didIteratorError3 = true;
-								_iteratorError3 = _context5.t2;
+								_iteratorError3 = _context4.t2;
 
 							case 94:
-								_context5.prev = 94;
-								_context5.prev = 95;
+								_context4.prev = 94;
+								_context4.prev = 95;
 
 								if (!_iteratorNormalCompletion3 && _iterator3.return) {
 									_iterator3.return();
 								}
 
 							case 97:
-								_context5.prev = 97;
+								_context4.prev = 97;
 
 								if (!_didIteratorError3) {
-									_context5.next = 100;
+									_context4.next = 100;
 									break;
 								}
 
 								throw _iteratorError3;
 
 							case 100:
-								return _context5.finish(97);
+								return _context4.finish(97);
 
 							case 101:
-								return _context5.finish(94);
+								return _context4.finish(94);
 
 							case 102:
 								if (incomingRequest.isMethodCalled) {
-									_context5.next = 108;
+									_context4.next = 108;
 									break;
 								}
 
 								if (!(typeof incomingRequest.endpoint[incomingRequest.requestObject.method] !== "function")) {
-									_context5.next = 105;
+									_context4.next = 105;
 									break;
 								}
 
 								throw new JSONRPC.Exception("Method " + JSON.stringify(incomingRequest.requestObject.method) + " not found on endpoint " + JSON.stringify(incomingRequest.endpoint.path) + ".", JSONRPC.Exception.METHOD_NOT_FOUND);
 
 							case 105:
-								_context5.next = 107;
+								_context4.next = 107;
 								return incomingRequest.endpoint[incomingRequest.requestObject.method].apply(incomingRequest.endpoint, [incomingRequest].concat(incomingRequest.requestObject.params));
 
 							case 107:
-								incomingRequest.callResult = _context5.sent;
+								incomingRequest.callResult = _context4.sent;
 
 							case 108:
-								_context5.next = 113;
+								_context4.next = 113;
 								break;
 
 							case 110:
-								_context5.prev = 110;
-								_context5.t3 = _context5["catch"](0);
+								_context4.prev = 110;
+								_context4.t3 = _context4["catch"](0);
 
-								incomingRequest.callResult = _context5.t3;
+								incomingRequest.callResult = _context4.t3;
 
 							case 113:
 								if (!(incomingRequest.callResult instanceof Error)) {
-									_context5.next = 143;
+									_context4.next = 143;
 									break;
 								}
 
@@ -7157,60 +7139,60 @@ module.exports = function (_EventEmitter) {
 								_iteratorNormalCompletion4 = true;
 								_didIteratorError4 = false;
 								_iteratorError4 = undefined;
-								_context5.prev = 118;
+								_context4.prev = 118;
 								_iterator4 = this._arrPlugins[Symbol.iterator]();
 
 							case 120:
 								if (_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done) {
-									_context5.next = 127;
+									_context4.next = 127;
 									break;
 								}
 
 								_plugin3 = _step4.value;
-								_context5.next = 124;
+								_context4.next = 124;
 								return _plugin3.exceptionCatch(incomingRequest);
 
 							case 124:
 								_iteratorNormalCompletion4 = true;
-								_context5.next = 120;
+								_context4.next = 120;
 								break;
 
 							case 127:
-								_context5.next = 133;
+								_context4.next = 133;
 								break;
 
 							case 129:
-								_context5.prev = 129;
-								_context5.t4 = _context5["catch"](118);
+								_context4.prev = 129;
+								_context4.t4 = _context4["catch"](118);
 								_didIteratorError4 = true;
-								_iteratorError4 = _context5.t4;
+								_iteratorError4 = _context4.t4;
 
 							case 133:
-								_context5.prev = 133;
-								_context5.prev = 134;
+								_context4.prev = 133;
+								_context4.prev = 134;
 
 								if (!_iteratorNormalCompletion4 && _iterator4.return) {
 									_iterator4.return();
 								}
 
 							case 136:
-								_context5.prev = 136;
+								_context4.prev = 136;
 
 								if (!_didIteratorError4) {
-									_context5.next = 139;
+									_context4.next = 139;
 									break;
 								}
 
 								throw _iteratorError4;
 
 							case 139:
-								return _context5.finish(136);
+								return _context4.finish(136);
 
 							case 140:
-								return _context5.finish(133);
+								return _context4.finish(133);
 
 							case 141:
-								_context5.next = 170;
+								_context4.next = 170;
 								break;
 
 							case 143:
@@ -7218,57 +7200,57 @@ module.exports = function (_EventEmitter) {
 								_iteratorNormalCompletion5 = true;
 								_didIteratorError5 = false;
 								_iteratorError5 = undefined;
-								_context5.prev = 147;
+								_context4.prev = 147;
 								_iterator5 = this._arrPlugins[Symbol.iterator]();
 
 							case 149:
 								if (_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done) {
-									_context5.next = 156;
+									_context4.next = 156;
 									break;
 								}
 
 								_plugin4 = _step5.value;
-								_context5.next = 153;
+								_context4.next = 153;
 								return _plugin4.result(incomingRequest);
 
 							case 153:
 								_iteratorNormalCompletion5 = true;
-								_context5.next = 149;
+								_context4.next = 149;
 								break;
 
 							case 156:
-								_context5.next = 162;
+								_context4.next = 162;
 								break;
 
 							case 158:
-								_context5.prev = 158;
-								_context5.t5 = _context5["catch"](147);
+								_context4.prev = 158;
+								_context4.t5 = _context4["catch"](147);
 								_didIteratorError5 = true;
-								_iteratorError5 = _context5.t5;
+								_iteratorError5 = _context4.t5;
 
 							case 162:
-								_context5.prev = 162;
-								_context5.prev = 163;
+								_context4.prev = 162;
+								_context4.prev = 163;
 
 								if (!_iteratorNormalCompletion5 && _iterator5.return) {
 									_iterator5.return();
 								}
 
 							case 165:
-								_context5.prev = 165;
+								_context4.prev = 165;
 
 								if (!_didIteratorError5) {
-									_context5.next = 168;
+									_context4.next = 168;
 									break;
 								}
 
 								throw _iteratorError5;
 
 							case 168:
-								return _context5.finish(165);
+								return _context4.finish(165);
 
 							case 169:
-								return _context5.finish(162);
+								return _context4.finish(162);
 
 							case 170:
 
@@ -7278,57 +7260,57 @@ module.exports = function (_EventEmitter) {
 								_iteratorNormalCompletion6 = true;
 								_didIteratorError6 = false;
 								_iteratorError6 = undefined;
-								_context5.prev = 175;
+								_context4.prev = 175;
 								_iterator6 = this._arrPlugins[Symbol.iterator]();
 
 							case 177:
 								if (_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done) {
-									_context5.next = 184;
+									_context4.next = 184;
 									break;
 								}
 
 								_plugin5 = _step6.value;
-								_context5.next = 181;
+								_context4.next = 181;
 								return _plugin5.response(incomingRequest);
 
 							case 181:
 								_iteratorNormalCompletion6 = true;
-								_context5.next = 177;
+								_context4.next = 177;
 								break;
 
 							case 184:
-								_context5.next = 190;
+								_context4.next = 190;
 								break;
 
 							case 186:
-								_context5.prev = 186;
-								_context5.t6 = _context5["catch"](175);
+								_context4.prev = 186;
+								_context4.t6 = _context4["catch"](175);
 								_didIteratorError6 = true;
-								_iteratorError6 = _context5.t6;
+								_iteratorError6 = _context4.t6;
 
 							case 190:
-								_context5.prev = 190;
-								_context5.prev = 191;
+								_context4.prev = 190;
+								_context4.prev = 191;
 
 								if (!_iteratorNormalCompletion6 && _iterator6.return) {
 									_iterator6.return();
 								}
 
 							case 193:
-								_context5.prev = 193;
+								_context4.prev = 193;
 
 								if (!_didIteratorError6) {
-									_context5.next = 196;
+									_context4.next = 196;
 									break;
 								}
 
 								throw _iteratorError6;
 
 							case 196:
-								return _context5.finish(193);
+								return _context4.finish(193);
 
 							case 197:
-								return _context5.finish(190);
+								return _context4.finish(190);
 
 							case 198:
 
@@ -7340,64 +7322,64 @@ module.exports = function (_EventEmitter) {
 								_iteratorNormalCompletion7 = true;
 								_didIteratorError7 = false;
 								_iteratorError7 = undefined;
-								_context5.prev = 203;
+								_context4.prev = 203;
 								_iterator7 = this._arrPlugins[Symbol.iterator]();
 
 							case 205:
 								if (_iteratorNormalCompletion7 = (_step7 = _iterator7.next()).done) {
-									_context5.next = 212;
+									_context4.next = 212;
 									break;
 								}
 
 								_plugin6 = _step7.value;
-								_context5.next = 209;
+								_context4.next = 209;
 								return _plugin6.afterSerialize(incomingRequest);
 
 							case 209:
 								_iteratorNormalCompletion7 = true;
-								_context5.next = 205;
+								_context4.next = 205;
 								break;
 
 							case 212:
-								_context5.next = 218;
+								_context4.next = 218;
 								break;
 
 							case 214:
-								_context5.prev = 214;
-								_context5.t7 = _context5["catch"](203);
+								_context4.prev = 214;
+								_context4.t7 = _context4["catch"](203);
 								_didIteratorError7 = true;
-								_iteratorError7 = _context5.t7;
+								_iteratorError7 = _context4.t7;
 
 							case 218:
-								_context5.prev = 218;
-								_context5.prev = 219;
+								_context4.prev = 218;
+								_context4.prev = 219;
 
 								if (!_iteratorNormalCompletion7 && _iterator7.return) {
 									_iterator7.return();
 								}
 
 							case 221:
-								_context5.prev = 221;
+								_context4.prev = 221;
 
 								if (!_didIteratorError7) {
-									_context5.next = 224;
+									_context4.next = 224;
 									break;
 								}
 
 								throw _iteratorError7;
 
 							case 224:
-								return _context5.finish(221);
+								return _context4.finish(221);
 
 							case 225:
-								return _context5.finish(218);
+								return _context4.finish(218);
 
 							case 226:
 							case "end":
-								return _context5.stop();
+								return _context4.stop();
 						}
 					}
-				}, _callee5, this, [[0, 110], [6, 17, 21, 29], [22,, 24, 28], [34, 45, 49, 57], [50,, 52, 56], [77, 90, 94, 102], [95,, 97, 101], [118, 129, 133, 141], [134,, 136, 140], [147, 158, 162, 170], [163,, 165, 169], [175, 186, 190, 198], [191,, 193, 197], [203, 214, 218, 226], [219,, 221, 225]]);
+				}, _callee4, this, [[0, 110], [6, 17, 21, 29], [22,, 24, 28], [34, 45, 49, 57], [50,, 52, 56], [77, 90, 94, 102], [95,, 97, 101], [118, 129, 133, 141], [134,, 136, 140], [147, 158, 162, 170], [163,, 165, 169], [175, 186, 190, 198], [191,, 193, 197], [203, 214, 218, 226], [219,, 221, 225]]);
 			}));
 
 			function processRequest(_x7) {
@@ -12980,7 +12962,7 @@ function CorkedRequest(state) {
     }
   };
 }
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(20), __webpack_require__(403).setImmediate))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(20), __webpack_require__(384).setImmediate))
 
 /***/ }),
 /* 111 */
@@ -13009,7 +12991,7 @@ if (!process.browser && process.env.READABLE_STREAM === 'disable' && Stream) {
 /* 112 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(global) {var ClientRequest = __webpack_require__(401)
+/* WEBPACK VAR INJECTION */(function(global) {var ClientRequest = __webpack_require__(402)
 var extend = __webpack_require__(410)
 var statusCodes = __webpack_require__(172)
 var url = __webpack_require__(60)
@@ -17017,7 +16999,7 @@ if (debugUtil && debugUtil.debuglog) {
 }
 /*</replacement>*/
 
-var BufferList = __webpack_require__(396);
+var BufferList = __webpack_require__(397);
 var StringDecoder;
 
 util.inherits(Readable, Stream);
@@ -17922,33 +17904,21 @@ try {
 	exports.blobConstructor = true
 } catch (e) {}
 
-// The xhr request to example.com may violate some restrictive CSP configurations,
-// so if we're running in a browser that supports `fetch`, avoid calling getXHR()
-// and assume support for certain features below.
-var xhr
-function getXHR () {
-	// Cache the xhr value
-	if (xhr !== undefined) return xhr
-
-	if (global.XMLHttpRequest) {
-		xhr = new global.XMLHttpRequest()
-		// If XDomainRequest is available (ie only, where xhr might not work
-		// cross domain), use the page location. Otherwise use example.com
-		// Note: this doesn't actually make an http request.
-		try {
-			xhr.open('GET', global.XDomainRequest ? '/' : 'https://example.com')
-		} catch(e) {
-			xhr = null
-		}
-	} else {
-		// Service workers don't have XHR
+// Service workers don't have XHR
+var xhr = null
+if (global.XMLHttpRequest) {
+	xhr = new global.XMLHttpRequest()
+	// If XDomainRequest is available (ie only, where xhr might not work
+	// cross domain), use the page location. Otherwise use example.com
+	// Note: this doesn't actually make an http request.
+	try {
+		xhr.open('GET', global.XDomainRequest ? '/' : 'https://example.com')
+	} catch(e) {
 		xhr = null
 	}
-	return xhr
 }
 
 function checkTypeSupport (type) {
-	var xhr = getXHR()
 	if (!xhr) return false
 	try {
 		xhr.responseType = type
@@ -17962,20 +17932,13 @@ function checkTypeSupport (type) {
 var haveArrayBuffer = typeof global.ArrayBuffer !== 'undefined'
 var haveSlice = haveArrayBuffer && isFunction(global.ArrayBuffer.prototype.slice)
 
-// If fetch is supported, then arraybuffer will be supported too. Skip calling
-// checkTypeSupport(), since that calls getXHR().
-exports.arraybuffer = exports.fetch || (haveArrayBuffer && checkTypeSupport('arraybuffer'))
-
+exports.arraybuffer = haveArrayBuffer && checkTypeSupport('arraybuffer')
 // These next two tests unavoidably show warnings in Chrome. Since fetch will always
 // be used if it's available, just return false for these to avoid the warnings.
 exports.msstream = !exports.fetch && haveSlice && checkTypeSupport('ms-stream')
 exports.mozchunkedarraybuffer = !exports.fetch && haveArrayBuffer &&
 	checkTypeSupport('moz-chunked-arraybuffer')
-
-// If fetch is supported, then overrideMimeType will be supported too. Skip calling
-// getXHR().
-exports.overrideMimeType = exports.fetch || (getXHR() ? isFunction(getXHR().overrideMimeType) : false)
-
+exports.overrideMimeType = xhr ? isFunction(xhr.overrideMimeType) : false
 exports.vbArray = isFunction(global.VBArray)
 
 function isFunction (value) {
@@ -18020,7 +17983,7 @@ module.exports = objExports;
 
 __webpack_require__(353);
 
-__webpack_require__(399);
+__webpack_require__(400);
 
 __webpack_require__(173);
 
@@ -19851,10 +19814,10 @@ function fromByteArray (uint8) {
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(process, Buffer) {var msg = __webpack_require__(151);
-var zstream = __webpack_require__(390);
-var zlib_deflate = __webpack_require__(385);
-var zlib_inflate = __webpack_require__(387);
-var constants = __webpack_require__(384);
+var zstream = __webpack_require__(391);
+var zlib_deflate = __webpack_require__(386);
+var zlib_inflate = __webpack_require__(388);
+var constants = __webpack_require__(385);
 
 for (var key in constants) {
   exports[key] = constants[key];
@@ -33373,6 +33336,65 @@ Response.prototype.clone = function() {
 /* 384 */
 /***/ (function(module, exports, __webpack_require__) {
 
+var apply = Function.prototype.apply;
+
+// DOM APIs, for completeness
+
+exports.setTimeout = function() {
+  return new Timeout(apply.call(setTimeout, window, arguments), clearTimeout);
+};
+exports.setInterval = function() {
+  return new Timeout(apply.call(setInterval, window, arguments), clearInterval);
+};
+exports.clearTimeout =
+exports.clearInterval = function(timeout) {
+  if (timeout) {
+    timeout.close();
+  }
+};
+
+function Timeout(id, clearFn) {
+  this._id = id;
+  this._clearFn = clearFn;
+}
+Timeout.prototype.unref = Timeout.prototype.ref = function() {};
+Timeout.prototype.close = function() {
+  this._clearFn.call(window, this._id);
+};
+
+// Does not start the time, just sets up the members needed.
+exports.enroll = function(item, msecs) {
+  clearTimeout(item._idleTimeoutId);
+  item._idleTimeout = msecs;
+};
+
+exports.unenroll = function(item) {
+  clearTimeout(item._idleTimeoutId);
+  item._idleTimeout = -1;
+};
+
+exports._unrefActive = exports.active = function(item) {
+  clearTimeout(item._idleTimeoutId);
+
+  var msecs = item._idleTimeout;
+  if (msecs >= 0) {
+    item._idleTimeoutId = setTimeout(function onTimeout() {
+      if (item._onTimeout)
+        item._onTimeout();
+    }, msecs);
+  }
+};
+
+// setimmediate attaches itself to the global object
+__webpack_require__(401);
+exports.setImmediate = setImmediate;
+exports.clearImmediate = clearImmediate;
+
+
+/***/ }),
+/* 385 */
+/***/ (function(module, exports, __webpack_require__) {
+
 "use strict";
 
 
@@ -33427,14 +33449,14 @@ module.exports = {
 
 
 /***/ }),
-/* 385 */
+/* 386 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 var utils   = __webpack_require__(74);
-var trees   = __webpack_require__(389);
+var trees   = __webpack_require__(390);
 var adler32 = __webpack_require__(149);
 var crc32   = __webpack_require__(150);
 var msg     = __webpack_require__(151);
@@ -35289,7 +35311,7 @@ exports.deflateTune = deflateTune;
 
 
 /***/ }),
-/* 386 */
+/* 387 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -35622,7 +35644,7 @@ module.exports = function inflate_fast(strm, start) {
 
 
 /***/ }),
-/* 387 */
+/* 388 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -35632,8 +35654,8 @@ module.exports = function inflate_fast(strm, start) {
 var utils         = __webpack_require__(74);
 var adler32       = __webpack_require__(149);
 var crc32         = __webpack_require__(150);
-var inflate_fast  = __webpack_require__(386);
-var inflate_table = __webpack_require__(388);
+var inflate_fast  = __webpack_require__(387);
+var inflate_table = __webpack_require__(389);
 
 var CODES = 0;
 var LENS = 1;
@@ -37167,7 +37189,7 @@ exports.inflateUndermine = inflateUndermine;
 
 
 /***/ }),
-/* 388 */
+/* 389 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -37501,7 +37523,7 @@ module.exports = function inflate_table(type, lens, lens_index, codes, table, ta
 
 
 /***/ }),
-/* 389 */
+/* 390 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -38710,7 +38732,7 @@ exports._tr_align = _tr_align;
 
 
 /***/ }),
-/* 390 */
+/* 391 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -38746,7 +38768,7 @@ module.exports = ZStream;
 
 
 /***/ }),
-/* 391 */
+/* 392 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(module, global) {var __WEBPACK_AMD_DEFINE_RESULT__;/*! https://mths.be/punycode v1.4.1 by @mathias */
@@ -39285,7 +39307,7 @@ module.exports = ZStream;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(409)(module), __webpack_require__(11)))
 
 /***/ }),
-/* 392 */
+/* 393 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -39376,7 +39398,7 @@ var isArray = Array.isArray || function (xs) {
 
 
 /***/ }),
-/* 393 */
+/* 394 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -39468,25 +39490,25 @@ var objectKeys = Object.keys || function (obj) {
 
 
 /***/ }),
-/* 394 */
+/* 395 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-exports.decode = exports.parse = __webpack_require__(392);
-exports.encode = exports.stringify = __webpack_require__(393);
+exports.decode = exports.parse = __webpack_require__(393);
+exports.encode = exports.stringify = __webpack_require__(394);
 
 
 /***/ }),
-/* 395 */
+/* 396 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__(48)
 
 
 /***/ }),
-/* 396 */
+/* 397 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -39556,21 +39578,21 @@ BufferList.prototype.concat = function (n) {
 };
 
 /***/ }),
-/* 397 */
+/* 398 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__(152)
 
 
 /***/ }),
-/* 398 */
+/* 399 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__(110)
 
 
 /***/ }),
-/* 399 */
+/* 400 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global, process) {/**
@@ -40260,7 +40282,7 @@ module.exports = __webpack_require__(110)
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(11), __webpack_require__(20)))
 
 /***/ }),
-/* 400 */
+/* 401 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global, process) {(function (global, undefined) {
@@ -40453,12 +40475,12 @@ module.exports = __webpack_require__(110)
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(11), __webpack_require__(20)))
 
 /***/ }),
-/* 401 */
+/* 402 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer, global, process) {var capability = __webpack_require__(155)
 var inherits = __webpack_require__(36)
-var response = __webpack_require__(402)
+var response = __webpack_require__(403)
 var stream = __webpack_require__(111)
 var toArrayBuffer = __webpack_require__(404)
 
@@ -40556,7 +40578,7 @@ ClientRequest.prototype._onFinish = function () {
 	var opts = self._opts
 
 	var headersObj = self._headers
-	var body = null
+	var body
 	if (opts.method === 'POST' || opts.method === 'PUT' || opts.method === 'PATCH' || opts.method === 'MERGE') {
 		if (capability.blobConstructor) {
 			body = new global.Blob(self._body.map(function (buffer) {
@@ -40578,7 +40600,7 @@ ClientRequest.prototype._onFinish = function () {
 		global.fetch(self._opts.url, {
 			method: self._opts.method,
 			headers: headers,
-			body: body || undefined,
+			body: body,
 			mode: 'cors',
 			credentials: opts.withCredentials ? 'include' : 'same-origin'
 		}).then(function (response) {
@@ -40754,7 +40776,7 @@ var unsafeHeaders = [
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(4).Buffer, __webpack_require__(11), __webpack_require__(20)))
 
 /***/ }),
-/* 402 */
+/* 403 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(process, Buffer, global) {var capability = __webpack_require__(155)
@@ -40941,65 +40963,6 @@ IncomingMessage.prototype._onXHRProgress = function () {
 }
 
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(20), __webpack_require__(4).Buffer, __webpack_require__(11)))
-
-/***/ }),
-/* 403 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var apply = Function.prototype.apply;
-
-// DOM APIs, for completeness
-
-exports.setTimeout = function() {
-  return new Timeout(apply.call(setTimeout, window, arguments), clearTimeout);
-};
-exports.setInterval = function() {
-  return new Timeout(apply.call(setInterval, window, arguments), clearInterval);
-};
-exports.clearTimeout =
-exports.clearInterval = function(timeout) {
-  if (timeout) {
-    timeout.close();
-  }
-};
-
-function Timeout(id, clearFn) {
-  this._id = id;
-  this._clearFn = clearFn;
-}
-Timeout.prototype.unref = Timeout.prototype.ref = function() {};
-Timeout.prototype.close = function() {
-  this._clearFn.call(window, this._id);
-};
-
-// Does not start the time, just sets up the members needed.
-exports.enroll = function(item, msecs) {
-  clearTimeout(item._idleTimeoutId);
-  item._idleTimeout = msecs;
-};
-
-exports.unenroll = function(item) {
-  clearTimeout(item._idleTimeoutId);
-  item._idleTimeout = -1;
-};
-
-exports._unrefActive = exports.active = function(item) {
-  clearTimeout(item._idleTimeoutId);
-
-  var msecs = item._idleTimeout;
-  if (msecs >= 0) {
-    item._idleTimeoutId = setTimeout(function onTimeout() {
-      if (item._onTimeout)
-        item._onTimeout();
-    }, msecs);
-  }
-};
-
-// setimmediate attaches itself to the global object
-__webpack_require__(400);
-exports.setImmediate = setImmediate;
-exports.clearImmediate = clearImmediate;
-
 
 /***/ }),
 /* 404 */
