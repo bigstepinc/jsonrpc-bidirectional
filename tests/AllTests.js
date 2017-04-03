@@ -1,6 +1,7 @@
 const JSONRPC = require("..");
 
 const http = require("http");
+const url = require("url");
 
 
 // @TODO: Test with https://github.com/uWebSockets/uWebSockets as well. They claim magnitudes of extra performance (memory, CPU, network connections).
@@ -196,6 +197,18 @@ class AllTests
 
 		this._jsonrpcServerSiteA.registerEndpoint(this._testEndpoint);
 		this._jsonrpcServerSiteA.attachToHTTPServer(this._httpServerSiteA, "/api/");
+
+		this._httpServerSiteA.on(
+			"request",
+			async (incomingMessage, serverResponse) => {
+				// API requests are handled by the VMEndpoint instance above.
+				if(url.parse(incomingMessage.url).pathname.substr(0, 4) !== "/api")
+				{
+					serverResponse.statusCode = 404;
+					serverResponse.end();
+				}
+			}
+		);
 
 		this._httpServerSiteA.listen(8324);
 	}

@@ -52,7 +52,8 @@ class Server extends EventEmitter
 				// Ignore paths which do not fall under strRootPath, or are not strRootPath. 
 				if(strRequestPath.substr(0, strRootPath.length) !== strRootPath)
 				{
-					httpResponse.end();
+					// Do not call .end() here, or co-existing HTTP handlers on the same server will not have a chance to set headers or respond.
+					// httpResponse.end();
 					return;
 				}
 
