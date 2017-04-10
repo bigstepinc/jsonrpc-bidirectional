@@ -4,7 +4,7 @@ process.on(
 	"unhandledRejection", 
 	(reason, promise) => 
 	{
-		console.log("Unhandled Rejection at: Promise", promise, "reason", reason);
+		console.log("[" + process.pid + "] Unhandled Rejection at: Promise", promise, "reason", reason);
 		
 		process.exit(1);
 	}
@@ -16,7 +16,7 @@ process.on(
 		await (new AllTests(/*bWebSocketMode*/ false)).runTests();
 		await (new AllTests(/*bWebSocketMode*/ true)).runTests();
 
-		console.log("Finished all tests!!!");
+		console.log("[" + process.pid + "] Finished all tests!!!");
 
 		process.exit(0);
 	}

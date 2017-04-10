@@ -1,11 +1,11 @@
 {
   "name": "jsonrpc-bidirectional",
   "description": "Bidirectional JSONRPC over web sockets or HTTP with extensive plugin support.",
-  "version": "1.6.3",
+  "version": "2.0.0",
   "scripts": {
     "transpile": "babel src --out-dir src",
     "todo": "http://jamesknelson.com/using-es6-in-the-browser-with-babel-6-and-webpack/",
-    "test": "node --harmony_async_await tests/main.js",
+    "test": "node tests/main.js",
     "lint": "eslint src tests --quiet"
   },
   "repository": {
@@ -31,7 +31,7 @@
   ],
   "preferGlobal": false,
   "engines": {
-    "node": ">=7.30"
+    "node": ">=7.80"
   },
   "browser": {
     "child_process": false
@@ -43,15 +43,15 @@
   },
   "devDependencies": {
     "@types/node": "*",
-    "babel-core": "^6.22.1",
+    "babel-core": "*",
     "babel-eslint": "*",
-    "babel-loader": "^6.2.10",
-    "babel-preset-es2015": "^6.22.0",
-    "babel-preset-stage-0": "^6.22.0",
+    "babel-loader": "*",
+    "babel-preset-es2015": "*",
+    "babel-preset-stage-0": "*",
     "eslint": "*",
     "eslint-plugin-jsdoc": "*",
     "sleep-promise": "*",
-    "webpack": "^2.2.1",
-    "ws": "^1.1.1"
+    "webpack": "*",
+    "ws": "*"
   }
 }

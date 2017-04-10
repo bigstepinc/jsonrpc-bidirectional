@@ -72,7 +72,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 		{
 			console.error(new Error("Couldn't find JSONRPC response call ID in this._objWebSocketRequestsPromises. RAW response: " + strResponse));
 			console.error(new Error("RAW remote message: " + strResponse));
-			console.log("Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request.");
+			console.log("[" + process.pid + "] Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request.");
 			this.webSocket.close(
 				/* CloseEvent.Internal Error */ 1011, 
 				"Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request."
@@ -135,7 +135,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 	rejectAllPromises(error)
 	{
 		console.error(error);
-		console.log("Rejecting all Promise instances in WebSockets/JSONRPCClientPlugin.");
+		console.log("[" + process.pid + "] Rejecting all Promise instances in WebSockets/JSONRPCClientPlugin.");
 
 		for(let nCallID in this._objWebSocketRequestsPromises)
 		{

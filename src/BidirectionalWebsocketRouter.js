@@ -65,7 +65,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 			// @TODO: test cases for the above, somehow.
 
 			// WebSocket.CLOSED would not recover and should never be added, because it would not get cleaned up.
-			console.log("addWebSocket ignoring closed webSocket.");
+			console.log("[" + process.pid + "] addWebSocket ignoring closed webSocket.");
 			return;
 		}
 
@@ -189,7 +189,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 
 		if(!strMessage.trim().length)
 		{
-			console.log("WebSocketBidirectionalRouter: Received empty message. Ignoring.");
+			console.log("[" + process.pid + "] WebSocketBidirectionalRouter: Received empty message. Ignoring.");
 			return;
 		}
 
@@ -220,7 +220,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 				}, undefined, "\t"));
 			}
 
-			console.log("Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request or response.");
+			console.log("[" + process.pid + "] Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request or response.");
 			webSocket.close(
 				/* CloseEvent.Internal Error */ 1011, 
 				"Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request or response."
@@ -370,7 +370,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 
 			if(webSocket.readyState === webSocket.constructor.OPEN)
 			{
-				console.log("Unclean state. Closing websocket.");
+				console.log("[" + process.pid + "] Unclean state. Closing websocket.");
 				webSocket.close(
 					/* CloseEvent.Internal Error */ 1011, 
 					"Unclean state. Closing websocket."

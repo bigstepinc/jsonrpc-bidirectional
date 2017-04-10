@@ -188,7 +188,7 @@ class AllTests
 	 */
 	async setupHTTPServer()
 	{
-		console.log("setupHTTPServer.");
+		console.log("[" + process.pid + "] setupHTTPServer.");
 
 		this._httpServerSiteA = http.createServer();
 		this._jsonrpcServerSiteA = new JSONRPC.Server();
@@ -219,7 +219,7 @@ class AllTests
 	 */
 	async setupWebsocketServerSiteA()
 	{
-		console.log("setupWebsocketServerSiteA.");
+		console.log("[" + process.pid + "] setupWebsocketServerSiteA.");
 
 		this._webSocketServerSiteA = new WebSocketServer({
 			port: 8325
@@ -234,13 +234,13 @@ class AllTests
 		);
 
 
-		console.log("Instantiating ServerPluginAuthorizeWebSocket on SiteA.");
+		console.log("[" + process.pid + "] Instantiating ServerPluginAuthorizeWebSocket on SiteA.");
 		this._serverPluginAuthorizeWebSocketSiteA = new ServerPluginAuthorizeWebSocket();
 
 		this._jsonrpcServerSiteA.addPlugin(this._serverPluginAuthorizeWebSocketSiteA);
 
 
-		console.log("Instantiating JSONRPC.BidirectionalWebsocketRouter on SiteA.");
+		console.log("[" + process.pid + "] Instantiating JSONRPC.BidirectionalWebsocketRouter on SiteA.");
 		const wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(this._jsonrpcServerSiteA);
 
 		wsJSONRPCRouter.on(
@@ -257,7 +257,7 @@ class AllTests
 			{
 				const nWebSocketConnectionID = await wsJSONRPCRouter.addWebSocket(webSocket);
 
-				console.log("Passing a new incoming connection to ServerPluginAuthorizeWebSocket.");
+				console.log("[" + process.pid + "] Passing a new incoming connection to ServerPluginAuthorizeWebSocket.");
 				this._serverPluginAuthorizeWebSocketSiteA.addConnection(nWebSocketConnectionID, webSocket);
 			}
 		);
@@ -269,7 +269,7 @@ class AllTests
 	 */
 	async setupSiteB()
 	{
-		console.log("setupSiteB.");
+		console.log("[" + process.pid + "] setupSiteB.");
 		if(this._bWebSocketMode)
 		{
 			if(
@@ -285,7 +285,7 @@ class AllTests
 				this._webSocketClientSiteB = null;
 			}
 
-			console.log("Connecting SiteB JSONRPC client to " + AllTests.localEndpointWebSocket + ".");
+			console.log("[" + process.pid + "] Connecting SiteB JSONRPC client to " + AllTests.localEndpointWebSocket + ".");
 			const ws = new WebSocket(AllTests.localEndpointWebSocket);
 			await new Promise((fnResolve, fnReject) => {
 				ws.on("open", fnResolve);
@@ -301,7 +301,7 @@ class AllTests
 			this._jsonrpcServerSiteB.addPlugin(this._serverAuthorizeAllPlugin);
 			this._jsonrpcServerSiteB.addPlugin(new ServerDebugMarkerPlugin("SiteB"));
 
-			console.log("Instantiating JSONRPC.BidirectionalWebsocketRouter on SiteB.");
+			console.log("[" + process.pid + "] Instantiating JSONRPC.BidirectionalWebsocketRouter on SiteB.");
 			const wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(
 				this._jsonrpcServerSiteB
 			);
@@ -328,7 +328,7 @@ class AllTests
 	 */
 	async setupSiteC()
 	{
-		console.log("setupSiteC.");
+		console.log("[" + process.pid + "] setupSiteC.");
 		if(this._bWebSocketMode)
 		{
 			if(
@@ -353,7 +353,7 @@ class AllTests
 			this._jsonrpcServerSiteC.addPlugin(this._serverAuthorizeAllPlugin);
 			this._jsonrpcServerSiteC.addPlugin(new ServerDebugMarkerPlugin("SiteC"));
 
-			console.log("Instantiating JSONRPC.BidirectionalWebsocketRouter on SiteC.");
+			console.log("[" + process.pid + "] Instantiating JSONRPC.BidirectionalWebsocketRouter on SiteC.");
 			const wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(
 				this._jsonrpcServerSiteC
 			);
@@ -380,7 +380,7 @@ class AllTests
 	 */
 	async setupSiteDisconnecter()
 	{
-		console.log("setupSiteDisconnecter.");
+		console.log("[" + process.pid + "] setupSiteDisconnecter.");
 		if(this._bWebSocketMode)
 		{
 			if(
@@ -405,7 +405,7 @@ class AllTests
 			this._jsonrpcServerSiteDisconnecter.addPlugin(this._serverAuthorizeAllPlugin);
 			this._jsonrpcServerSiteDisconnecter.addPlugin(new ServerDebugMarkerPlugin("SiteDisconnecter"));
 
-			console.log("Instantiating JSONRPC.BidirectionalWebsocketRouter on SiteDisconnecter.");
+			console.log("[" + process.pid + "] Instantiating JSONRPC.BidirectionalWebsocketRouter on SiteDisconnecter.");
 			const wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(
 				this._jsonrpcServerSiteDisconnecter
 			);
@@ -432,7 +432,7 @@ class AllTests
 	 */
 	async triggerConnectionRefused()
 	{
-		console.log("triggerConnectionRefused");
+		console.log("[" + process.pid + "] triggerConnectionRefused");
 
 		assert(this._httpServerSiteA === null);
 		assert(this._jsonrpcServerSiteA === null);
@@ -464,7 +464,7 @@ class AllTests
 	 */
 	async endpointNotFoundError()
 	{
-		console.log("endpointNotFoundError");
+		console.log("[" + process.pid + "] endpointNotFoundError");
 
 		const client = new TestClient("http://localhost:8324/api/bad-endpoint-path");
 		client.addPlugin(new ClientDebugMarkerPlugin("SiteB"));
@@ -494,7 +494,7 @@ class AllTests
 	 */
 	async outsideJSONRPCPathError()
 	{
-		console.log("outsideJSONRPCPathError");
+		console.log("[" + process.pid + "] outsideJSONRPCPathError");
 
 		const client = new TestClient("http://localhost:8324/unhandled-path");
 		client.addPlugin(new ClientDebugMarkerPlugin("SiteB"));
@@ -524,7 +524,7 @@ class AllTests
 	 */
 	async triggerAuthenticationError()
 	{
-		console.log("triggerAuthenticationError");
+		console.log("[" + process.pid + "] triggerAuthenticationError");
 
 		try
 		{
@@ -551,7 +551,7 @@ class AllTests
 	 */
 	async requestParseError()
 	{
-		console.log("requestParseError");
+		console.log("[" + process.pid + "] requestParseError");
 
 		const invalidJSONPlugin = new ClientPluginInvalidRequestJSON();
 		this._jsonrpcClientSiteB.addPlugin(invalidJSONPlugin);
@@ -589,7 +589,7 @@ class AllTests
 	 */
 	async responseParseError()
 	{
-		console.log("responseParseError");
+		console.log("[" + process.pid + "] responseParseError");
 
 		const invalidJSONPlugin = new ServerPluginInvalidResponseJSON();
 		this._jsonrpcServerSiteA.addPlugin(invalidJSONPlugin);
@@ -627,7 +627,7 @@ class AllTests
 	 */
 	async triggerAuthorizationError()
 	{
-		console.log("triggerAuthorizationError");
+		console.log("[" + process.pid + "] triggerAuthorizationError");
 
 		if(this._bWebSocketMode)
 		{
@@ -669,7 +669,7 @@ class AllTests
 		const bRandomSleep = !bDoNotSleep;
 		bVeryLargePayload = !!bVeryLargePayload;
 
-		console.log("callRPCMethodSiteB");
+		console.log("[" + process.pid + "] callRPCMethodSiteB");
 
 		let strParam = "pong_" + (this._jsonrpcClientSiteB.callID);
 
@@ -702,7 +702,7 @@ class AllTests
 	{
 		const bRandomSleep = !bDoNotSleep;
 
-		console.log("callRPCMethodSiteC");
+		console.log("[" + process.pid + "] callRPCMethodSiteC");
 
 		const strParam = "pong_" + (this._jsonrpcClientSiteC.callID);
 		const arrParams = [strParam, bRandomSleep];
@@ -723,7 +723,7 @@ class AllTests
 	 */
 	async callRPCMethodSiteDisconnecter(bTerminate)
 	{
-		console.log("callRPCMethodSiteDisconnecter");
+		console.log("[" + process.pid + "] callRPCMethodSiteDisconnecter");
 
 		bTerminate = !!bTerminate;
 
@@ -766,7 +766,7 @@ class AllTests
 			return;
 		}
 
-		console.log("callRPCMethodNonBidirectionalClient");
+		console.log("[" + process.pid + "] callRPCMethodNonBidirectionalClient");
 
 		const bRandomSleep = !bDoNotSleep;
 
@@ -797,7 +797,7 @@ class AllTests
 	 */
 	async callRPCMethodSiteBWhichThrowsJSONRPCException()
 	{
-		console.log("callRPCMethodSiteBWhichThrowsJSONRPCException");
+		console.log("[" + process.pid + "] callRPCMethodSiteBWhichThrowsJSONRPCException");
 
 		try
 		{
@@ -823,7 +823,7 @@ class AllTests
 	 */
 	async callRPCMethodSiteBWhichThrowsSimpleError()
 	{
-		console.log("callRPCMethodSiteBWhichThrowsSimpleError");
+		console.log("[" + process.pid + "] callRPCMethodSiteBWhichThrowsSimpleError");
 
 		try
 		{
@@ -849,7 +849,7 @@ class AllTests
 	 */
 	async manyCallsInParallel()
 	{
-		console.log("manyCallsInParallel");
+		console.log("[" + process.pid + "] manyCallsInParallel");
 
 		const nStartTime = (new Date()).getTime();
 
@@ -892,7 +892,7 @@ class AllTests
 	 */
 	async _makeClientWebSocket()
 	{
-		console.log("Connecting WebSocket to " + AllTests.localEndpointWebSocket + ".");
+		console.log("[" + process.pid + "] Connecting WebSocket to " + AllTests.localEndpointWebSocket + ".");
 		const webSocket = new WebSocket(AllTests.localEndpointWebSocket);
 		await new Promise((fnResolve, fnReject) => {
 			webSocket.on("open", fnResolve);

@@ -13,11 +13,11 @@ class DebugLogger extends JSONRPC.ServerPluginBase
 	{
 		if(incomingRequest.requestBody.length > 1024 * 1024)
 		{
-			console.log("[" + (new Date()).toISOString() + "] Received JSONRPC request at endpoint path" + incomingRequest.endpoint.path + ", " + incomingRequest.requestObject.method + "(). Larger than 1 MB, not logging. \n");
+			console.log("[" + process.pid + "] [" + (new Date()).toISOString() + "] Received JSONRPC request at endpoint path" + incomingRequest.endpoint.path + ", " + incomingRequest.requestObject.method + "(). Larger than 1 MB, not logging. \n");
 		}
 		else
 		{
-			console.log("[" + (new Date()).toISOString() + "] Received JSONRPC request at endpoint path" + incomingRequest.endpoint.path + ": " + incomingRequest.requestBody + "\n");
+			console.log("[" + process.pid + "] [" + (new Date()).toISOString() + "] Received JSONRPC request at endpoint path" + incomingRequest.endpoint.path + ": " + incomingRequest.requestBody + "\n");
 		}
 	}
 
@@ -32,11 +32,11 @@ class DebugLogger extends JSONRPC.ServerPluginBase
 
 		if(incomingRequest.requestBody.length > 1024 * 1024)
 		{
-			console.log("[" + (new Date()).toISOString() + "] Sending JSONRPC response, " + incomingRequest.requestObject.method + "(). Larger than 1 MB, not logging. \n");
+			console.log("[" + process.pid + "] [" + (new Date()).toISOString() + "] Sending JSONRPC response, " + incomingRequest.requestObject.method + "(). Larger than 1 MB, not logging. \n");
 		}
 		else
 		{
-			console.log("[" + (new Date()).toISOString() + "] Sending JSONRPC response: " + incomingRequest.callResultSerialized + "\n");
+			console.log("[" + process.pid + "] [" + (new Date()).toISOString() + "] Sending JSONRPC response: " + incomingRequest.callResultSerialized + "\n");
 		}
 	}
 };
