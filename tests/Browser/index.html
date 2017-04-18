@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Tests</title>
+
+		<script type="text/javascript" src="/builds/browser/es5/jsonrpc.js"></script>
+
+		<script>
+			var arrErrors = [];
+
+			window.onerror = function(errorMsg, url, lineNumber){
+				arrErrors.push([errorMsg, url, lineNumber]);
+			};
+
+			var client;
+			window.addEventListener(
+				"load",
+				function(event){
+					client = new JSONRPC.Client("http://localhost:8324/api");
+
+					client.rpc("ping", ["Calling from html es5 client."])
+						.then(function(result){arrErrors.push(result)})
+						.catch(function(error){arrErrors.psuh(error)})
+					;
+				}
+			);
+		</script>
+	</head>
+	<body>
+	</body>
+</html>

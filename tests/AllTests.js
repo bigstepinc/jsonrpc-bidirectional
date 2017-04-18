@@ -2,6 +2,12 @@ const JSONRPC = require("..");
 
 const http = require("http");
 const url = require("url");
+const path = require("path");
+const fs = require("fs");
+
+const sleep = require("sleep-promise");
+
+const Phantom = require("phantom");
 
 
 // @TODO: Test with https://github.com/uWebSockets/uWebSockets as well. They claim magnitudes of extra performance (memory, CPU, network connections).
@@ -69,7 +75,6 @@ class AllTests
 		this._serverAuthenticationSkipPlugin = new JSONRPC.Plugins.Server.AuthenticationSkip();
 		this._serverAuthorizeAllPlugin = new JSONRPC.Plugins.Server.AuthorizeAll();
 
-
 		this._bWebSocketMode = !!bWebSocketMode;
 
 		Object.seal(this);
@@ -85,8 +90,7 @@ class AllTests
 
 
 		await this.setupHTTPServer();
-
-
+		
 		if(this._bWebSocketMode)
 		{
 			await this.setupWebsocketServerSiteA();
@@ -116,6 +120,14 @@ class AllTests
 			await this._jsonrpcClientSiteC.rpc("ImHereForTheParty", ["Baracus", "Baracus does the harlem shake", /*bDoNotAuthorizeMe*/ false]);
 			await this._jsonrpcClientSiteDisconnecter.rpc("ImHereForTheParty", ["Murdock", "Murdock does the harlem shake", /*bDoNotAuthorizeMe*/ false]);
 		}
+
+
+		if(!this._bWebSocketMode)
+		{
+			await this.callRPCMethodFromWebPage();
+		}
+
+
 
 		await this.callRPCMethodSiteB(/*bDoNotSleep*/ true);
 		await this.callRPCMethodSiteB(/*bDoNotSleep*/ true, /*bVeryLargePayload*/ true);
@@ -200,9 +212,29 @@ class AllTests
 
 		this._httpServerSiteA.on(
 			"request",
-			async (incomingMessage, serverResponse) => {
+			async (incomingRequest, serverResponse) => {
 				// API requests are handled by the VMEndpoint instance above.
-				if(url.parse(incomingMessage.url).pathname.substr(0, 4) !== "/api")
+
+				const objParsedURL = url.parse(incomingRequest.url);
+				const strFilePath = path.join(path.dirname(__dirname), objParsedURL.pathname);
+
+				if(
+					(
+						objParsedURL.pathname.substr(0, "/tests/".length) === "/tests/"
+						|| objParsedURL.pathname.substr(0, "/builds/".length) === "/builds/"
+					)
+					&& incomingRequest.method === "GET"
+					&& !objParsedURL.pathname.includes("..")
+					&& fs.existsSync(strFilePath)
+				)
+				{
+					console.log("[" + process.pid + "] Serving static HTTP file: " + strFilePath);
+
+					serverResponse.statusCode = 200;
+					serverResponse.write(fs.readFileSync(strFilePath));
+					serverResponse.end();
+				}
+				else if(url.parse(incomingRequest.url).pathname.substr(0, 4) !== "/api")
 				{
 					serverResponse.statusCode = 404;
 					serverResponse.end();
@@ -841,6 +873,69 @@ class AllTests
 			assert.strictEqual(error.code, 0);
 			assert.strictEqual(error.message, "Error");
 		}
+	}
+
+
+	async callRPCMethodFromWebPage()
+	{
+		assert(fs.existsSync(path.resolve(path.dirname(__dirname) + "/builds/browser/es5/jsonrpc.js")));
+		assert(fs.existsSync(path.resolve(__dirname + "/Browser/index.html")));
+
+		const phantom = await Phantom.create(
+			[],
+			{
+				logger: console,
+				logLevel: "error" // error | debug
+			}
+		);
+
+		const phantomPage = await phantom.createPage();
+		await phantomPage.setting("javascriptEnabled", true);
+
+
+		let nTimeoutIDWaitForWebPage = null;
+		const promiseWaitForWebPage = new Promise((fnResolve, fnReject) => {
+			nTimeoutIDWaitForWebPage = setTimeout(
+				async () => {
+					this._testEndpoint.fnResolveWaitForWebPage = null;
+
+					console.log(
+						await phantomPage.evaluate(
+							function () {
+								return window.arrErrors;
+							}
+						)
+					);
+
+					fnReject(new Error("Timed out waiting for webpage JSONRPC call to TestEndpoint.ping()."));
+				},
+				5000 /*milliseconds*/
+			);
+
+			this._testEndpoint.fnResolveWaitForWebPage = fnResolve;
+		});
+
+		
+		const strStatus = await phantomPage.open("http://localhost:8324/tests/Browser/index.html".replace(/\\+/g, "/").replace(/^\//, ""));
+		console.log("[" + process.pid + "] Phantom page open: " + strStatus);
+		assert.strictEqual(strStatus, "success");
+
+		//phantom.process.stdout.pipe(process.stdout);
+		//phantom.process.stderr.pipe(process.stderr);
+
+		const strContent = await phantomPage.property("content");
+		//console.log(strContent);
+
+
+		await promiseWaitForWebPage;
+		if(nTimeoutIDWaitForWebPage !== null)
+		{
+			clearTimeout(nTimeoutIDWaitForWebPage);
+		}
+
+		await phantom.exit();
+
+		console.log("[" + process.pid + "] Calling from the webpage worked!");
 	}
 
 

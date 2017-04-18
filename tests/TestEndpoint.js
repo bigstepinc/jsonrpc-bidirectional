@@ -20,6 +20,8 @@ class TestEndpoint extends JSONRPC.EndpointBase
 			/*classReverseCallsClient*/ JSONRPC.Client
 		);
 
+		this.fnResolveWaitForWebPage = null;
+
 		//Object.seal(this);
 	}
 
@@ -44,6 +46,12 @@ class TestEndpoint extends JSONRPC.EndpointBase
 		if(typeof strATeamCharacterName === "string")
 		{
 			await incomingRequest.reverseCallsClient.rpc("ping", [strATeamCharacterName + " called back to confirm this: " + strReturn + "!", /*bRandomSleep*/ true]);
+		}
+
+		if(this.fnResolveWaitForWebPage !== null)
+		{
+			this.fnResolveWaitForWebPage();
+			this.fnResolveWaitForWebPage = null;
 		}
 
 		return strReturn;
