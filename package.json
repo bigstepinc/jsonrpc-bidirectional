@@ -54,6 +54,7 @@
     "babel-runtime": "*",
     "eslint": "*",
     "eslint-plugin-jsdoc": "*",
+    "phantom": "^4.0.2",
     "webpack": "*"
   }
 }
