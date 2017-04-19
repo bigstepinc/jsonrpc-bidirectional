@@ -1,5 +1,7 @@
 # Bidirectional JSON-RPC 2.0 server and client
 
+[![Build Status](https://travis-ci.org/oxygens/jsonrpc-bidirectional.svg?branch=master)](https://travis-ci.org/oxygens/jsonrpc-bidirectional)
+
 A main goal of this project is to have the JSONRPC server and client support __bidirectional JSON-RPC requests over a single WebSocket connection.__
 
 Both the server and client support two __transports, HTTP and WebSocket__ ([websockets/ws](https://github.com/websockets/ws) compatible API), and allow more through plugin extensibility. 
