@@ -20,7 +20,7 @@
 
 					client.rpc("ping", ["Calling from html es5 client."])
 						.then(function(result){arrErrors.push(result)})
-						.catch(function(error){arrErrors.psuh(error)})
+						.catch(function(error){arrErrors.push(error)})
 					;
 				}
 			);

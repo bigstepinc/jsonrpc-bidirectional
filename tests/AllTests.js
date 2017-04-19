@@ -5,7 +5,7 @@ const url = require("url");
 const path = require("path");
 const fs = require("fs");
 
-const sleep = require("sleep-promise");
+//const sleep = require("sleep-promise");
 
 const Phantom = require("phantom");
 
@@ -222,6 +222,7 @@ class AllTests
 					(
 						objParsedURL.pathname.substr(0, "/tests/".length) === "/tests/"
 						|| objParsedURL.pathname.substr(0, "/builds/".length) === "/builds/"
+						|| objParsedURL.pathname.substr(0, "/node_modules/".length) === "/node_modules/"
 					)
 					&& incomingRequest.method === "GET"
 					&& !objParsedURL.pathname.includes("..")
@@ -236,6 +237,8 @@ class AllTests
 				}
 				else if(url.parse(incomingRequest.url).pathname.substr(0, 4) !== "/api")
 				{
+					console.error("[" + process.pid + "] Could not find static HTTP file: " + strFilePath);
+
 					serverResponse.statusCode = 404;
 					serverResponse.end();
 				}
@@ -901,7 +904,7 @@ class AllTests
 
 					console.log(
 						await phantomPage.evaluate(
-							function () {
+							function() {
 								return window.arrErrors;
 							}
 						)
@@ -923,7 +926,7 @@ class AllTests
 		//phantom.process.stdout.pipe(process.stdout);
 		//phantom.process.stderr.pipe(process.stderr);
 
-		const strContent = await phantomPage.property("content");
+		//const strContent = await phantomPage.property("content");
 		//console.log(strContent);
 
 

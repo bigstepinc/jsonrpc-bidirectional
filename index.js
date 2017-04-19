@@ -1,4 +1,5 @@
-const objExports = {};
+// Do not use const here, webpack/babel issues.
+var objExports = {};
 
 objExports.Client = require("./src/Client");
 objExports.ClientPluginBase = require("./src/ClientPluginBase");
