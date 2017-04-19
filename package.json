@@ -37,8 +37,8 @@
   },
   "dependencies": {
     "crypto-js": "^3.1.9-1",
+    "jssha": "^2.2.0",
     "node-fetch": "^1.6.3",
-    "sleep-promise": "2.0.0",
     "ws": "^2.2.3"
   },
   "devDependencies": {
@@ -47,7 +47,7 @@
     "babel-eslint": "*",
     "babel-loader": "*",
     "babel-plugin-async-to-promises": "*",
-    "babel-plugin-transform-runtime": "*",
+    "babel-plugin-remove-comments": "*",
     "babel-polyfill": "*",
     "babel-preset-es2015": "*",
     "babel-preset-stage-3": "*",
@@ -55,6 +55,7 @@
     "eslint": "*",
     "eslint-plugin-jsdoc": "*",
     "phantom": "^4.0.2",
-    "webpack": "*"
+    "webpack": "*",
+    "sleep-promise": "*"
   }
 }
