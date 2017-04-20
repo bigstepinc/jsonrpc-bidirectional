@@ -10,8 +10,8 @@ module.exports = [
 		externals: {
 			// Map require("something) to global variable Something.
 			// "something": "Something"
-			//"node-fetch": "fetch",
-			//"es6-promise": "Promise"
+			
+			"ws": "WebSocket"
 		}, 
 		entry: [
 			"babel-polyfill",
@@ -19,7 +19,7 @@ module.exports = [
 		],
 		output: {
 			path: path.join(__dirname, "builds", "browser", "es5"),
-			filename: "jsonrpc.js",
+			filename: "jsonrpc.min.js",
 			libraryTarget: "umd"
 		},
 		devtool: "source-map",
@@ -67,12 +67,18 @@ module.exports = [
 	}/*,
 	{
 		target: "web", 
+		externals: {
+			// Map require("something) to global variable Something.
+			// "something": "Something"
+			
+			"ws": "WebSocket"
+		}, 
 		entry: [
 			"./index_webpack"
 		],
 		output: {
 			path: path.join(__dirname, "builds", "browser", "es7"),
-			filename: "jsonrpc.js",
+			filename: "jsonrpc.min.js",
 			libraryTarget: "umd"
 		},
 		devtool: "source-map",

@@ -3,29 +3,64 @@
 	<head>
 		<title>Tests</title>
 
-		<script type="text/javascript" src="/builds/browser/es5/jsonrpc.js"></script>
+		<script type="text/javascript" src="/builds/browser/es5/jsonrpc.min.js"></script>
 
 		<script>
+			if(!console)
+				console = {};
+			if(!console.log)
+				console.log = function(){};
+			if(!console.info)
+				console.info = console.log;
+			if(!console.debug)
+				console.debug = console.log;
+			if(!console.error)
+				console.error = console.log;
+
+
 			var arrErrors = [];
 
 			window.onerror = function(errorMsg, url, lineNumber){
 				arrErrors.push([errorMsg, url, lineNumber]);
 			};
 
+			var bWebSocketMode = location.href.indexOf("websocketmode=1") !== -1 && WebSocket;
+
 			var client;
 			window.addEventListener(
 				"load",
 				function(event){
-					client = new JSONRPC.Client("http://localhost:8324/api");
+					client = new JSONRPC.Client("http://" + location.host + "/api");
 
-					client.rpc("ping", ["Calling from html es5 client."])
-						.then(function(result){arrErrors.push(result)})
-						.catch(function(error){arrErrors.push(error)})
-					;
+					if(bWebSocketMode)
+					{
+						var ws = new WebSocket("ws://" + location.host +  "/api"); 
+						client.addPlugin(new JSONRPC.Plugins.Client.WebSocketTransport(ws, /*bBidirectionalWebSocketMode*/ false));
+						
+						ws.addEventListener("open", function(event){
+							client.rpc("ping", ["Calling from html es5 client, websocket mode."])
+								.then(function(result){arrErrors.push(result); console.log(result)})
+								.catch(function(error){arrErrors.push(error); console.error(error)})
+							;
+						});
+					}
+					else
+					{
+						client.rpc("ping", ["Calling from html es5 client, http mode."])
+							.then(function(result){arrErrors.push(result); console.log(result)})
+							.catch(function(error){arrErrors.push(error); console.error(error)})
+						;
+					}
+
+					console.info('JSONRPC.Client instantiated as window.client.');
+					console.info('Example call: ');
+					console.debug('client.rpc("ping", ["Calling from browser ES5 client."]).then(console.log).catch(console.error);');
+					console.info('The above command is known to work in at least Internet Explorer 10.');
 				}
 			);
 		</script>
 	</head>
 	<body>
+		Open the developer tools console (F12 for most browsers, CTRL+SHIFT+I in Electron) to see errors or manually make calls.
 	</body>
 </html>

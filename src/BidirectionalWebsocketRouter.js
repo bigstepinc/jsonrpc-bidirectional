@@ -12,6 +12,8 @@ JSONRPC.Utils = require("./Utils");
 
 const EventEmitter = require("events");
 
+const WebSocket = require("ws");
+
 
 /**
  * The "madeReverseCallsClient" event offers automatically instantiated API clients (API clients are instantiated for each connection, lazily).
@@ -57,7 +59,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 	 */
 	async addWebSocket(webSocket)
 	{
-		if(webSocket.readyState === webSocket.constructor.CLOSED)
+		if(webSocket.readyState === WebSocket.CLOSED)
 		{
 			// WebSocket.CLOSING should be followed by a closed event.
 			// WebSocket.OPEN is desired.
@@ -81,33 +83,37 @@ class BidirectionalWebsocketRouter extends EventEmitter
 
 		this._objSessions[nWebSocketConnectionID] = objSession;
 
-		webSocket.on(
+		webSocket.addEventListener(
 			"close",
-			(code, message) => {
+			(closeEvent) => {
+				//closeEvent.code;
+				//closeEvent.reason;
+				//closeEvent.wasClean;
+
 				delete this._objSessions[nWebSocketConnectionID];
 			}
 		);
 
-		webSocket.on(
+		webSocket.addEventListener(
 			"error",
 			(error) => {
 				delete this._objSessions[nWebSocketConnectionID];
 
-				if(webSocket.readyState === webSocket.constructor.OPEN)
+				if(webSocket.readyState === WebSocket.OPEN)
 				{
 					webSocket.close(
-						/* CloseEvent.Internal Error */ 1011, 
+						/*CLOSE_NORMAL*/ 1000, // Chrome only supports 1000 or the 3000-3999 range ///* CloseEvent.Internal Error */ 1011, 
 						error.message
 					);
 				}
 			}
 		);
 
-		webSocket.on(
+		webSocket.addEventListener(
 			"message", 
-			async (strMessage) => 
+			async (messageEvent) => 
 			{
-				await this._routeMessage(strMessage, objSession);//.then(() => {}).catch(console.error);
+				await this._routeMessage(messageEvent.data, objSession);//.then(() => {}).catch(console.error);
 			}
 		);
 
@@ -222,7 +228,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 
 			console.log("[" + process.pid + "] Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request or response.");
 			webSocket.close(
-				/* CloseEvent.Internal Error */ 1011, 
+				/*CLOSE_NORMAL*/ 1000, // Chrome only supports 1000 or the 3000-3999 range ///* CloseEvent.Internal Error */ 1011, 
 				"Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request or response."
 			);
 
@@ -235,7 +241,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 			{
 				if(!this._jsonrpcServer)
 				{
-					if(webSocket.readyState === webSocket.constructor.OPEN)
+					if(webSocket.readyState === WebSocket.OPEN)
 					{
 						webSocket.send(JSON.stringify({
 							id: null,
@@ -290,7 +296,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 
 				await this._jsonrpcServer.processRequest(incomingRequest);
 				
-				if(webSocket.readyState !== webSocket.constructor.OPEN)
+				if(webSocket.readyState !== WebSocket.OPEN)
 				{
 					console.error("webSocket.readyState: " + JSON.stringify(webSocket.readyState) + ". Request was " + strMessage + ". Attempted responding with " + JSON.stringify(incomingRequest.callResultToBeSerialized, undefined, "\t") + ".");
 				}
@@ -306,7 +312,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 				{
 					if(!this._jsonrpcServer)
 					{
-						if(webSocket.readyState === webSocket.constructor.OPEN)
+						if(webSocket.readyState === WebSocket.OPEN)
 						{
 							webSocket.send(JSON.stringify({
 								id: null,
@@ -319,10 +325,10 @@ class BidirectionalWebsocketRouter extends EventEmitter
 						}
 					}
 
-					if(webSocket.readyState === webSocket.constructor.OPEN)
+					if(webSocket.readyState === WebSocket.OPEN)
 					{
 						webSocket.close(
-							/* CloseEvent.Internal Error */ 1011, 
+							/*CLOSE_NORMAL*/ 1000, // Chrome only supports 1000 or the 3000-3999 range ///* CloseEvent.Internal Error */ 1011, 
 							"How can the client be not initialized, and yet getting responses from phantom requests? Closing websocket."
 						);
 					}
@@ -355,7 +361,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 				&& this._objSessions[nWebSocketConnectionID].clientWebSocketTransportPlugin === null
 			)
 			{
-				if(webSocket.readyState === webSocket.constructor.OPEN)
+				if(webSocket.readyState === WebSocket.OPEN)
 				{
 					webSocket.send(JSON.stringify({
 						id: null,
@@ -368,11 +374,11 @@ class BidirectionalWebsocketRouter extends EventEmitter
 				}
 			}
 
-			if(webSocket.readyState === webSocket.constructor.OPEN)
+			if(webSocket.readyState === WebSocket.OPEN)
 			{
 				console.log("[" + process.pid + "] Unclean state. Closing websocket.");
 				webSocket.close(
-					/* CloseEvent.Internal Error */ 1011, 
+					/*CLOSE_NORMAL*/ 1000, // Chrome only supports 1000 or the 3000-3999 range ///* CloseEvent.Internal Error */ 1011, 
 					"Unclean state. Closing websocket."
 				);
 			}
