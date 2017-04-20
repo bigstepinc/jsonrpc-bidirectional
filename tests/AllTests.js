@@ -111,8 +111,7 @@ class AllTests
 
 		if(!this._bWebSocketMode)
 		{
-			this._jsonrpcServerSiteA.addPlugin(this._serverAuthorizeAllPlugin);
-			this._jsonrpcServerSiteA.addPlugin(this._serverAuthenticationSkipPlugin);
+			this.disableServerSecuritySiteA();
 		}
 		else
 		{
@@ -296,6 +295,16 @@ class AllTests
 				this._serverPluginAuthorizeWebSocketSiteA.addConnection(nWebSocketConnectionID, webSocket);
 			}
 		);
+	}
+
+
+	/**
+	 * @returns {undefined}
+	 */
+	async disableServerSecuritySiteA()
+	{
+		this._jsonrpcServerSiteA.addPlugin(this._serverAuthorizeAllPlugin);
+		this._jsonrpcServerSiteA.addPlugin(this._serverAuthenticationSkipPlugin);
 	}
 
 
@@ -881,7 +890,7 @@ class AllTests
 
 	async callRPCMethodFromWebPage()
 	{
-		assert(fs.existsSync(path.resolve(path.dirname(__dirname) + "/builds/browser/es5/jsonrpc.js")));
+		assert(fs.existsSync(path.resolve(path.dirname(__dirname) + "/builds/browser/es5/jsonrpc.min.js")));
 		assert(fs.existsSync(path.resolve(__dirname + "/Browser/index.html")));
 
 		const phantom = await Phantom.create(

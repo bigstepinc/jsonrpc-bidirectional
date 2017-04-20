@@ -19,7 +19,7 @@ module.exports = [
 		],
 		output: {
 			path: path.join(__dirname, "builds", "browser", "es5"),
-			filename: "jsonrpc.js",
+			filename: "jsonrpc.min.js",
 			libraryTarget: "umd"
 		},
 		devtool: "source-map",
@@ -72,7 +72,7 @@ module.exports = [
 		],
 		output: {
 			path: path.join(__dirname, "builds", "browser", "es7"),
-			filename: "jsonrpc.js",
+			filename: "jsonrpc.min.js",
 			libraryTarget: "umd"
 		},
 		devtool: "source-map",
