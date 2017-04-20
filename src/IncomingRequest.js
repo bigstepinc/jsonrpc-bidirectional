@@ -180,7 +180,7 @@ class IncomingRequest
 	 */
 	set bidirectionalWebsocketRouter(bidirectionalWebsocketRouter)
 	{
-		assert(bidirectionalWebsocketRouter.constructor.name === "BidirectionalWebsocketRouter");
+		assert(bidirectionalWebsocketRouter.constructor.name === "BidirectionalWebsocketRouter", "bidirectionalWebsocketRouter must be an instance of BidirectionalWebsocketRouter.");
 
 		this._bidirectionalWebsocketRouter = bidirectionalWebsocketRouter;
 	}

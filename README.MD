@@ -212,7 +212,7 @@ const wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(jsonrpcServer);
 // Optional.
 wsJSONRPCRouter.on("madeReverseCallsClient", (clientReverseCalls) => { /*add plugins or just setup the client even further*/ });
 
-
+// Alternatively reuse existing web server: const webSocketServer = new WebSocketServer({server: httpServerInstance});
 const webSocketServer = new WebSocketServer({port: 8080});
 webSocketServer.on("error", (error) => {console.error(error); process.exit(1);});
 

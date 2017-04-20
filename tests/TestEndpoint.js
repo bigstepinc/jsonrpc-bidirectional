@@ -21,6 +21,7 @@ class TestEndpoint extends JSONRPC.EndpointBase
 		);
 
 		this.fnResolveWaitForWebPage = null;
+		this.nWaitForWebPageRemainingCallsCount = null;
 
 		//Object.seal(this);
 	}
@@ -47,8 +48,15 @@ class TestEndpoint extends JSONRPC.EndpointBase
 		{
 			await incomingRequest.reverseCallsClient.rpc("ping", [strATeamCharacterName + " called back to confirm this: " + strReturn + "!", /*bRandomSleep*/ true]);
 		}
+		else if(strReturn === "Calling from html es5 client, bidirectional websocket mode.")
+		{
+			await incomingRequest.reverseCallsClient.rpc("ping", ["This is node. You, the browser, called back earlier to confirm this: " + strReturn + "!", /*bRandomSleep*/ false, "CallMeBackOnceAgain"]);
+		}
 
-		if(this.fnResolveWaitForWebPage !== null)
+		if(
+			this.fnResolveWaitForWebPage !== null
+			&& --this.nWaitForWebPageRemainingCallsCount === 0
+		)
 		{
 			this.fnResolveWaitForWebPage();
 			this.fnResolveWaitForWebPage = null;

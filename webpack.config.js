@@ -1,6 +1,7 @@
 const path = require("path");
 const fs = require("fs");
 const webpack = require("webpack");
+const recursiveKeys = require("recursive-keys");
 
 const objPackageJSON = JSON.parse(fs.readFileSync("package.json"));
 
@@ -51,7 +52,14 @@ module.exports = [
 				minimize: true,
 				sourceMap: true,
 				compress: { screw_ie8: true },
-				mangle: { screw_ie8: true },
+				mangle: {
+					screw_ie8: true,
+					except: recursiveKeys.dumpKeysRecursively(require("./index_webpack")).map(
+						(strClassName) => {
+							return strClassName.split(".").pop();
+						}
+					)
+				},
 				output: { 
 					screw_ie8: true, 
 					comments: false,
