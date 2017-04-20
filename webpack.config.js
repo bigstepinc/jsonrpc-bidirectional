@@ -10,8 +10,8 @@ module.exports = [
 		externals: {
 			// Map require("something) to global variable Something.
 			// "something": "Something"
-			//"node-fetch": "fetch",
-			//"es6-promise": "Promise"
+			
+			"ws": "WebSocket"
 		}, 
 		entry: [
 			"babel-polyfill",
@@ -67,6 +67,12 @@ module.exports = [
 	}/*,
 	{
 		target: "web", 
+		externals: {
+			// Map require("something) to global variable Something.
+			// "something": "Something"
+			
+			"ws": "WebSocket"
+		}, 
 		entry: [
 			"./index_webpack"
 		],

@@ -37,9 +37,11 @@ class Server extends EventEmitter
 	 * 
 	 * @param {http.Server} httpServer
 	 * @param {string} strRootPath
+	 * @param {boolean} bSharedWithWebSocketServer
 	 */
-	async attachToHTTPServer(httpServer, strRootPath)
+	async attachToHTTPServer(httpServer, strRootPath, bSharedWithWebSocketServer)
 	{
+		bSharedWithWebSocketServer = !!bSharedWithWebSocketServer;
 		assert(typeof strRootPath === "string", typeof strRootPath);
 
 		strRootPath = JSONRPC.EndpointBase.normalizePath(strRootPath);
@@ -54,6 +56,21 @@ class Server extends EventEmitter
 				{
 					// Do not call .end() here, or co-existing HTTP handlers on the same server will not have a chance to set headers or respond.
 					// httpResponse.end();
+					return;
+				}
+
+				if(httpRequest.headers["sec-websocket-version"])
+				{
+					if(bSharedWithWebSocketServer)
+					{
+						// Do not call .end() here, or co-existing HTTP handlers on the same server will not have a chance to set headers or respond.
+						// httpResponse.end();
+						return;
+					}
+
+					console.error("Received websocket upgrade request, yet not sharing the HTTP connection with a WebSocket.");
+					httpResponse.statusCode = 403; //Forbidden.
+					httpResponse.end();
 					return;
 				}
 

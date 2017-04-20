@@ -147,49 +147,42 @@ class AllTests
 
 		await this.manyCallsInParallel();
 
-		if(this._httpServerSiteA)
-		{
-			let fnResolveWaitClose;
-			let fnRejectWaitClose;
-			const promiseWaitClose = new Promise((fnResolve, fnReject) => {
-				fnResolveWaitClose = fnResolve;
-				fnRejectWaitClose = fnReject;
-			});
-			this._httpServerSiteA.close((result, error) => {
-				if(error)
-				{
-					fnRejectWaitClose(error);
-				}
-				else
-				{
-					fnResolveWaitClose(result);
-				}
-			});
-			
-			await promiseWaitClose;
-		}
-
-
 		if(this._webSocketServerSiteA)
 		{
-			let fnResolveWaitClose;
-			let fnRejectWaitClose;
-			const promiseWaitClose = new Promise((fnResolve, fnReject) => {
-				fnResolveWaitClose = fnResolve;
-				fnRejectWaitClose = fnReject;
+			console.log("Closing WebSocket server.");
+			await new Promise((fnResolve, fnReject) => {
+				this._webSocketServerSiteA.close((result, error) => {
+					if(error)
+					{
+						fnReject(error);
+					}
+					else
+					{
+						fnResolve(result);
+					}
+				});
 			});
-			this._webSocketServerSiteA.close((result, error) => {
-				if(error)
-				{
-					fnRejectWaitClose(error);
-				}
-				else
-				{
-					fnResolveWaitClose(result);
-				}
+
+			this._webSocketServerSiteA = null;
+		}
+
+		if(this._httpServerSiteA)
+		{
+			console.log("Closing HTTP server.");
+			await new Promise((fnResolve, fnReject) => {
+				this._httpServerSiteA.close((result, error) => {
+					if(error)
+					{
+						fnReject(error);
+					}
+					else
+					{
+						fnResolve(result);
+					}
+				});
 			});
 			
-			await promiseWaitClose;
+			this._httpServerSiteA = null;
 		}
 	}
 
@@ -207,7 +200,8 @@ class AllTests
 		this._jsonrpcServerSiteA.addPlugin(new ServerDebugMarkerPlugin("SiteA"));
 
 		this._jsonrpcServerSiteA.registerEndpoint(this._testEndpoint);
-		this._jsonrpcServerSiteA.attachToHTTPServer(this._httpServerSiteA, "/api/");
+
+		this._jsonrpcServerSiteA.attachToHTTPServer(this._httpServerSiteA, "/api/", /*bSharedWithWebSocketServer*/ this._bWebSocketMode);
 
 		this._httpServerSiteA.on(
 			"request",
@@ -233,6 +227,7 @@ class AllTests
 					serverResponse.statusCode = 200;
 					serverResponse.write(fs.readFileSync(strFilePath));
 					serverResponse.end();
+					return;
 				}
 				else if(url.parse(incomingRequest.url).pathname.substr(0, 4) !== "/api")
 				{
@@ -240,6 +235,20 @@ class AllTests
 
 					serverResponse.statusCode = 404;
 					serverResponse.end();
+					return;
+				}
+				else if(
+					this._bWebSocketMode
+					&& !incomingRequest.headers["sec-websocket-version"]
+					&& incomingRequest.method === "POST"
+					&& url.parse(incomingRequest.url).pathname.substr(0, 4) === "/api"
+				)
+				{
+					const strError = "For these automated tests, HTTP API requests are forbidden while in WebSocket mode to correctly assess if the calls are coming through the being tested channels.";
+					serverResponse.write(strError);
+					serverResponse.statusCode = 500;
+					serverResponse.end();
+					throw new Error(strError);
 				}
 			}
 		);
@@ -255,14 +264,12 @@ class AllTests
 	{
 		console.log("[" + process.pid + "] setupWebsocketServerSiteA.");
 
-		this._webSocketServerSiteA = new WebSocketServer({
-			port: 8325
-		});
+		this._webSocketServerSiteA = new WebSocketServer({server: this._httpServerSiteA});
 
 		this._webSocketServerSiteA.on(
 			"error",
 			(error) => {
-				console.log(error);
+				console.error(error);
 				process.exit(1);
 			}
 		);
@@ -508,6 +515,10 @@ class AllTests
 	 */
 	async endpointNotFoundError()
 	{
+		const bWebSocketMode = this._bWebSocketMode;
+		this._bWebSocketMode = false;
+
+
 		console.log("[" + process.pid + "] endpointNotFoundError");
 
 		const client = new TestClient("http://localhost:8324/api/bad-endpoint-path");
@@ -530,6 +541,9 @@ class AllTests
 			assert.strictEqual(error.code, JSONRPC.Exception.METHOD_NOT_FOUND);
 			assert(error.message.includes("Unknown JSONRPC endpoint"));
 		}
+
+
+		this._bWebSocketMode = bWebSocketMode;
 	}
 
 
@@ -928,7 +942,7 @@ class AllTests
 		});
 
 		
-		const strStatus = await phantomPage.open("http://localhost:8324/tests/Browser/index.html".replace(/\\+/g, "/").replace(/^\//, ""));
+		const strStatus = await phantomPage.open(`http://localhost:8324/tests/Browser/index.html?websocketmode=${this._bWebSocketMode ? 1 : 0}`.replace(/\\+/g, "/").replace(/^\//, ""));
 		console.log("[" + process.pid + "] Phantom page open: " + strStatus);
 		assert.strictEqual(strStatus, "success");
 
@@ -1015,6 +1029,6 @@ class AllTests
 	 */
 	static get localEndpointWebSocket()
 	{
-		return "ws://localhost:8325/api";
+		return "ws://localhost:8324/api";
 	}
 };

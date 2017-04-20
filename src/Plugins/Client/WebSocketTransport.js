@@ -4,6 +4,9 @@ JSONRPC.Utils = require("../../Utils");
 
 const assert = require("assert");
 
+const WebSocket = require("ws");
+
+
 module.exports =
 class WebSocketTransport extends JSONRPC.ClientPluginBase
 {
@@ -57,7 +60,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 				console.error(error);
 				console.error("Unable to parse JSON. RAW remote response: " + strResponse);
 				this._webSocket.close(
-					/* CloseEvent.Internal Error */ 1011, 
+					/*CLOSE_NORMAL*/ 1000, // Chrome only supports 1000 or the 3000-3999 range ///* CloseEvent.Internal Error */ 1011, 
 					"Unable to parse JSON. RAW remote response: " + strResponse
 				);
 
@@ -74,7 +77,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 			console.error(new Error("RAW remote message: " + strResponse));
 			console.log("[" + process.pid + "] Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request.");
 			this.webSocket.close(
-				/* CloseEvent.Internal Error */ 1011, 
+				/*CLOSE_NORMAL*/ 1000, // Chrome only supports 1000 or the 3000-3999 range ///* CloseEvent.Internal Error */ 1011, 
 				"Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request."
 			);
 
@@ -105,7 +108,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 			return;
 		}
 
-		if(this.webSocket.readyState !== this.webSocket.constructor.OPEN)
+		if(this.webSocket.readyState !== WebSocket.OPEN)
 		{
 			throw new Error("WebSocket not connected.");
 		}
@@ -161,14 +164,14 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 	{
 		//assert(webSocket.constructor.name === "WebSocket");
 
-		this._webSocket.on(
+		this._webSocket.addEventListener(
 			"close", 
-			(code, message) => {
-				this.rejectAllPromises(new Error("WebSocket closed. Code: " + JSON.stringify(code) + ". Message: " + JSON.stringify(message) + "."));
+			(closeEvent) => {
+				this.rejectAllPromises(new Error("WebSocket closed. Code: " + JSON.stringify(closeEvent.code) + ". Message: " + JSON.stringify(closeEvent.reason) + ". wasClean: " + JSON.stringify(closeEvent.wasClean)));
 			}
 		);
 		
-		this._webSocket.on(
+		this._webSocket.addEventListener(
 			"error",
 			(error) => {
 				this.rejectAllPromises(error);
@@ -177,10 +180,10 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 
 		if(!this._bBidirectionalWebSocketMode)
 		{
-			this._webSocket.on(
+			this._webSocket.addEventListener(
 				"message",
-				async (strMessage) => {
-					await this.processResponse(strMessage);
+				async (messageEvent) => {
+					await this.processResponse(messageEvent.data);
 				}
 			);
 		}
