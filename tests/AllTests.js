@@ -121,11 +121,7 @@ class AllTests
 		}
 
 
-		if(!this._bWebSocketMode)
-		{
-			await this.callRPCMethodFromWebPage();
-		}
-
+		await this.callRPCMethodFromWebPage();
 
 
 		await this.callRPCMethodSiteB(/*bDoNotSleep*/ true);
@@ -137,7 +133,6 @@ class AllTests
 			await this.setupSiteDisconnecter();
 			await this._jsonrpcClientSiteDisconnecter.rpc("ImHereForTheParty", ["Murdock", "Murdock does the harlem shake", /*bDoNotAuthorizeMe*/ false]);
 			await this.callRPCMethodSiteDisconnecter(/*bTerminate*/ true);
-
 		}
 
 		await this.callRPCMethodSiteBWhichThrowsJSONRPCException();
@@ -288,7 +283,7 @@ class AllTests
 			"madeReverseCallsClient",
 			(clientReverseCalls) => {
 				clientReverseCalls.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
-				clientReverseCalls.addPlugin(new ClientDebugMarkerPlugin("SiteA; reverse calls;"));				
+				clientReverseCalls.addPlugin(new ClientDebugMarkerPlugin("SiteA; reverse calls;"));
 			}
 		);
 
@@ -919,6 +914,8 @@ class AllTests
 		await phantomPage.setting("javascriptEnabled", true);
 
 
+		this._testEndpoint.nWaitForWebPageRemainingCallsCount = this._bWebSocketMode ? 3 : 1;
+
 		let nTimeoutIDWaitForWebPage = null;
 		const promiseWaitForWebPage = new Promise((fnResolve, fnReject) => {
 			nTimeoutIDWaitForWebPage = setTimeout(
@@ -935,7 +932,7 @@ class AllTests
 
 					fnReject(new Error("Timed out waiting for webpage JSONRPC call to TestEndpoint.ping()."));
 				},
-				5000 /*milliseconds*/
+				7000 /*milliseconds*/
 			);
 
 			this._testEndpoint.fnResolveWaitForWebPage = fnResolve;
@@ -953,13 +950,34 @@ class AllTests
 		//console.log(strContent);
 
 
+		/**
+			Now waiting for these events (each will decrement this._testEndpoint.nWaitForWebPageRemainingCallsCount)
+			1) Simple call ffrom a stand alone JSONRPC client in the browser, towards node.
+		*/
+
+		/**
+		 	If in websocket mode:
+		
+			2) Another call, on a different connection, from a JSONRPC client instantiated by BidirectionalWebsocketRouter in the browser.
+			Exactly this call from browser to node: ping("Calling from html es5 client, bidirectional websocket mode.");
+		
+			3) node's ping will call browser ping: await incomingRequest.reverseCallsClient.rpc("ping", [strATeamCharacterName + " called back to confirm this: " + strReturn + "!", false, "CallMeBackOnceAgain"]);
+			Where the character name is "CallMeBackOnceAgain".
+
+			4) If the browser ping sees "CallMeBackOnceAgain" as value, it will make one last call to node's ping, without any special params (preventing an infinite loop).
+		*/
+
+
 		await promiseWaitForWebPage;
 		if(nTimeoutIDWaitForWebPage !== null)
 		{
 			clearTimeout(nTimeoutIDWaitForWebPage);
 		}
+		assert(this._testEndpoint.nWaitForWebPageRemainingCallsCount === 0, "Remaining ping calls count: " + this._testEndpoint.nWaitForWebPageRemainingCallsCount);
+
 
 		await phantom.exit();
+		
 
 		console.log("[" + process.pid + "] Calling from the webpage worked!");
 	}

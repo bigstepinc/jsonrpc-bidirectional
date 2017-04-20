@@ -4,8 +4,25 @@
 		<title>Tests</title>
 
 		<script type="text/javascript" src="/builds/browser/es5/jsonrpc.min.js"></script>
+		<script type="text/javascript" src="/tests/Browser/TestEndpoint.js"></script>
 
 		<script>
+			/**
+			 * These tests have to make a total of 3 calls to ping() on the other side.
+			 * 
+			 * One from a simple JSONRPC client.
+			 * One from a bidirectional client, direct call.
+			 * One from a bidirectional client, reverse call inside an incoming call.
+			 * 
+			 * After all 3 are made, testing will continue.
+			 * Otherwise, testing will timeout after a number of seconds of waiting for these calls to complete.
+			 */
+
+			
+			var client;
+			var clientOfBidirectionalWS;
+
+
 			if(!console)
 				console = {};
 			if(!console.log)
@@ -19,6 +36,12 @@
 
 
 			var arrErrors = [];
+			function genericTestsPromiseCatch(error)
+			{
+				arrErrors.push(error); 
+				console.log(error)
+			};
+
 
 			window.onerror = function(errorMsg, url, lineNumber){
 				arrErrors.push([errorMsg, url, lineNumber]);
@@ -26,36 +49,89 @@
 
 			var bWebSocketMode = location.href.indexOf("websocketmode=1") !== -1 && WebSocket;
 
-			var client;
+
+			/**
+			 * Standalone JSONRPC.Client instance. 
+			 * It has a JSONRPC.Plugins.Client.WebSocketTransport plugin added, if in WebSocket mode.
+			 * 
+			 * @returns {undefined}
+			 */
+			function testSimpleClient()
+			{
+				client = new JSONRPC.Client("http://" + location.host + "/api");
+
+				if(bWebSocketMode)
+				{
+					var ws = new WebSocket("ws://" + location.host +  "/api"); 
+					client.addPlugin(new JSONRPC.Plugins.Client.WebSocketTransport(ws, /*bBidirectionalWebSocketMode*/ false));
+					
+					ws.addEventListener("open", function(event){
+						client.rpc("ImHereForTheParty", ["Lynch", "Lynch does the harlem shake", /*bDoNotAuthorizeMe*/ false])
+							.then(function(objTeamMember){
+								client.rpc("ping", ["Calling from html es5 client, websocket mode."]).then(genericTestsPromiseCatch).catch(genericTestsPromiseCatch);
+							})
+							.catch(genericTestsPromiseCatch)
+						;
+					});
+				}
+				else
+				{
+					client.rpc("ping", ["Calling from html es5 client, http mode."]).then(genericTestsPromiseCatch).catch(genericTestsPromiseCatch);
+				}
+
+				console.info('JSONRPC.Client instantiated as window.client.');
+				console.info('Example call: ');
+				console.debug('client.rpc("ping", ["Calling from browser ES5 client."]).then(console.log).catch(console.error);');
+				console.info('The above command is known to work in at least Internet Explorer 10.');
+			}
+
+
+			/**
+			 * JSONRPC.Server with JSONRPC.BidirectionalWebsocketRouter 
+			 * and reverse calls JSONRPC.Client instances (one per connection) on the endpoint.
+			 * 
+			 * @returns {undefined}
+			 */
+			function testBidirectionalRPC()
+			{
+				var jsonrpcServer = new JSONRPC.Server();
+				jsonrpcServer.registerEndpoint(new TestEndpoint());
+
+				// By default, JSONRPC.Server rejects all requests as not authenticated and not authorized.
+				jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthenticationSkip());
+				jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthorizeAll());
+
+				var ws = new WebSocket("ws://" + location.host +  "/api"); 
+
+				ws.addEventListener("open", function(event){
+					var wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(jsonrpcServer);
+
+					wsJSONRPCRouter.addWebSocket(ws)
+						.then(function(nWebSocketConnectionID){
+							clientOfBidirectionalWS = wsJSONRPCRouter.connectionIDToSingletonClient(nWebSocketConnectionID, JSONRPC.Client);
+
+							clientOfBidirectionalWS.rpc("ImHereForTheParty", ["Lynch", "Lynch does the harlem shake", /*bDoNotAuthorizeMe*/ false])
+								.then(function(objTeamMember){
+									clientOfBidirectionalWS.rpc("ping", ["Calling from html es5 client, bidirectional websocket mode."]).then(genericTestsPromiseCatch).catch(genericTestsPromiseCatch);
+								})
+								.catch(genericTestsPromiseCatch)
+							;
+						})
+						.catch(genericTestsPromiseCatch)
+					;
+				});
+			}
+		
+
 			window.addEventListener(
 				"load",
 				function(event){
-					client = new JSONRPC.Client("http://" + location.host + "/api");
+					testSimpleClient();
 
 					if(bWebSocketMode)
 					{
-						var ws = new WebSocket("ws://" + location.host +  "/api"); 
-						client.addPlugin(new JSONRPC.Plugins.Client.WebSocketTransport(ws, /*bBidirectionalWebSocketMode*/ false));
-						
-						ws.addEventListener("open", function(event){
-							client.rpc("ping", ["Calling from html es5 client, websocket mode."])
-								.then(function(result){arrErrors.push(result); console.log(result)})
-								.catch(function(error){arrErrors.push(error); console.error(error)})
-							;
-						});
+						testBidirectionalRPC();
 					}
-					else
-					{
-						client.rpc("ping", ["Calling from html es5 client, http mode."])
-							.then(function(result){arrErrors.push(result); console.log(result)})
-							.catch(function(error){arrErrors.push(error); console.error(error)})
-						;
-					}
-
-					console.info('JSONRPC.Client instantiated as window.client.');
-					console.info('Example call: ');
-					console.debug('client.rpc("ping", ["Calling from browser ES5 client."]).then(console.log).catch(console.error);');
-					console.info('The above command is known to work in at least Internet Explorer 10.');
 				}
 			);
 		</script>
