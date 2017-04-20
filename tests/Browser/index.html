@@ -112,6 +112,7 @@
 
 							clientOfBidirectionalWS.rpc("ImHereForTheParty", ["Lynch", "Lynch does the harlem shake", /*bDoNotAuthorizeMe*/ false])
 								.then(function(objTeamMember){
+									// When calling with this exact string, the node's ping() method will call back into the JSONRPC server hosted on this page (node becomes client, browser becomes server).
 									clientOfBidirectionalWS.rpc("ping", ["Calling from html es5 client, bidirectional websocket mode."]).then(genericTestsPromiseCatch).catch(genericTestsPromiseCatch);
 								})
 								.catch(genericTestsPromiseCatch)
