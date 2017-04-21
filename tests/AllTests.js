@@ -183,6 +183,9 @@ class AllTests
 			
 			this._httpServerSiteA = null;
 		}
+
+
+		this._bPreventHTTPAPIRequests = false;
 	}
 
 

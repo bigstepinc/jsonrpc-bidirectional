@@ -51,7 +51,11 @@ module.exports = [
 			new webpack.optimize.UglifyJsPlugin({
 				minimize: true,
 				sourceMap: true,
-				compress: { screw_ie8: true },
+				compress: {
+					screw_ie8: true,
+					unused: true, 
+					dead_code: true
+				},
 				mangle: {
 					screw_ie8: true,
 					except: recursiveKeys.dumpKeysRecursively(require("./index_webpack")).map(
