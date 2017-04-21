@@ -20,6 +20,6 @@ process.on(
 		await allTests.setupWebsocketServerSiteA();
 		await allTests.disableServerSecuritySiteA();
 
-		console.log("Go to http://localhost:8324/tests/Browser/index.html");
+		console.log("Go to http://localhost:8324/tests/Browser/index.html?websocketmode=1");
 	}
 )();
