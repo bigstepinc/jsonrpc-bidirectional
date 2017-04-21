@@ -76,6 +76,7 @@ class AllTests
 		this._serverAuthorizeAllPlugin = new JSONRPC.Plugins.Server.AuthorizeAll();
 
 		this._bWebSocketMode = !!bWebSocketMode;
+		this._bPreventHTTPAPIRequests = false;
 
 		Object.seal(this);
 	}
@@ -86,6 +87,9 @@ class AllTests
 	 */
 	async runTests()
 	{
+		this._bPreventHTTPAPIRequests = this._bWebSocketMode;
+
+
 		await this.triggerConnectionRefused();
 
 
@@ -179,6 +183,9 @@ class AllTests
 			
 			this._httpServerSiteA = null;
 		}
+
+
+		this._bPreventHTTPAPIRequests = false;
 	}
 
 
@@ -233,7 +240,7 @@ class AllTests
 					return;
 				}
 				else if(
-					this._bWebSocketMode
+					this._bPreventHTTPAPIRequests
 					&& !incomingRequest.headers["sec-websocket-version"]
 					&& incomingRequest.method === "POST"
 					&& url.parse(incomingRequest.url).pathname.substr(0, 4) === "/api"
@@ -510,8 +517,7 @@ class AllTests
 	 */
 	async endpointNotFoundError()
 	{
-		const bWebSocketMode = this._bWebSocketMode;
-		this._bWebSocketMode = false;
+		this._bPreventHTTPAPIRequests = false;
 
 
 		console.log("[" + process.pid + "] endpointNotFoundError");
@@ -538,7 +544,7 @@ class AllTests
 		}
 
 
-		this._bWebSocketMode = bWebSocketMode;
+		this._bPreventHTTPAPIRequests = this._bWebSocketMode;
 	}
 
 
