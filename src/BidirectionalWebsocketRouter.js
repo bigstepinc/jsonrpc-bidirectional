@@ -132,7 +132,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 	 */
 	connectionIDToSingletonClient(nConnectionID, ClientClass)
 	{
-		assert(typeof nConnectionID === "number");
+		assert(typeof nConnectionID === "number", "nConnectionID must be a number. Received this: " + JSON.stringify(nConnectionID));
 		assert(typeof ClientClass === "function", "Invalid ClientClass value: " + (typeof ClientClass));
 
 		if(!this._objSessions.hasOwnProperty(nConnectionID))

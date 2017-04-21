@@ -76,7 +76,7 @@ module.exports = [
 				}
 			})
 		]
-	}/*,
+	},
 	{
 		target: "web", 
 		externals: {
@@ -115,6 +115,6 @@ module.exports = [
 		},
 		plugins: [
 		]
-	}*/
+	}
 ];
 
