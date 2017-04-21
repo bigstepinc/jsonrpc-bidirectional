@@ -71,8 +71,8 @@ module.exports = [
 						${objPackageJSON.name} v${objPackageJSON.version}
 						${objPackageJSON.description}
 						${objPackageJSON.homepage}
-						${objPackageJSON.homepage}/blob/master/LICENSE
-					*/`.replace(/\t+/g, "\t")
+						\n\n${fs.readFileSync("./LICENSE")}
+					*/`.replace(/\t+/g, "")
 				}
 			})
 		]
