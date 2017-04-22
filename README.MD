@@ -274,7 +274,7 @@ __Site B (ES5 browser). WebSocket client (connects to the above WebSocket TCP se
 		<script type="text/javascript" src="/node_modules/whatwg-fetch/fetch.js"></script>
 		<script type="text/javascript" src="/node_modules/es6-promise/dist/es6-promise.auto.min.js"></script>
 
-		<script type="text/javascript" src="/node_modules/regenerator-runtime/runtime.js"></script>
+		<!-- Already covered by babel-polyfill: script type="text/javascript" src="/node_modules/regenerator-runtime/runtime.js"></script-->
 		<script type="text/javascript" src="/builds/browser/es5/jsonrpc.min.js"></script>
 
 		<script>
