@@ -9,13 +9,11 @@ module.exports = [
 	{
 		target: "web", 
 		externals: {
-			// Map require("something) to global variable Something.
-			// "something": "Something"
-			
-			"ws": "WebSocket"
+			"ws": "WebSocket",
+			"node-fetch": "fetch"
 		}, 
 		entry: [
-			"babel-polyfill",
+			// "babel-polyfill",
 			"./index_webpack"
 		],
 		output: {
@@ -48,6 +46,13 @@ module.exports = [
 			]
 		},
 		plugins: [
+			new webpack.optimize.OccurrenceOrderPlugin(),
+			new webpack.optimize.DedupePlugin(),
+			new webpack.DefinePlugin({
+				"process.env": {
+					"NODE_ENV": JSON.stringify("production")
+				}
+			}),
 			new webpack.optimize.UglifyJsPlugin({
 				minimize: true,
 				sourceMap: true,
@@ -80,10 +85,8 @@ module.exports = [
 	{
 		target: "web", 
 		externals: {
-			// Map require("something) to global variable Something.
-			// "something": "Something"
-			
-			"ws": "WebSocket"
+			"ws": "WebSocket",
+			"node-fetch": "fetch"
 		}, 
 		entry: [
 			"./index_webpack"

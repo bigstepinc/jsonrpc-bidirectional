@@ -3,7 +3,14 @@
 	<head>
 		<title>Tests</title>
 
+		<!-- These are external to jsonrpc.min.js intentionally, to reduce file size and reuse them for other libraries. -->
+		<script type="text/javascript" src="/node_modules/babel-polyfill/dist/polyfill.min.js"></script>
+		<script type="text/javascript" src="/node_modules/whatwg-fetch/fetch.js"></script>
+		<script type="text/javascript" src="/node_modules/es6-promise/dist/es6-promise.auto.min.js"></script>
+
+		<!--script type="text/javascript" src="/node_modules/regenerator-runtime/runtime.js"></script-->
 		<script type="text/javascript" src="/builds/browser/es5/jsonrpc.min.js"></script>
+		
 		<script type="text/javascript" src="/tests/Browser/TestEndpoint.js"></script>
 
 		<script>
@@ -81,7 +88,7 @@
 
 				console.info("JSONRPC.Client instantiated as window.client.");
 				console.info("Example call: ");
-				console.debug("client.rpc('ping', ['Calling from browser ES5 client.']).then(console.log).catch(console.error);");
+				console.info("client.rpc('ping', ['Calling from browser ES5 client.']).then(console.log).catch(console.error);");
 				console.info("The above command is known to work in at least Internet Explorer 10.");
 			}
 

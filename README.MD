@@ -199,7 +199,7 @@ const WebSocketServer = WebSocket.Server;
 ```
 
 
-__Site A. WebSocket server (accepts incoming TCP connections):__
+__Site A. WebSocket server (accepts incoming TCP connections), JSONRPC server & client:__
 
 ```JavaScript
 const jsonrpcServer = new JSONRPC.Server();
@@ -224,12 +224,14 @@ webSocketServer.on(
 	{
 		const nWebSocketConnectionID = await wsJSONRPCRouter.addWebSocket(webSocket);
 		// Do something with nWebSocketConnectionID and webSocket here, like register them as a pair with an authorization plugin.
+
+		// const clientForThisConnection = wsJSONRPCRouter.connectionIDToSingletonClient(nWebSocketConnectionID, JSONRPC.Client);
 	}
 );
 ```
 
 
-__Site B. WebSocket client (connects to the above WebSocket TCP server):__
+__Site B. WebSocket client (connects to the above WebSocket TCP server), JSONRPC server & client:__
 
 ```JavaScript
 const jsonrpcServer = new JSONRPC.Server();
@@ -257,4 +259,114 @@ const nWebSocketConnectionID = await wsJSONRPCRouter.addWebSocket(webSocket);
 const theOnlyClient = wsJSONRPCRouter.connectionIDToSingletonClient(nWebSocketConnectionID, TestClient);
 
 await theOnlyClient.divide(3, 2);
+```
+
+
+__Site B (ES5 browser). WebSocket client (connects to the above WebSocket TCP server), JSONRPC server & client:__
+```html
+<!doctype html>
+<html>
+	<head>
+		<title>Tests</title>
+
+		<!-- These are external to jsonrpc.min.js intentionally, to reduce file size and reuse them for other libraries. -->
+		<script type="text/javascript" src="/node_modules/babel-polyfill/dist/polyfill.min.js"></script>
+		<script type="text/javascript" src="/node_modules/whatwg-fetch/fetch.js"></script>
+		<script type="text/javascript" src="/node_modules/es6-promise/dist/es6-promise.auto.min.js"></script>
+
+		<script type="text/javascript" src="/node_modules/regenerator-runtime/runtime.js"></script>
+		<script type="text/javascript" src="/builds/browser/es5/jsonrpc.min.js"></script>
+
+		<script>
+			function TestEndpoint()
+			{
+				JSONRPC.EndpointBase.prototype.constructor.apply(
+					this,
+					[
+						/*strName*/ "Test", 
+						/*strPath*/ location.protocol + "//" + location.host + "/api", 
+						/*objReflection*/ {},
+						/*classReverseCallsClient*/ JSONRPC.Client
+					]
+				);
+			}
+
+			TestEndpoint.prototype = new JSONRPC.EndpointBase("TestEndpoint", "/api", {});
+			TestEndpoint.prototype.constructor = JSONRPC.EndpointBase;
+
+			TestEndpoint.prototype.ping = function(incomingRequest, strReturn){
+				return new Promise(function(fnResolve, fnReject){
+					fnResolve(strReturn);
+				});
+			};
+
+
+			var client;
+			var clientWS;
+			var clientOfBidirectionalWS;
+
+
+			function testSimpleClient()
+			{
+				client = new JSONRPC.Client("http://" + location.host + "/api");
+				client.rpc("ping", ["Calling from html es5 client, http transport."]).then(genericTestsPromiseCatch).catch(genericTestsPromiseCatch);
+				
+				
+
+				clientWS = new JSONRPC.Client("http://" + location.host + "/api");
+
+				var ws = new WebSocket("ws://" + location.host +  "/api"); 
+				clientWS.addPlugin(new JSONRPC.Plugins.Client.WebSocketTransport(ws, /*bBidirectionalWebSocketMode*/ false));
+				
+				ws.addEventListener("open", function(event){
+					client.rpc("ping", ["Calling from html es5 client, websocket transport."])
+						.then(console.log)
+						.catch(console.log)
+					;
+				});
+			}
+
+
+			function testBidirectionalRPC()
+			{
+				var jsonrpcServer = new JSONRPC.Server();
+				jsonrpcServer.registerEndpoint(new TestEndpoint());
+
+				// By default, JSONRPC.Server rejects all requests as not authenticated and not authorized.
+				jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthenticationSkip());
+				jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthorizeAll());
+
+				var ws = new WebSocket("ws://" + location.host +  "/api"); 
+
+				ws.addEventListener("open", function(event){
+					var wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(jsonrpcServer);
+
+					wsJSONRPCRouter.addWebSocket(ws)
+						.then(function(nWebSocketConnectionID){
+							clientOfBidirectionalWS = wsJSONRPCRouter.connectionIDToSingletonClient(nWebSocketConnectionID, JSONRPC.Client);
+
+							clientOfBidirectionalWS.rpc("ping", ["Calling from html es5 client, websocket transport with bidirectional JSONRPC."])
+								.then(console.log)
+								.catch(console.log)
+							;
+						})
+						.catch(console.log)
+					;
+				});
+			}
+		
+
+			window.addEventListener(
+				"load",
+				function(event){
+					testSimpleClient();
+					testBidirectionalRPC();
+				}
+			);
+		</script>
+	</head>
+	<body>
+		Open the developer tools console (F12 for most browsers, CTRL+SHIFT+I in Electron) to see errors or manually make calls.
+	</body>
+</html>
 ```

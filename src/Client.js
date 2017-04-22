@@ -11,8 +11,6 @@ JSONRPC.OutgoingRequest = require("./OutgoingRequest");
 const EventEmitter = require("events");
 
 const fetch = require("node-fetch");
-const Request = fetch.Request;
-const Headers = fetch.Headers;
 
 const assert = require("assert");
 
@@ -132,12 +130,12 @@ class Client extends EventEmitter
 			let bHTTPErrorMode = false;
 			if(!outgoingRequest.isMethodCalled)
 			{
-				const request = new Request(
+				const request = new (fetch.Request ? fetch.Request : Request)(
 					outgoingRequest.endpointURL,
 					{
 						method: "POST",
 						mode: "cors",
-						headers: new Headers(outgoingRequest.headers),
+						headers: new (fetch.Headers ? fetch.Headers : Headers)(outgoingRequest.headers),
 						body: outgoingRequest.requestBody,
 						cache: "no-cache",
 						credentials: "include"
