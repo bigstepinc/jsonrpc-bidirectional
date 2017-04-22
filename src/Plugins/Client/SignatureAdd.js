@@ -1,8 +1,8 @@
 const JSONRPC = {};
 JSONRPC.ClientPluginBase = require("../../ClientPluginBase");
 
-// const JSSHA = require("jssha");
-const HMAC_SHA256 = require("crypto-js/hmac-sha256");
+ const JSSHA = require("jssha");
+//const HMAC_SHA256 = require("crypto-js/hmac-sha256");
 
 /**
  * This has purpose at Bigstep (the company which originally created this project).
@@ -58,11 +58,11 @@ class SignatureAdd extends JSONRPC.ClientPluginBase
 	 */
 	async afterJSONEncode(outgoingRequest)
 	{
-		/*const sha = new JSSHA("SHA-256", "TEXT");
+		const sha = new JSSHA("SHA-256", "TEXT");
 		sha.setHMACKey(this.strAPIKey, "TEXT");
 		sha.update(outgoingRequest.requestBody);
-		let strVerifyHash = sha.getHMAC("HEX");*/
-		let strVerifyHash = HMAC_SHA256(outgoingRequest.requestBody, this.strAPIKey);
+		let strVerifyHash = sha.getHMAC("HEX");
+		//let strVerifyHash = HMAC_SHA256(outgoingRequest.requestBody, this.strAPIKey);
 
 		if(this.strKeyMetaData !== null)
 		{
