@@ -1,6 +1,6 @@
 # Bidirectional JSON-RPC 2.0 server and client
 
-[![Version npm](https://img.shields.io/npm/v/ws.svg)](https://www.npmjs.com/package/jsonrpc-bidirectional)
+[![Version npm](https://img.shields.io/npm/v/jsonrpc-bidirectional.svg)](https://www.npmjs.com/package/jsonrpc-bidirectional)
 [![Linux build](https://travis-ci.org/oxygens/jsonrpc-bidirectional.svg?branch=master)](https://travis-ci.org/oxygens/jsonrpc-bidirectional)
 [![Windows Build](https://ci.appveyor.com/api/projects/status/github/oxygens/jsonrpc-bidirectional?branch=master&svg=true)](https://ci.appveyor.com/project/oxygens/jsonrpc-bidirectional)
 

@@ -2,6 +2,8 @@
 /* eslint-disable */
 
 /**
+ * Keep everything IE10 compatible, so it can be tested there as well.
+ * 
  * @class
  */
 function TestEndpoint()
@@ -10,7 +12,7 @@ function TestEndpoint()
 		this,
 		[
 			/*strName*/ "Test", 
-			/*strPath*/ location.protocol + "//" + location.host + '/api',  // /api, replaced / with \x2F because issues.
+			/*strPath*/ location.protocol + "//" + location.host + "/api", 
 			/*objReflection*/ {},
 			/*classReverseCallsClient*/ JSONRPC.Client
 		]

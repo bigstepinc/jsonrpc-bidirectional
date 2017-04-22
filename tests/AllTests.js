@@ -272,7 +272,8 @@ class AllTests
 			"error",
 			(error) => {
 				console.error(error);
-				process.exit(1);
+				//process.exit(1); // Why did I put this here?
+				throw error;
 			}
 		);
 
