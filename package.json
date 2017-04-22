@@ -57,5 +57,11 @@
     "sleep-promise": "^2.0.0",
     "uglify-js": "^2.8.22",
     "webpack": "^2.4.1"
-  }
+  },
+  "files": [
+    "builds/browser/es5/jsonrpc.min.js",
+    "builds/browser/es5/jsonrpc.min.js.map",
+    "builds/browser/es7/jsonrpc.min.js",
+    "builds/browser/es7/jsonrpc.min.js.map"
+  ]
 }
