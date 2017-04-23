@@ -4,7 +4,7 @@
 [![Linux build](https://travis-ci.org/oxygens/jsonrpc-bidirectional.svg?branch=master)](https://travis-ci.org/oxygens/jsonrpc-bidirectional)
 [![Windows Build](https://ci.appveyor.com/api/projects/status/github/oxygens/jsonrpc-bidirectional?branch=master&svg=true)](https://ci.appveyor.com/project/oxygens/jsonrpc-bidirectional)
 
-A main goal of this project is to have the JSON-RPC server and client support __bidirectional JSON-RPC requests over a single WebSocket connection.__
+A main goal of this project is to have the JSON-RPC server and client support __bidirectional JSON-RPC requests over a single WebSocket connection.__ Simply put, it makes it possible to have a JSONRPC __Server__ in the browser and a separate one in the back-end.
 
 This library is tested in __browsers__ (at least Internet Explorer 10) and in __Node.js__ (at least 7.8, or 7.x with the --harmony flag.).
 
