@@ -10,7 +10,11 @@ This library is tested in __browsers__ (at least Internet Explorer 10) and in __
 
 Both the server and client support two __transports, HTTP and WebSocket__, and allow more through plugin extensibility. 
 
-For WebSocket client support it expects W3C compatible WebSocket class instances (browser `WebSocket` and Node.js [websockets/ws](https://github.com/websockets/ws) `WebSocket`). On the Node.js side it is tested to work with [websockets/ws](https://github.com/websockets/ws). `WebSocketServer` implementations are supported only if 100% API compatible with `websockets/ws`, or made compatible through an adapter.
+__Any WebSocket implementation may be used__, handling of the HTTP server and WebSocket is external to these JSONRPC classes.
+
+For WebSocket client support, it expects W3C compatible WebSocket class instances (out of the box browser `WebSocket` and Node.js [websockets/ws](https://github.com/websockets/ws) `WebSocket`). 
+
+On the Node.js side it is tested to work with [websockets/ws](https://github.com/websockets/ws). Other `WebSocketServer` implementations are supported if API compatible with `websockets/ws` (constructor and events), or made compatible through an adapter.
 
 Plugins are allowed to replace the JSON-RPC protocol altogether, extend the protocol or wrap it.
 
