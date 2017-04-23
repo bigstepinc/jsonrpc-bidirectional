@@ -4,13 +4,17 @@
 [![Linux build](https://travis-ci.org/oxygens/jsonrpc-bidirectional.svg?branch=master)](https://travis-ci.org/oxygens/jsonrpc-bidirectional)
 [![Windows Build](https://ci.appveyor.com/api/projects/status/github/oxygens/jsonrpc-bidirectional?branch=master&svg=true)](https://ci.appveyor.com/project/oxygens/jsonrpc-bidirectional)
 
-A main goal of this project is to have the JSON-RPC server and client support __bidirectional JSON-RPC requests over a single WebSocket connection.__
+A main goal of this project is to have the JSON-RPC server and client support __bidirectional JSON-RPC requests over a single WebSocket connection.__ Simply put, it makes it possible to have a JSONRPC __Server__ in the browser and a separate one in the back-end.
 
 This library is tested in __browsers__ (at least Internet Explorer 10) and in __Node.js__ (at least 7.8, or 7.x with the --harmony flag.).
 
 Both the server and client support two __transports, HTTP and WebSocket__, and allow more through plugin extensibility. 
 
-For WebSocket client support it expects W3C compatible WebSocket class instances (browser `WebSocket` and Node.js [websockets/ws](https://github.com/websockets/ws) `WebSocket`). On the Node.js side it is tested to work with [websockets/ws](https://github.com/websockets/ws). `WebSocketServer` implementations are supported only if 100% API compatible with `websockets/ws`, or made compatible through an adapter.
+__Any WebSocket implementation may be used__, handling of the HTTP server and WebSocket is external to these JSONRPC classes.
+
+For WebSocket client support, it expects W3C compatible WebSocket class instances (out of the box browser `WebSocket` and Node.js [websockets/ws](https://github.com/websockets/ws) `WebSocket`). 
+
+On the Node.js side it is tested to work with [websockets/ws](https://github.com/websockets/ws). Other `WebSocketServer` implementations are supported if API compatible with `websockets/ws` (constructor and events), or made compatible through an adapter.
 
 Plugins are allowed to replace the JSON-RPC protocol altogether, extend the protocol or wrap it.
 
