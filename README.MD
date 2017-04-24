@@ -6,15 +6,30 @@
 
 A main goal of this project is to have the JSON-RPC server and client support __bidirectional JSON-RPC requests over a single WebSocket connection.__ Simply put, it makes it possible to have a JSONRPC __Server__ in the browser and a separate one in the back-end.
 
-This library is tested in __browsers__ (at least Internet Explorer 10) and in __Node.js__ (at least 7.8, or 7.x with the --harmony flag.).
+This library is tested in __browsers__ (>= IE10) and in __Node.js__ (>=7.8).
+
+
+## Transports
 
 Both the server and client support two __transports, HTTP and WebSocket__, and allow more through plugin extensibility. 
 
-__Any WebSocket implementation may be used__, handling of the HTTP server and WebSocket is external to these JSONRPC classes.
+#### WebSocket
 
-For WebSocket client support, it expects W3C compatible WebSocket class instances (out of the box browser `WebSocket` and Node.js [websockets/ws](https://github.com/websockets/ws) `WebSocket`). 
+__Any WebSocket implementation may be used__, as handling of the HTTP server and WebSocket is external to these JSONRPC classes.
 
-On the Node.js side it is tested to work with [websockets/ws](https://github.com/websockets/ws). Other `WebSocketServer` implementations are supported if API compatible with `websockets/ws` (constructor and events), or made compatible through an adapter.
+For WebSocket client support in Node.js and browsers, `JSONRPC.Plugins.Client.WebSocketTransport` accepts connected W3C compatible WebSocket class instances (out of the box browser [WebSocket](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API) and Node.js [websockets/ws](https://github.com/websockets/ws) `WebSocket`). 
+
+On the Node.js side, this library is tested to work with [websockets/ws](https://github.com/websockets/ws). Other `WebSocketServer` implementations are supported if API compatible with `websockets/ws` (constructor and events), or made compatible through an adapter.
+
+#### HTTP
+
+`JSONRPC.Client` has embeded support for HTTP requests, through [fetch](https://developer.mozilla.org/en/docs/Web/API/Fetch_API) (polyfills for older browsers exist, and work just fine).
+
+#### Other
+
+It is easy to support other transports, see `JSONRPC.Plugins.Client.WebSocketTransport` for an example.
+
+## Events and plugins
 
 Plugins are allowed to replace the JSON-RPC protocol altogether, extend the protocol or wrap it.
 
