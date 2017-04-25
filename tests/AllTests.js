@@ -37,6 +37,8 @@ class AllTests
 	 */
 	constructor(bBenchmarkMode, bWebSocketMode, classWebSocket, classWebSocketServer, classWebSocketAdapter, bDisableVeryLargePacket)
 	{
+		this.bAwaitServerClose = false;
+
 		this._bBenchmarkMode = bBenchmarkMode;
 		this.savedConsole = null;
 		this._classWebSocket = classWebSocket;
@@ -199,10 +201,8 @@ class AllTests
 
 		if(this._webSocketServerSiteA)
 		{
-			// uws just hangs when closing, commented the await.
-
 			console.log("Closing WebSocket server.");
-			/*await*/ new Promise((fnResolve, fnReject) => {
+			const awaitWebSocketServerClose = new Promise((fnResolve, fnReject) => {
 				this._webSocketServerSiteA.close((result, error) => {
 					if(error)
 					{
@@ -214,6 +214,14 @@ class AllTests
 					}
 				});
 			});
+
+			if(this.bAwaitServerClose)
+			{
+				// uws hangs on .close(), ws doesn't.
+				// Without the await, the process will exit just fine on Windows 10, 64 bit.
+				// On Travis (Linux) it throws segmentation fault.
+				await awaitWebSocketServerClose;
+			}
 
 			this._webSocketServerSiteA = null;
 			global.gc();
