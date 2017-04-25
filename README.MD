@@ -21,6 +21,8 @@ For WebSocket client support in Node.js and browsers, `JSONRPC.Plugins.Client.We
 
 On the Node.js side, this library is tested to work with [websockets/ws](https://github.com/websockets/ws). Other `WebSocketServer` implementations are supported if API compatible with `websockets/ws` (constructor and events), or made compatible through an adapter.
 
+There is a wrapper for [uWebSockets](https://github.com/uWebSockets/uWebSockets) in `JSONRPC.WebSocketAdapters.uws.WebSocketWrapper`. All obtained `uws.WebSocket` instances (from the `connection` event, or instantiated directly) must be wrapped (and thus replaced) with an instance of this class. _At the moment `uws` is on par with `ws` or __slower__ (for this library), and crashes randomly and infrequently during testing in travis (not on my machine).
+
 #### HTTP
 
 `JSONRPC.Client` has embeded support for HTTP requests, through [fetch](https://developer.mozilla.org/en/docs/Web/API/Fetch_API) (polyfills for older browsers exist, and work just fine).
@@ -30,8 +32,6 @@ On the Node.js side, this library is tested to work with [websockets/ws](https:/
 It is easy to support other transports, see `JSONRPC.Plugins.Client.WebSocketTransport` for an example.
 
 ## Events and plugins
-
-There is a wrapper for [uWebSockets](https://github.com/uWebSockets/uWebSockets) in `JSONRPC.WebSocketAdapters.uws.WebSocketWrapper`. All obtained `uws.WebSocket` instances (from the `connection` event, or instantiated directly) must be wrapped (and thus replaced) with an instance of this class. _At the moment `uws` is on par with `ws` or __slower__ for this library_.
 
 Plugins are allowed to replace the JSON-RPC protocol altogether, extend the protocol or wrap it.
 
