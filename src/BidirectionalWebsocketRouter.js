@@ -10,9 +10,10 @@ JSONRPC.Plugins = {};
 JSONRPC.Plugins.Client = require("./Plugins/Client");
 JSONRPC.Utils = require("./Utils");
 
-const EventEmitter = require("events");
+JSONRPC.WebSocketAdapters = {};
+JSONRPC.WebSocketAdapters.WebSocketWrapperBase = require("./WebSocketAdapters/WebSocketWrapperBase");
 
-const WebSocket = require("ws");
+const EventEmitter = require("events");
 
 
 /**
@@ -59,7 +60,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 	 */
 	async addWebSocket(webSocket)
 	{
-		if(webSocket.readyState === WebSocket.CLOSED)
+		if(webSocket.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.CLOSED)
 		{
 			// WebSocket.CLOSING should be followed by a closed event.
 			// WebSocket.OPEN is desired.
@@ -83,39 +84,66 @@ class BidirectionalWebsocketRouter extends EventEmitter
 
 		this._objSessions[nWebSocketConnectionID] = objSession;
 
-		webSocket.addEventListener(
-			"close",
-			(closeEvent) => {
-				//closeEvent.code;
-				//closeEvent.reason;
-				//closeEvent.wasClean;
 
-				delete this._objSessions[nWebSocketConnectionID];
-			}
-		);
+		const fnOnError = (error) => {
+			delete this._objSessions[nWebSocketConnectionID];
 
-		webSocket.addEventListener(
-			"error",
-			(error) => {
-				delete this._objSessions[nWebSocketConnectionID];
-
-				if(webSocket.readyState === WebSocket.OPEN)
-				{
-					webSocket.close(
-						/*CLOSE_NORMAL*/ 1000, // Chrome only supports 1000 or the 3000-3999 range ///* CloseEvent.Internal Error */ 1011, 
-						error.message
-					);
-				}
-			}
-		);
-
-		webSocket.addEventListener(
-			"message", 
-			async (messageEvent) => 
+			if(webSocket.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN)
 			{
-				await this._routeMessage(messageEvent.data, objSession);//.then(() => {}).catch(console.error);
+				webSocket.close(
+					/*CLOSE_NORMAL*/ 1000, // Chrome only supports 1000 or the 3000-3999 range ///* CloseEvent.Internal Error */ 1011, 
+					error.message
+				);
 			}
-		);
+		};
+		
+
+		if(webSocket.addEventListener)
+		{
+			webSocket.addEventListener(
+				"message", 
+				async (messageEvent) => 
+				{
+					this._routeMessage(messageEvent.data, objSession).catch((error) => {throw error;});
+				}
+			);
+
+			webSocket.addEventListener(
+				"close",
+				(closeEvent) => {
+					//closeEvent.code;
+					//closeEvent.reason;
+					//closeEvent.wasClean;
+
+					delete this._objSessions[nWebSocketConnectionID];
+				}
+			);
+
+			webSocket.addEventListener("error", fnOnError);
+		}
+		else
+		{
+			webSocket.on(
+				"message", 
+				async (strData, objFlags) => 
+				{
+					this._routeMessage(strData, objSession).catch((error) => { throw error; });
+				}
+			);
+
+			webSocket.on(
+				"close",
+				(nCode, strReason) => {
+					delete this._objSessions[nWebSocketConnectionID];
+				}
+			);
+
+			webSocket.on("error", fnOnError);
+		}
+
+
+
+
 
 		return nWebSocketConnectionID;
 	}
@@ -241,7 +269,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 			{
 				if(!this._jsonrpcServer)
 				{
-					if(webSocket.readyState === WebSocket.OPEN)
+					if(webSocket.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN)
 					{
 						webSocket.send(JSON.stringify({
 							id: null,
@@ -296,7 +324,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 
 				await this._jsonrpcServer.processRequest(incomingRequest);
 				
-				if(webSocket.readyState !== WebSocket.OPEN)
+				if(webSocket.readyState !== JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN)
 				{
 					console.error("webSocket.readyState: " + JSON.stringify(webSocket.readyState) + ". Request was " + strMessage + ". Attempted responding with " + JSON.stringify(incomingRequest.callResultToBeSerialized, undefined, "\t") + ".");
 				}
@@ -312,7 +340,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 				{
 					if(!this._jsonrpcServer)
 					{
-						if(webSocket.readyState === WebSocket.OPEN)
+						if(webSocket.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN)
 						{
 							webSocket.send(JSON.stringify({
 								id: null,
@@ -325,7 +353,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 						}
 					}
 
-					if(webSocket.readyState === WebSocket.OPEN)
+					if(webSocket.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN)
 					{
 						webSocket.close(
 							/*CLOSE_NORMAL*/ 1000, // Chrome only supports 1000 or the 3000-3999 range ///* CloseEvent.Internal Error */ 1011, 
@@ -361,7 +389,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 				&& this._objSessions[nWebSocketConnectionID].clientWebSocketTransportPlugin === null
 			)
 			{
-				if(webSocket.readyState === WebSocket.OPEN)
+				if(webSocket.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN)
 				{
 					webSocket.send(JSON.stringify({
 						id: null,
@@ -374,7 +402,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 				}
 			}
 
-			if(webSocket.readyState === WebSocket.OPEN)
+			if(webSocket.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN)
 			{
 				console.log("[" + process.pid + "] Unclean state. Closing websocket.");
 				webSocket.close(

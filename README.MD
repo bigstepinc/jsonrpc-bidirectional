@@ -12,6 +12,8 @@ Both the server and client support two __transports, HTTP and WebSocket__, and a
 
 For WebSocket client support it expects W3C compatible WebSocket class instances (browser `WebSocket` and Node.js [websockets/ws](https://github.com/websockets/ws) `WebSocket`). On the Node.js side it is tested to work with [websockets/ws](https://github.com/websockets/ws). `WebSocketServer` implementations are supported only if 100% API compatible with `websockets/ws`, or made compatible through an adapter.
 
+There is a wrapper for [uWebSockets](https://github.com/uWebSockets/uWebSockets) in `JSONRPC.WebSocketAdapters.uws.WebSocketWrapper`. All obtained `uws.WebSocket` instances (from the `connection` event, or instantiated directly) must be wrapped (and thus replaced) with an instance of this class. _At the moment `uws` is on par with `ws` or __slower__ for this library_.
+
 Plugins are allowed to replace the JSON-RPC protocol altogether, extend the protocol or wrap it.
 
 __Plugins for the server or the client may also be custom middle layers__, for example: authentication, authorization, validation, routing, backward compatibility translation, advanced error logging, automatic retries, caching, etc.

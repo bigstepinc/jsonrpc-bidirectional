@@ -1,10 +1,11 @@
 {
   "name": "jsonrpc-bidirectional",
   "description": "Bidirectional JSONRPC over web sockets or HTTP with extensive plugin support.",
-  "version": "3.0.6",
+  "version": "3.0.7",
   "scripts": {
     "build": "node build.js",
-    "test": "node tests/main.js",
+    "test": "node --expose-gc --max-old-space-size=3072 tests/main.js",
+    "benchmark": "node --expose-gc --max-old-space-size=3072 tests/benchmark.js",
     "lint": "eslint src tests --quiet"
   },
   "repository": {
@@ -40,7 +41,6 @@
     "jssha": "^2.2.0",
     "node-fetch": "^1.6.3",
     "whatwg-fetch": "^2.0.3",
-    "ws": "^2.2.3",
     "babel-polyfill": "^6.23.0",
     "babel-runtime": "^6.23.0"
   },
@@ -58,7 +58,8 @@
     "phantom": "^4.0.2",
     "sleep-promise": "^2.0.0",
     "uglify-js": "^2.8.22",
-    "webpack": "^2.4.1"
+    "webpack": "^2.4.1",
+    "ws": "^2.2.3"
   },
   "files": [
     "builds/browser/es5/jsonrpc.min.js",

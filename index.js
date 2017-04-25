@@ -17,4 +17,9 @@ objExports.Plugins = objExports.Plugins || {};
 objExports.Plugins.Client = require("./src/Plugins/Client");
 objExports.Plugins.Server = require("./src/Plugins/Server");
 
+objExports.WebSocketAdapters = objExports.WebSocketAdapters || {};
+objExports.WebSocketAdapters.WebSocketWrapperBase = require("./src/WebSocketAdapters/WebSocketWrapperBase");
+objExports.WebSocketAdapters.uws = objExports.WebSocketAdapters.uws || {};
+objExports.WebSocketAdapters.uws.WebSocketWrapper = require("./src/WebSocketAdapters/uws/WebSocketWrapper");
+
 module.exports = objExports;

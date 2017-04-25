@@ -2,9 +2,10 @@ const JSONRPC = {};
 JSONRPC.ClientPluginBase = require("../../ClientPluginBase");
 JSONRPC.Utils = require("../../Utils");
 
-const assert = require("assert");
+JSONRPC.WebSocketAdapters = {};
+JSONRPC.WebSocketAdapters.WebSocketWrapperBase = require("../../WebSocketAdapters/WebSocketWrapperBase");
 
-const WebSocket = require("ws");
+const assert = require("assert");
 
 
 module.exports =
@@ -108,7 +109,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 			return;
 		}
 
-		if(this.webSocket.readyState !== WebSocket.OPEN)
+		if(this.webSocket.readyState !== JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN)
 		{
 			throw new Error("WebSocket not connected.");
 		}
@@ -162,30 +163,57 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 	 */
 	_setupWebSocket()
 	{
-		//assert(webSocket.constructor.name === "WebSocket");
-
-		this._webSocket.addEventListener(
-			"close", 
-			(closeEvent) => {
-				this.rejectAllPromises(new Error("WebSocket closed. Code: " + JSON.stringify(closeEvent.code) + ". Message: " + JSON.stringify(closeEvent.reason) + ". wasClean: " + JSON.stringify(closeEvent.wasClean)));
-			}
-		);
-		
-		this._webSocket.addEventListener(
-			"error",
-			(error) => {
-				this.rejectAllPromises(error);
-			}
-		);
-
-		if(!this._bBidirectionalWebSocketMode)
+		if(this._webSocket.addEventListener)
 		{
 			this._webSocket.addEventListener(
-				"message",
-				async (messageEvent) => {
-					await this.processResponse(messageEvent.data);
+				"close", 
+				(closeEvent) => {
+					this.rejectAllPromises(new Error("WebSocket closed. Code: " + JSON.stringify(closeEvent.code) + ". Message: " + JSON.stringify(closeEvent.reason) + ". wasClean: " + JSON.stringify(closeEvent.wasClean)));
 				}
 			);
+			
+			this._webSocket.addEventListener(
+				"error",
+				(error) => {
+					this.rejectAllPromises(error);
+				}
+			);
+
+			if(!this._bBidirectionalWebSocketMode)
+			{
+				this._webSocket.addEventListener(
+					"message",
+					async (messageEvent) => {
+						await this.processResponse(messageEvent.data);
+					}
+				);
+			}
+		}
+		else
+		{
+			this._webSocket.on(
+				"close", 
+				(nCode, strReason, bWasClean) => {
+					this.rejectAllPromises(new Error("WebSocket closed. Code: " + JSON.stringify(nCode) + ". Message: " + JSON.stringify(strReason)));
+				}
+			);
+			
+			this._webSocket.on(
+				"error",
+				(error) => {
+					this.rejectAllPromises(error);
+				}
+			);
+
+			if(!this._bBidirectionalWebSocketMode)
+			{
+				this._webSocket.on(
+					"message",
+					async (mxData, objFlags) => {
+						await this.processResponse(mxData);
+					}
+				);
+			}
 		}
 	}
 };

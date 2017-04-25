@@ -11,7 +11,10 @@ JSONRPC.Plugins.Client = require("../src/Plugins/Client");
 module.exports =
 class TestEndpoint extends JSONRPC.EndpointBase 
 {
-	constructor()
+	/**
+	 * @param {boolean} bBenchmarkMode
+	 */
+	constructor(bBenchmarkMode)
 	{
 		super(
 			/*strName*/ "Test", 
@@ -19,6 +22,8 @@ class TestEndpoint extends JSONRPC.EndpointBase
 			/*objReflection*/ {},
 			/*classReverseCallsClient*/ JSONRPC.Client
 		);
+
+		this._bBenchmarkMode = !!bBenchmarkMode;
 
 		this.fnResolveWaitForWebPage = null;
 		this.nWaitForWebPageRemainingCallsCount = null;
@@ -39,7 +44,7 @@ class TestEndpoint extends JSONRPC.EndpointBase
 	 */
 	async ping(incomingRequest, strReturn, bRandomSleep, strATeamCharacterName)
 	{
-		if(bRandomSleep)
+		if(bRandomSleep && !this._bBenchmarkMode)
 		{
 			await sleep(parseInt(Math.random() * 1000 /*milliseconds*/, 10));
 		}
