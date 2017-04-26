@@ -1,9 +1,12 @@
 const JSONRPC = require("..");
 
+const exec = require("child_process").exec;
+
 const http = require("http");
 const url = require("url");
 const path = require("path");
 const fs = require("fs");
+const os = require("os");
 
 const sleep = require("sleep-promise");
 
@@ -1011,16 +1014,40 @@ class AllTests
 			}
 		);
 
+		let phantomPage;
 		try
 		{
-			const phantomPage = await phantom.createPage();
+			phantomPage = await phantom.createPage();
 		}
 		catch(error)
 		{
-			if(error.message.includes("Error reading from stdin"))
+			if(
+				error.message.includes("Error reading from stdin")
+				&& os.platform() === "linux"
+			)
 			{
 				// https://github.com/amir20/phantomjs-node/issues/649
-				return;
+				console.error("phantomjs may have reported an error in the phantom library.");
+				console.error("If missing phantomjs dependencies: yum install libXext  libXrender  fontconfig  libfontconfig.so.1");
+
+				const processCommand = exec("../node_modules/phantomjs-prebuilt/lib/phantom/bin/phantomjs --help");
+				processCommand.stdout.pipe(process.stdout);
+				processCommand.stderr.pipe(process.stderr);
+				await new Promise(async (fnResolve, fnReject) => {
+					processCommand.on("error", fnReject);
+					processCommand.on("exit", (nCode) => {
+						if(nCode === 0)
+						{
+							fnResolve();
+						}
+						else
+						{
+							fnReject(new Error("Failed with error code " + nCode));
+						}
+					});
+				});
+
+				process.exit(1);
 			}
 			
 			throw error;
