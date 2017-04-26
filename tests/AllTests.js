@@ -1022,6 +1022,8 @@ class AllTests
 				// https://github.com/amir20/phantomjs-node/issues/649
 				return;
 			}
+			
+			throw error;
 		}
 		
 		await phantomPage.setting("javascriptEnabled", true);
