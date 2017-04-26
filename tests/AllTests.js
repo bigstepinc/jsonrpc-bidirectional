@@ -1011,7 +1011,19 @@ class AllTests
 			}
 		);
 
-		const phantomPage = await phantom.createPage();
+		try
+		{
+			const phantomPage = await phantom.createPage();
+		}
+		catch(error)
+		{
+			if(error.message.includes("Error reading from stdin"))
+			{
+				// https://github.com/amir20/phantomjs-node/issues/649
+				return;
+			}
+		}
+		
 		await phantomPage.setting("javascriptEnabled", true);
 
 
