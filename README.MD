@@ -21,9 +21,11 @@ For WebSocket client support in Node.js and browsers, `JSONRPC.Plugins.Client.We
 
 On the Node.js side, this library is tested to work with [websockets/ws](https://github.com/websockets/ws). Other `WebSocketServer` implementations are supported if API compatible with `websockets/ws` (constructor and events), or made compatible through an adapter.
 
+There is a wrapper for [uWebSockets](https://github.com/uWebSockets/uWebSockets) in `JSONRPC.WebSocketAdapters.uws.WebSocketWrapper`. All obtained `uws.WebSocket` instances (from the `connection` event, or instantiated directly) must be wrapped (and thus replaced) with an instance of this class.
+
 #### HTTP
 
-`JSONRPC.Client` has embeded support for HTTP requests, through [fetch](https://developer.mozilla.org/en/docs/Web/API/Fetch_API) (polyfills for older browsers exist, and work just fine).
+`JSONRPC.Client` has embeded support for HTTP requests, through [fetch](https://developer.mozilla.org/en/docs/Web/API/Fetch_API) (polyfills for older browsers exist, and work just fine). `JSONRPC.Server` has the `attachToHTTPServer` method.
 
 #### Other
 
@@ -233,7 +235,8 @@ const wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(jsonrpcServer);
 // Optional.
 wsJSONRPCRouter.on("madeReverseCallsClient", (clientReverseCalls) => { /*add plugins or just setup the client even further*/ });
 
-// Alternatively reuse existing web server: const webSocketServer = new WebSocketServer({server: httpServerInstance});
+// Alternatively reuse existing web server: 
+// const webSocketServer = new WebSocketServer({server: httpServerInstance});
 const webSocketServer = new WebSocketServer({port: 8080});
 webSocketServer.on("error", (error) => {console.error(error); process.exit(1);});
 
@@ -261,7 +264,7 @@ jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthenticationSkip());
 jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthorizeAll());
 
 
-const webSocket = new WebSocket("ws://localhost/api");
+const webSocket = new WebSocket("ws://localhost:8080/api");
 await new Promise((fnResolve, fnReject) => {
 	webSocket.addEventListener("open", fnResolve);
 	webSocket.addEventListener("error", fnReject);

@@ -55,6 +55,7 @@
 			};
 
 			var bWebSocketMode = location.href.indexOf("websocketmode=1") !== -1 && WebSocket;
+			var nWebsocketsPort = location.href.match(/websocketsport=([0-9]+)/) ? location.href.match(/websocketsport=([0-9]+)/)[1] : location.port;
 
 
 			/**
@@ -69,7 +70,7 @@
 
 				if(bWebSocketMode)
 				{
-					var ws = new WebSocket("ws://" + location.host +  "/api"); 
+					var ws = new WebSocket("ws://" + location.hostname + ":" + nWebsocketsPort +  "/api"); 
 					client.addPlugin(new JSONRPC.Plugins.Client.WebSocketTransport(ws, /*bBidirectionalWebSocketMode*/ false));
 					
 					ws.addEventListener("open", function(event){
@@ -108,7 +109,7 @@
 				jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthenticationSkip());
 				jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthorizeAll());
 
-				var ws = new WebSocket("ws://" + location.host +  "/api"); 
+				var ws = new WebSocket("ws://" + location.hostname + ":" + nWebsocketsPort +  "/api"); 
 
 				ws.addEventListener("open", function(event){
 					var wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(jsonrpcServer);

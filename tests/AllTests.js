@@ -1,21 +1,19 @@
 const JSONRPC = require("..");
 
+const exec = require("child_process").exec;
+
 const http = require("http");
 const url = require("url");
 const path = require("path");
 const fs = require("fs");
+const os = require("os");
 
-//const sleep = require("sleep-promise");
+const sleep = require("sleep-promise");
 
 const Phantom = require("phantom");
 
 
-// @TODO: Test with https://github.com/uWebSockets/uWebSockets as well. They claim magnitudes of extra performance (memory, CPU, network connections).
-// Read first: https://github.com/uWebSockets/uWebSockets#deviations-from-ws
 // @TODO: Test with other WebSocket implementations.
-
-const WebSocket = require("ws");
-const WebSocketServer = WebSocket.Server;
 
 
 const TestEndpoint = require("./TestEndpoint");
@@ -33,11 +31,25 @@ module.exports =
 class AllTests
 {
 	/**
+	 * @param {boolean} bBenchmarkMode
 	 * @param {boolean} bWebSocketMode
+	 * @param {Class|undefined} classWebSocket
+	 * @param {Class|undefined} classWebSocketServer
+	 * @param {Class|undefined} classWebSocketAdapter
+	 * @param {boolean|undefined} bDisableVeryLargePacket
 	 */
-	constructor(bWebSocketMode)
+	constructor(bBenchmarkMode, bWebSocketMode, classWebSocket, classWebSocketServer, classWebSocketAdapter, bDisableVeryLargePacket)
 	{
-		this._testEndpoint = new TestEndpoint();
+		this.bAwaitServerClose = false;
+
+		this._bBenchmarkMode = bBenchmarkMode;
+		this.savedConsole = null;
+		this._classWebSocket = classWebSocket;
+		this._classWebSocketServer = classWebSocketServer;
+		this._classWebSocketAdapter = classWebSocketAdapter;
+		this._bDisableVeryLargePacket = !!bDisableVeryLargePacket;
+
+		this._testEndpoint = new TestEndpoint(this._bBenchmarkMode || !this._bWebSocketMode);
 
 		// SiteA is supposedly reachable over the internet. It listens for new connections (websocket or http). 
 		this._httpServerSiteA = null;
@@ -78,7 +90,46 @@ class AllTests
 		this._bWebSocketMode = !!bWebSocketMode;
 		this._bPreventHTTPAPIRequests = false;
 
+		this._nHTTPPort = 8234;
+		this._nWebSocketsPort = this._nHTTPPort;
+
 		Object.seal(this);
+	}
+
+
+	/**
+	 * @param {number} nPort
+	 */
+	set httpServerPort(nPort)
+	{
+		this._nHTTPPort = nPort;
+	}
+
+
+	/**
+	 * @returns {number}
+	 */
+	get httpServerPort()
+	{
+		return this._nHTTPPort;
+	}
+
+
+	/**
+	 * @param {number} nPort
+	 */
+	set websocketServerPort(nPort)
+	{
+		this._nWebSocketsPort = nPort;
+	}
+
+
+	/**
+	 * @returns {number}
+	 */
+	get websocketServerPort()
+	{
+		return this._nWebSocketsPort;
 	}
 
 
@@ -87,6 +138,11 @@ class AllTests
 	 */
 	async runTests()
 	{
+		if(this._bBenchmarkMode)
+		{
+			this.disableConsole();
+		}
+
 		this._bPreventHTTPAPIRequests = this._bWebSocketMode;
 
 
@@ -149,7 +205,7 @@ class AllTests
 		if(this._webSocketServerSiteA)
 		{
 			console.log("Closing WebSocket server.");
-			await new Promise((fnResolve, fnReject) => {
+			const awaitWebSocketServerClose = new Promise((fnResolve, fnReject) => {
 				this._webSocketServerSiteA.close((result, error) => {
 					if(error)
 					{
@@ -162,7 +218,17 @@ class AllTests
 				});
 			});
 
+			if(this.bAwaitServerClose)
+			{
+				// uws hangs on .close(), ws doesn't.
+				// Without the await, the process will exit just fine on Windows 10, 64 bit.
+				// On Travis (Linux) it throws segmentation fault.
+				await awaitWebSocketServerClose;
+			}
+
 			this._webSocketServerSiteA = null;
+			global.gc();
+			await sleep(1000);
 		}
 
 		if(this._httpServerSiteA)
@@ -182,10 +248,17 @@ class AllTests
 			});
 			
 			this._httpServerSiteA = null;
+			global.gc();
 		}
 
 
 		this._bPreventHTTPAPIRequests = false;
+
+
+		if(this._bBenchmarkMode)
+		{
+			this.enableConsole();
+		}
 	}
 
 
@@ -255,7 +328,7 @@ class AllTests
 			}
 		);
 
-		this._httpServerSiteA.listen(8324);
+		this._httpServerSiteA.listen(this._nHTTPPort);
 	}
 
 
@@ -266,7 +339,14 @@ class AllTests
 	{
 		console.log("[" + process.pid + "] setupWebsocketServerSiteA.");
 
-		this._webSocketServerSiteA = new WebSocketServer({server: this._httpServerSiteA});
+		if(this._nWebSocketsPort !== this._nHTTPPort)
+		{
+			this._webSocketServerSiteA = new this._classWebSocketServer({port: this._nWebSocketsPort});
+		}
+		else
+		{
+			this._webSocketServerSiteA = new this._classWebSocketServer({server: this._httpServerSiteA});
+		}
 
 		this._webSocketServerSiteA.on(
 			"error",
@@ -299,6 +379,11 @@ class AllTests
 			"connection", 
 			async (webSocket) => 
 			{
+				if(this._classWebSocketAdapter)
+				{
+					webSocket = new this._classWebSocketAdapter(webSocket);
+				}
+
 				const nWebSocketConnectionID = await wsJSONRPCRouter.addWebSocket(webSocket);
 
 				console.log("[" + process.pid + "] Passing a new incoming connection to ServerPluginAuthorizeWebSocket.");
@@ -328,7 +413,7 @@ class AllTests
 		{
 			if(
 				this._webSocketClientSiteB
-				&& this._webSocketClientSiteB.readyState === WebSocket.OPEN
+				&& this._webSocketClientSiteB.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN
 			)
 			{
 				this._webSocketClientSiteB.close(
@@ -339,8 +424,14 @@ class AllTests
 				this._webSocketClientSiteB = null;
 			}
 
-			console.log("[" + process.pid + "] Connecting SiteB JSONRPC client to " + AllTests.localEndpointWebSocket + ".");
-			const ws = new WebSocket(AllTests.localEndpointWebSocket);
+			console.log("[" + process.pid + "] Connecting SiteB JSONRPC client to " + this.localEndpointWebSocket + ".");
+			let ws = new this._classWebSocket(this.localEndpointWebSocket);
+
+			if(this._classWebSocketAdapter)
+			{
+				ws = new this._classWebSocketAdapter(ws, this.localEndpointWebSocket);
+			}
+
 			await new Promise((fnResolve, fnReject) => {
 				ws.on("open", fnResolve);
 				ws.on("error", fnReject);
@@ -349,7 +440,7 @@ class AllTests
 			this._webSocketClientSiteB = ws;
 
 			this._jsonrpcServerSiteB = new JSONRPC.Server();
-			this._jsonrpcServerSiteB.registerEndpoint(new TestEndpoint());
+			this._jsonrpcServerSiteB.registerEndpoint(new TestEndpoint(this._bBenchmarkMode || !this._bWebSocketMode));
 
 			this._jsonrpcServerSiteB.addPlugin(this._serverAuthenticationSkipPlugin);
 			this._jsonrpcServerSiteB.addPlugin(this._serverAuthorizeAllPlugin);
@@ -370,7 +461,7 @@ class AllTests
 		}
 		else
 		{
-			this._jsonrpcClientSiteB = new TestClient("http://localhost:8324/api");
+			this._jsonrpcClientSiteB = new TestClient("http://localhost:" + this._nHTTPPort + "/api");
 			this._jsonrpcClientSiteB.addPlugin(new ClientDebugMarkerPlugin("SiteB"));
 			this._jsonrpcClientSiteB.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 		}
@@ -387,7 +478,7 @@ class AllTests
 		{
 			if(
 				this._webSocketClientSiteC
-				&& this._webSocketClientSiteC.readyState === WebSocket.OPEN
+				&& this._webSocketClientSiteC.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN
 			)
 			{
 				this._webSocketClientSiteC.close(
@@ -401,7 +492,7 @@ class AllTests
 			this._webSocketClientSiteC = await this._makeClientWebSocket();
 
 			this._jsonrpcServerSiteC = new JSONRPC.Server();
-			this._jsonrpcServerSiteC.registerEndpoint(new TestEndpoint());
+			this._jsonrpcServerSiteC.registerEndpoint(new TestEndpoint(this._bBenchmarkMode || !this._bWebSocketMode));
 
 			this._jsonrpcServerSiteC.addPlugin(this._serverAuthenticationSkipPlugin);
 			this._jsonrpcServerSiteC.addPlugin(this._serverAuthorizeAllPlugin);
@@ -422,7 +513,7 @@ class AllTests
 		}
 		else
 		{
-			this._jsonrpcClientSiteC = new TestClient("http://localhost:8324/api");
+			this._jsonrpcClientSiteC = new TestClient("http://localhost:" + this._nHTTPPort + "/api");
 			this._jsonrpcClientSiteC.addPlugin(new ClientDebugMarkerPlugin("SiteC"));
 			this._jsonrpcClientSiteC.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 		}
@@ -439,7 +530,7 @@ class AllTests
 		{
 			if(
 				this._webSocketClientSiteDisconnecter
-				&& this._webSocketClientSiteDisconnecter.readyState === WebSocket.OPEN
+				&& this._webSocketClientSiteDisconnecter.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN
 			)
 			{
 				this._webSocketClientSiteDisconnecter.close(
@@ -453,7 +544,7 @@ class AllTests
 			this._webSocketClientSiteDisconnecter = await this._makeClientWebSocket();
 
 			this._jsonrpcServerSiteDisconnecter = new JSONRPC.Server();
-			this._jsonrpcServerSiteDisconnecter.registerEndpoint(new TestEndpoint());
+			this._jsonrpcServerSiteDisconnecter.registerEndpoint(new TestEndpoint(this._bBenchmarkMode || !this._bWebSocketMode));
 
 			this._jsonrpcServerSiteDisconnecter.addPlugin(this._serverAuthenticationSkipPlugin);
 			this._jsonrpcServerSiteDisconnecter.addPlugin(this._serverAuthorizeAllPlugin);
@@ -474,7 +565,7 @@ class AllTests
 		}
 		else
 		{
-			this._jsonrpcClientSiteDisconnecter = new TestClient("http://localhost:8324/api");
+			this._jsonrpcClientSiteDisconnecter = new TestClient("http://localhost:" + this._nHTTPPort + "/api");
 			this._jsonrpcClientSiteDisconnecter.addPlugin(new ClientDebugMarkerPlugin("SiteDisconnecter"));
 			this._jsonrpcClientSiteDisconnecter.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 		}
@@ -490,7 +581,7 @@ class AllTests
 
 		assert(this._httpServerSiteA === null);
 		assert(this._jsonrpcServerSiteA === null);
-
+		
 		try
 		{
 			await this.setupSiteB();
@@ -501,13 +592,18 @@ class AllTests
 		{
 			if(!this._bWebSocketMode && error.constructor.name !== "FetchError")
 			{
+				console.error(error.constructor.name);
 				throw error;
 			}
 			
 			if(process.execPath)
 			{
+				console.error(error);
 				// nodejs specific error.
-				assert(error.message.includes("ECONNREFUSED"));
+				assert(
+					error.message.includes("ECONNREFUSED") // ws
+					|| error.message.includes("uWs client connection error") // uws
+				);
 			}
 		}
 	}
@@ -523,7 +619,7 @@ class AllTests
 
 		console.log("[" + process.pid + "] endpointNotFoundError");
 
-		const client = new TestClient("http://localhost:8324/api/bad-endpoint-path");
+		const client = new TestClient("http://localhost:" + this._nHTTPPort + "/api/bad-endpoint-path");
 		client.addPlugin(new ClientDebugMarkerPlugin("SiteB"));
 		client.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 
@@ -538,6 +634,8 @@ class AllTests
 			{
 				throw error;
 			}
+
+			console.error(error);
 			
 			assert(error instanceof JSONRPC.Exception);
 			assert.strictEqual(error.code, JSONRPC.Exception.METHOD_NOT_FOUND);
@@ -556,7 +654,7 @@ class AllTests
 	{
 		console.log("[" + process.pid + "] outsideJSONRPCPathError");
 
-		const client = new TestClient("http://localhost:8324/unhandled-path");
+		const client = new TestClient("http://localhost:" + this._nHTTPPort + "/unhandled-path");
 		client.addPlugin(new ClientDebugMarkerPlugin("SiteB"));
 		client.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 
@@ -727,7 +825,7 @@ class AllTests
 	async callRPCMethodSiteB(bDoNotSleep, bVeryLargePayload)
 	{
 		const bRandomSleep = !bDoNotSleep;
-		bVeryLargePayload = !!bVeryLargePayload;
+		bVeryLargePayload = !!bVeryLargePayload && !this._bDisableVeryLargePacket;
 
 		console.log("[" + process.pid + "] callRPCMethodSiteB");
 
@@ -835,7 +933,7 @@ class AllTests
 		{
 			const webSocket = await this._makeClientWebSocket();
 
-			this._jsonrpcClientNonBidirectional = new TestClient(AllTests.localEndpointWebSocket);
+			this._jsonrpcClientNonBidirectional = new TestClient(this.localEndpointWebSocket);
 			this._jsonrpcClientNonBidirectional.addPlugin(new ClientDebugMarkerPlugin("NonBidirectionalClient"));
 			this._jsonrpcClientNonBidirectional.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 			
@@ -917,7 +1015,45 @@ class AllTests
 			}
 		);
 
-		const phantomPage = await phantom.createPage();
+		let phantomPage;
+		try
+		{
+			phantomPage = await phantom.createPage();
+		}
+		catch(error)
+		{
+			if(
+				error.message.includes("Error reading from stdin")
+				&& os.platform() === "linux"
+			)
+			{
+				// https://github.com/amir20/phantomjs-node/issues/649
+				console.error("phantomjs may have reported an error in the phantom library.");
+				console.error("If missing phantomjs dependencies: yum install libXext  libXrender  fontconfig  libfontconfig.so.1");
+
+				const processCommand = exec("../node_modules/phantomjs-prebuilt/lib/phantom/bin/phantomjs --help");
+				processCommand.stdout.pipe(process.stdout);
+				processCommand.stderr.pipe(process.stderr);
+				await new Promise(async (fnResolve, fnReject) => {
+					processCommand.on("error", fnReject);
+					processCommand.on("exit", (nCode) => {
+						if(nCode === 0)
+						{
+							fnResolve();
+						}
+						else
+						{
+							fnReject(new Error("Failed with error code " + nCode));
+						}
+					});
+				});
+
+				process.exit(1);
+			}
+			
+			throw error;
+		}
+		
 		await phantomPage.setting("javascriptEnabled", true);
 
 
@@ -945,8 +1081,9 @@ class AllTests
 			this._testEndpoint.fnResolveWaitForWebPage = fnResolve;
 		});
 
-		
-		const strStatus = await phantomPage.open(`http://localhost:8324/tests/Browser/index.html?websocketmode=${this._bWebSocketMode ? 1 : 0}`.replace(/\\+/g, "/").replace(/^\//, ""));
+		const strPhatomPageURL = `http://localhost:${this._nHTTPPort}/tests/Browser/index.html?websocketmode=${this._bWebSocketMode ? 1 : 0}&websocketsport=${this._nWebSocketsPort}`.replace(/\\+/g, "/").replace(/^\//, "");
+		console.log("Trying to open " + strPhatomPageURL);
+		const strStatus = await phantomPage.open(strPhatomPageURL);
 		console.log("[" + process.pid + "] Phantom page open: " + strStatus);
 		assert.strictEqual(strStatus, "success");
 
@@ -1021,15 +1158,38 @@ class AllTests
 		// http://smallvoid.com/article/winnt-tcpip-max-limit.html
 		// https://blog.jayway.com/2015/04/13/600k-concurrent-websocket-connections-on-aws-using-node-js/
 		// http://stackoverflow.com/questions/17033631/node-js-maxing-out-at-1000-concurrent-connections
-		const nCallCount = this._bWebSocketMode ? 2000 : 500;
+		const nCallCount = this._bWebSocketMode ? (this._bBenchmarkMode ? 20000 : 2000) : 500;
+
+		const fnPickAMethodIndex = (i) => {
+			if(this._bBenchmarkMode)
+			{
+				return i % arrMethods.length;
+			}
+			else
+			{
+				return Math.round(Math.random() * (arrMethods.length - 1));
+			}
+		}
+
 		for(let i = 0; i < nCallCount; i++)
 		{
-			arrPromises.push(arrMethods[Math.round(Math.random() * (arrMethods.length - 1))].apply(this, []));
+			arrPromises.push(arrMethods[fnPickAMethodIndex(i)].apply(this, []));
 		}
 
 		await Promise.all(arrPromises);
 
+		if(this._bBenchmarkMode)
+		{
+			this.enableConsole();
+		}
+
 		console.log(nCallCount + " calls executed in " + ((new Date()).getTime() - nStartTime) + " milliseconds.");
+
+		if(this._bBenchmarkMode)
+		{
+			console.log("heapTotal: " + Math.round(process.memoryUsage().heapTotal / 1024 / 1024, 2) + " MB");
+			this.disableConsole();
+		}
 	}
 
 
@@ -1038,8 +1198,14 @@ class AllTests
 	 */
 	async _makeClientWebSocket()
 	{
-		console.log("[" + process.pid + "] Connecting WebSocket to " + AllTests.localEndpointWebSocket + ".");
-		const webSocket = new WebSocket(AllTests.localEndpointWebSocket);
+		console.log("[" + process.pid + "] Connecting WebSocket to " + this.localEndpointWebSocket + ".");
+		let webSocket = new this._classWebSocket(this.localEndpointWebSocket);
+
+		if(this._classWebSocketAdapter)
+		{
+			webSocket = new this._classWebSocketAdapter(webSocket, this.localEndpointWebSocket);
+		}
+
 		await new Promise((fnResolve, fnReject) => {
 			webSocket.on("open", fnResolve);
 			webSocket.on("error", fnReject);
@@ -1052,8 +1218,33 @@ class AllTests
 	/**
 	 * @returns {string}
 	 */
-	static get localEndpointWebSocket()
+	get localEndpointWebSocket()
 	{
-		return "ws://localhost:8324/api";
+		assert(this._nWebSocketsPort, JSON.stringify(this._nWebSocketsPort));
+		return "ws://localhost:" + this._nWebSocketsPort + "/api";
+	}
+
+
+	disableConsole()
+	{
+		if(!this.savedConsole)
+		{
+			this.savedConsole = {log: console.log, error: console.error};
+		}
+
+		console.log = () => {};
+		console.error = () => {};
+	}
+
+
+	enableConsole()
+	{
+		if(this.savedConsole)
+		{
+			console.log = this.savedConsole.log;
+			console.error = this.savedConsole.error;
+
+			this.savedConsole = null;
+		}
 	}
 };

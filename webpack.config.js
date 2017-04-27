@@ -9,7 +9,8 @@ module.exports = [
 	{
 		target: "web", 
 		externals: {
-			"ws": "WebSocket",
+			"ws": "WebSocket", 
+			"uws": "WebSocket", 
 			"node-fetch": "fetch"
 		}, 
 		entry: [
@@ -86,6 +87,7 @@ module.exports = [
 		target: "web", 
 		externals: {
 			"ws": "WebSocket",
+			"uws": "WebSocket",
 			"node-fetch": "fetch"
 		}, 
 		entry: [
