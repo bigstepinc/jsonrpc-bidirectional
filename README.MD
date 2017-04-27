@@ -25,7 +25,7 @@ There is a wrapper for [uWebSockets](https://github.com/uWebSockets/uWebSockets)
 
 #### HTTP
 
-`JSONRPC.Client` has embeded support for HTTP requests, through [fetch](https://developer.mozilla.org/en/docs/Web/API/Fetch_API) (polyfills for older browsers exist, and work just fine).
+`JSONRPC.Client` has embeded support for HTTP requests, through [fetch](https://developer.mozilla.org/en/docs/Web/API/Fetch_API) (polyfills for older browsers exist, and work just fine). `JSONRPC.Server` has the `attachToHTTPServer` method.
 
 #### Other
 
