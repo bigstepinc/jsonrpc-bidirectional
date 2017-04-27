@@ -32,6 +32,7 @@ process.on(
 			// Most of the randomness was disabled when tested.
 			// Tested on nodejs 7.8.0, Windows 10, 64 bit.
 			// https://github.com/uWebSockets/uWebSockets/issues/585
+			// If replacing the uws client with ws and keeping the uws server, then uws wins at memory used by a large margin. Doesn't win the CPU though.
 			console.log("===== uws (20,000 calls in parallel, over as many reused connections as possible)");
 			allTests = new AllTests(bBenchmarkMode, /*bWebSocketMode*/ true, require("uws"), require("uws").Server, JSONRPC.WebSocketAdapters.uws.WebSocketWrapper, /*bDisableVeryLargePacket*/ true);
 			allTests.websocketServerPort = allTests.httpServerPort + 1;
