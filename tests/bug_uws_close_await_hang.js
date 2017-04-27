@@ -11,6 +11,8 @@ process.on(
 	}
 );
 
+// https://github.com/uWebSockets/uWebSockets/issues/586
+
 (
 	async () =>
 	{
