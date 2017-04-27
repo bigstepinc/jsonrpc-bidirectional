@@ -248,6 +248,7 @@ class AllTests
 			});
 			
 			this._httpServerSiteA = null;
+			global.gc();
 		}
 
 
@@ -1186,6 +1187,7 @@ class AllTests
 
 		if(this._bBenchmarkMode)
 		{
+			console.log("heapTotal: " + Math.round(process.memoryUsage().heapTotal / 1024 / 1024, 2) + " MB");
 			this.disableConsole();
 		}
 	}
