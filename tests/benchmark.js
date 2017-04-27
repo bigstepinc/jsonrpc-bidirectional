@@ -31,6 +31,7 @@ process.on(
 			// uws is consistently slower than ws when benchmarking with a few open connections (2) with the same number of calls.
 			// Most of the randomness was disabled when tested.
 			// Tested on nodejs 7.8.0, Windows 10, 64 bit.
+			// https://github.com/uWebSockets/uWebSockets/issues/585
 			console.log("===== uws (20,000 calls in parallel, over as many reused connections as possible)");
 			allTests = new AllTests(bBenchmarkMode, /*bWebSocketMode*/ true, require("uws"), require("uws").Server, JSONRPC.WebSocketAdapters.uws.WebSocketWrapper, /*bDisableVeryLargePacket*/ true);
 			allTests.websocketServerPort = allTests.httpServerPort + 1;
