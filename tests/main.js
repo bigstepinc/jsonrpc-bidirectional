@@ -19,6 +19,8 @@ process.on(
 		let allTests = new AllTests(bBenchmarkMode, /*bWebSocketMode*/ false);
 		await allTests.runTests();
 
+		// uws "Segmentation fault" on .close() in Travis.
+		// https://github.com/uWebSockets/uWebSockets/issues/583
 		//allTests = new AllTests(bBenchmarkMode, /*bWebSocketMode*/ true, require("uws"), require("uws").Server, JSONRPC.WebSocketAdapters.uws.WebSocketWrapper, /*bDisableVeryLargePacket*/ true);
 		//allTests.websocketServerPort = allTests.httpServerPort + 1;
 		//await allTests.runTests();
