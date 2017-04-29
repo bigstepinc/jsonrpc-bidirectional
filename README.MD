@@ -41,7 +41,7 @@ See `JSONRPC.ClientPluginBase` and `JSONRPC.ServerPluginBase`. Plugins may be ad
 
 Events may be used instead of plugins. Method names in `JSONRPC.ClientPluginBase` and `JSONRPC.ServerPluginBase` are also event names (event handlers have the same params) while `JSONRPC.Server` and `JSONRPC.Client` emit these events.
 
-Events may be more efficient than plugins, if very small performance gains matter. Plugins on the other hand help write readable and maintanable code (and are asynchronous).
+Events may be more efficient than plugins, if very small performance gains matter. Plugins on the other hand help write readable and maintainable code (and are asynchronous).
 
 
 ## Define an endpoint
