@@ -266,8 +266,8 @@ jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthorizeAll());
 
 const webSocket = new WebSocket("ws://localhost:8080/api");
 await new Promise((fnResolve, fnReject) => {
-	webSocket.on("open", fnResolve);
-	webSocket.on("error", fnReject);
+	webSocket.addEventListener("open", fnResolve);
+	webSocket.addEventListener("error", fnReject);
 });
 
 
