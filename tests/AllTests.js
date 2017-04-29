@@ -1169,7 +1169,7 @@ class AllTests
 			{
 				return Math.round(Math.random() * (arrMethods.length - 1));
 			}
-		}
+		};
 
 		for(let i = 0; i < nCallCount; i++)
 		{

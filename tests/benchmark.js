@@ -31,8 +31,27 @@ process.on(
 			// uws is consistently slower than ws when benchmarking with a few open connections (2) with the same number of calls.
 			// Most of the randomness was disabled when tested.
 			// Tested on nodejs 7.8.0, Windows 10, 64 bit.
+			// https://github.com/uWebSockets/uWebSockets/issues/585
 			console.log("===== uws (20,000 calls in parallel, over as many reused connections as possible)");
 			allTests = new AllTests(bBenchmarkMode, /*bWebSocketMode*/ true, require("uws"), require("uws").Server, JSONRPC.WebSocketAdapters.uws.WebSocketWrapper, /*bDisableVeryLargePacket*/ true);
+			allTests.websocketServerPort = allTests.httpServerPort + 1;
+			await allTests.runTests();
+			global.gc();
+			console.log("heapTotal after gc(): " + Math.round(process.memoryUsage().heapTotal / 1024 / 1024, 2) + " MB");
+			console.log("");
+
+
+			console.log("===== uws.Server, ws.Client (20,000 calls in parallel, over as many reused connections as possible)");
+			allTests = new AllTests(bBenchmarkMode, /*bWebSocketMode*/ true, require("ws"), require("uws").Server, JSONRPC.WebSocketAdapters.uws.WebSocketWrapper, /*bDisableVeryLargePacket*/ true);
+			allTests.websocketServerPort = allTests.httpServerPort + 1;
+			await allTests.runTests();
+			global.gc();
+			console.log("heapTotal after gc(): " + Math.round(process.memoryUsage().heapTotal / 1024 / 1024, 2) + " MB");
+			console.log("");
+
+
+			console.log("===== uw.Server, uws.Client (20,000 calls in parallel, over as many reused connections as possible)");
+			allTests = new AllTests(bBenchmarkMode, /*bWebSocketMode*/ true, require("uws"), require("ws").Server, JSONRPC.WebSocketAdapters.uws.WebSocketWrapper, /*bDisableVeryLargePacket*/ true);
 			allTests.websocketServerPort = allTests.httpServerPort + 1;
 			await allTests.runTests();
 			global.gc();

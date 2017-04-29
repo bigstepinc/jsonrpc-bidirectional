@@ -4,8 +4,8 @@
   "version": "3.2.3",
   "scripts": {
     "build": "node build.js",
-    "test": "node --expose-gc --max-old-space-size=3072 tests/main.js",
-    "benchmark": "node --expose-gc --max-old-space-size=3072 tests/benchmark.js",
+    "test": "node --expose-gc --max-old-space-size=1024 tests/main.js",
+    "benchmark": "node --expose-gc --max-old-space-size=1024 tests/benchmark.js",
     "lint": "eslint src tests --quiet"
   },
   "repository": {
