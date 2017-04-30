@@ -38,14 +38,17 @@ process.on(
 
 			allTests = new AllTests(bBenchmarkMode, /*bWebSocketMode*/ true, require("ws"), require("ws").Server, undefined, /*bDisableVeryLargePacket*/ false);
 			await allTests.runTests();
+
+			console.log("[" + process.pid + "] Done!!!");
 		}
 		else
 		{
 			allTests = new AllTests(bBenchmarkMode, /*bWebSocketMode*/ false);
 			await allTests.runClusterTests();
+
+			console.log("[" + process.pid + "] Worker done!!!");
 		}
 		
-		console.log("[" + process.pid + "] Done!!!");
 
 		process.exit(0);
 	}
