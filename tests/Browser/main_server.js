@@ -15,11 +15,11 @@ process.on(
 (
 	async () =>
 	{
-		const allTests = new AllTests(/*bWebSocketMode*/ true);
+		const allTests = new AllTests(/*bBenchmarkMode*/ false, /*bWebSocketMode*/ true, require("ws"), require("ws").Server, undefined, /*bDisableVeryLargePacket*/ false);
 		await allTests.setupHTTPServer();
 		await allTests.setupWebsocketServerSiteA();
 		await allTests.disableServerSecuritySiteA();
 
-		console.log("Go to http://localhost:8324/tests/Browser/index.html?websocketmode=1");
+		console.log("Go to http://localhost:" + allTests.httpServerPort + "/tests/Browser/index.html?websocketmode=1&websocketsport=" + allTests.websocketServerPort);
 	}
 )();

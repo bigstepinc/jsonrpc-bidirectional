@@ -1,5 +1,7 @@
 const sleep = require("sleep-promise");
 
+const cluster = require("cluster");
+
 const JSONRPC = {};
 JSONRPC.Exception = require("../src/Exception");
 JSONRPC.Client = require("../src/Client");
@@ -7,6 +9,8 @@ JSONRPC.EndpointBase = require("../src/EndpointBase");
 
 JSONRPC.Plugins = {};
 JSONRPC.Plugins.Client = require("../src/Plugins/Client");
+
+const TestClient = require("./TestClient");
 
 module.exports =
 class TestEndpoint extends JSONRPC.EndpointBase 
@@ -20,7 +24,7 @@ class TestEndpoint extends JSONRPC.EndpointBase
 			/*strName*/ "Test", 
 			/*strPath*/ "/api", 
 			/*objReflection*/ {},
-			/*classReverseCallsClient*/ JSONRPC.Client
+			/*classReverseCallsClient*/ TestClient
 		);
 
 		this._bBenchmarkMode = !!bBenchmarkMode;
@@ -181,5 +185,28 @@ class TestEndpoint extends JSONRPC.EndpointBase
 		return {
 			"teamMember": strTeamMember
 		};
+	}
+
+
+	/**
+	 * @param {number} nPID 
+	 */
+	async killWorker(nPID)
+	{
+		if(!cluster.isMaster)
+		{
+			throw new Error("Only available on the master.");
+		}
+
+		for(let worker of cluster.workers)
+		{
+			if(worker.pid === nPID)
+			{
+				worker.kill();
+				return;
+			}
+		}
+
+		throw new Error("Worker with pid " + nPID + " not found.");
 	}
 };

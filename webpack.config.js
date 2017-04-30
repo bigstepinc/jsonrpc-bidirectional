@@ -11,7 +11,8 @@ module.exports = [
 		externals: {
 			"ws": "WebSocket", 
 			"uws": "WebSocket", 
-			"node-fetch": "fetch"
+			"node-fetch": "fetch",
+			"cluster": ""
 		}, 
 		entry: [
 			// "babel-polyfill",
@@ -88,7 +89,8 @@ module.exports = [
 		externals: {
 			"ws": "WebSocket",
 			"uws": "WebSocket",
-			"node-fetch": "fetch"
+			"node-fetch": "fetch",
+			"cluster": ""
 		}, 
 		entry: [
 			"./index_webpack"

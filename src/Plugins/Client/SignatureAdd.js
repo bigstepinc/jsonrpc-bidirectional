@@ -1,7 +1,7 @@
 const JSONRPC = {};
 JSONRPC.ClientPluginBase = require("../../ClientPluginBase");
 
- const JSSHA = require("jssha");
+const JSSHA = require("jssha");
 //const HMAC_SHA256 = require("crypto-js/hmac-sha256");
 
 /**

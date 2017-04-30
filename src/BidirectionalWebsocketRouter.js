@@ -1,10 +1,9 @@
-const assert = require("assert");
-
-const JSONRPC = {};
+const JSONRPC = require("../index");
 JSONRPC.Exception = require("./Exception");
 JSONRPC.Server = require("./Server");
 JSONRPC.IncomingRequest = require("./IncomingRequest");
 JSONRPC.EndpointBase = require("./EndpointBase");
+JSONRPC.RouterBase = require("./RouterBase");
 
 JSONRPC.Plugins = {};
 JSONRPC.Plugins.Client = require("./Plugins/Client");
@@ -13,40 +12,14 @@ JSONRPC.Utils = require("./Utils");
 JSONRPC.WebSocketAdapters = {};
 JSONRPC.WebSocketAdapters.WebSocketWrapperBase = require("./WebSocketAdapters/WebSocketWrapperBase");
 
-const EventEmitter = require("events");
-
 
 /**
+ * @event madeReverseCallsClient
  * The "madeReverseCallsClient" event offers automatically instantiated API clients (API clients are instantiated for each connection, lazily).
  */
 module.exports =
-class BidirectionalWebsocketRouter extends EventEmitter
+class BidirectionalWebsocketRouter extends JSONRPC.RouterBase
 {
-	/**
-	 * Clients are automatically instantiated per connection and are available as a property of the first param of the exported functions,
-	 * if the JSONRPC.EndpointBase constructor param classReverseCallsClient was set to a JSONRPC.Client subclass.
-	 * 
-	 * If jsonrpcServer is non-null and classReverseCallsClient is set on at least one endpoint, then bi-directional JSONRPC over the same websocket is enabled.
-	 * 
-	 * @param {JSONRPC.Server|null} jsonrpcServer
-	 */
-	constructor(jsonrpcServer)
-	{
-		super();
-
-		assert(jsonrpcServer === null || jsonrpcServer instanceof JSONRPC.Server);
-
-		this._jsonrpcServer = jsonrpcServer;
-
-		if(!BidirectionalWebsocketRouter.hasOwnProperty("_nServerWebSocketConnectionIDCounter"))
-		{
-			BidirectionalWebsocketRouter._nServerWebSocketConnectionIDCounter = Math.max(parseInt(new Date().getTime() / 1000, 10) - 1483826328, 0);
-		}
-
-		this._objSessions = {};
-	}
-
-
 	/**
 	 * Returns the connection ID.
 	 * 
@@ -72,21 +45,23 @@ class BidirectionalWebsocketRouter extends EventEmitter
 			return;
 		}
 
-		const nWebSocketConnectionID = ++BidirectionalWebsocketRouter._nServerWebSocketConnectionIDCounter;
+		const nConnectionID = ++this._nConnectionIDCounter;
 
+		const strEndpointPath = JSONRPC.EndpointBase.normalizePath(webSocket.url ? webSocket.url : webSocket.upgradeReq.url);
 
 		const objSession = {
 			webSocket: webSocket,
-			nWebSocketConnectionID: nWebSocketConnectionID,
+			nConnectionID: nConnectionID,
 			clientReverseCalls: null,
-			clientWebSocketTransportPlugin: null
+			clientWebSocketTransportPlugin: null,
+			strEndpointPath: strEndpointPath
 		};
 
-		this._objSessions[nWebSocketConnectionID] = objSession;
+		this._objSessions[nConnectionID] = objSession;
 
 
 		const fnOnError = (error) => {
-			delete this._objSessions[nWebSocketConnectionID];
+			this.onConnectionEnded(nConnectionID);
 
 			if(webSocket.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN)
 			{
@@ -102,8 +77,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 		{
 			webSocket.addEventListener(
 				"message", 
-				async (messageEvent) => 
-				{
+				(messageEvent) => {
 					this._routeMessage(messageEvent.data, objSession).catch((error) => {throw error;});
 				}
 			);
@@ -115,7 +89,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 					//closeEvent.reason;
 					//closeEvent.wasClean;
 
-					delete this._objSessions[nWebSocketConnectionID];
+					this.onConnectionEnded(nConnectionID);
 				}
 			);
 
@@ -125,8 +99,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 		{
 			webSocket.on(
 				"message", 
-				async (strData, objFlags) => 
-				{
+				(strData, objFlags) => {
 					this._routeMessage(strData, objSession).catch((error) => { throw error; });
 				}
 			);
@@ -134,7 +107,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 			webSocket.on(
 				"close",
 				(nCode, strReason) => {
-					delete this._objSessions[nWebSocketConnectionID];
+					this.onConnectionEnded(nConnectionID);
 				}
 			);
 
@@ -142,66 +115,23 @@ class BidirectionalWebsocketRouter extends EventEmitter
 		}
 
 
-
-
-
-		return nWebSocketConnectionID;
-	}
-
-
-	/**
-	 * If the client does not exist, it will be generated and saved on the session.
-	 * Another client will not be generated automatically, regardless of the accessed endpoint's defined client class for reverse calls.
-	 * 
-	 * @param {number} nConnectionID
-	 * @param {Class} ClientClass
-	 * 
-	 * @returns {JSONRPC.Client}
-	 */
-	connectionIDToSingletonClient(nConnectionID, ClientClass)
-	{
-		assert(typeof nConnectionID === "number", "nConnectionID must be a number. Received this: " + JSON.stringify(nConnectionID));
-		assert(typeof ClientClass === "function", "Invalid ClientClass value: " + (typeof ClientClass));
-
-		if(!this._objSessions.hasOwnProperty(nConnectionID))
-		{
-			throw new Error("Connection " + JSON.stringify(nConnectionID) + " not found in BidirectionalWebsocketRouter.");
-		}
-
-		if(this._objSessions[nConnectionID].clientReverseCalls === null)
-		{
-			this._objSessions[nConnectionID].clientReverseCalls = this._makeReverseCallsClient(
-				this._objSessions[nConnectionID].webSocket,
-				ClientClass,
-				this._objSessions[nConnectionID]
-			);
-		}
-		else
-		{
-			assert(
-				this._objSessions[nConnectionID].clientReverseCalls instanceof ClientClass, 
-				"clientReverseCalls already initialized with a different JSONRPC.Client subclass."
-			);
-		}
-
-		return this._objSessions[nConnectionID].clientReverseCalls;
+		return nConnectionID;
 	}
 
 
 	/**
 	 * Overridable to allow configuring the client further.
 	 * 
-	 * @param {WebSocket} webSocket
 	 * @param {Class} ClientClass
 	 * @param {Object} objSession
 	 * 
 	 * @returns {JSONRPC.Client}
 	 */
-	_makeReverseCallsClient(webSocket, ClientClass, objSession)
+	_makeReverseCallsClient(ClientClass, objSession)
 	{
-		const clientReverseCalls = new ClientClass(webSocket.url ? webSocket.url : webSocket.upgradeReq.url);
+		const clientReverseCalls = new ClientClass(objSession.strEndpointPath);
 		
-		objSession.clientWebSocketTransportPlugin = new JSONRPC.Plugins.Client.WebSocketTransport(webSocket, /*bBidirectionalWebSocketMode*/ true);
+		objSession.clientWebSocketTransportPlugin = new JSONRPC.Plugins.Client.WebSocketTransport(objSession.webSocket, /*bBidirectionalWebSocketMode*/ true);
 		clientReverseCalls.addPlugin(objSession.clientWebSocketTransportPlugin);
 
 		this.emit("madeReverseCallsClient", clientReverseCalls);
@@ -219,7 +149,7 @@ class BidirectionalWebsocketRouter extends EventEmitter
 	async _routeMessage(strMessage, objSession)
 	{
 		const webSocket = objSession.webSocket;
-		const nWebSocketConnectionID = objSession.nWebSocketConnectionID;
+		const nConnectionID = objSession.nConnectionID;
 
 		if(!strMessage.trim().length)
 		{
@@ -240,8 +170,8 @@ class BidirectionalWebsocketRouter extends EventEmitter
 
 			if(
 				this._jsonrpcServer 
-				&& this._objSessions.hasOwnProperty(nWebSocketConnectionID)
-				&& this._objSessions[nWebSocketConnectionID].clientWebSocketTransportPlugin === null
+				&& this._objSessions.hasOwnProperty(nConnectionID)
+				&& this._objSessions[nConnectionID].clientWebSocketTransportPlugin === null
 			)
 			{
 				webSocket.send(JSON.stringify({
@@ -287,8 +217,8 @@ class BidirectionalWebsocketRouter extends EventEmitter
 
 				const incomingRequest = new JSONRPC.IncomingRequest();
 
-				incomingRequest.connectionID = nWebSocketConnectionID;
-				incomingRequest.bidirectionalWebsocketRouter = this;
+				incomingRequest.connectionID = nConnectionID;
+				incomingRequest.router = this;
 
 
 				if(webSocket.upgradeReq)
@@ -300,18 +230,16 @@ class BidirectionalWebsocketRouter extends EventEmitter
 				}
 
 
-				// Move this somewhere in a state tracking class instance of the websocket connection so it is only executed on an incoming connection,
-				// for efficiency.
 				try
 				{
-					const strPath = JSONRPC.EndpointBase.normalizePath(webSocket.url ? webSocket.url : webSocket.upgradeReq.url);
+					const strEndpointPath = this._objSessions[nConnectionID].strEndpointPath;
 
-					if(!this._jsonrpcServer.endpoints.hasOwnProperty(strPath))
+					if(!this._jsonrpcServer.endpoints.hasOwnProperty(strEndpointPath))
 					{
-						throw new JSONRPC.Exception("Unknown JSONRPC endpoint " + strPath + ".", JSONRPC.Exception.METHOD_NOT_FOUND);
+						throw new JSONRPC.Exception("Unknown JSONRPC endpoint " + strEndpointPath + ".", JSONRPC.Exception.METHOD_NOT_FOUND);
 					}
-					incomingRequest.endpoint = this._jsonrpcServer.endpoints[strPath];
 
+					incomingRequest.endpoint = this._jsonrpcServer.endpoints[strEndpointPath];
 
 					incomingRequest.requestBody = strMessage;
 					incomingRequest.requestObject = objMessage;
@@ -334,8 +262,8 @@ class BidirectionalWebsocketRouter extends EventEmitter
 			else if(objMessage.hasOwnProperty("result") || objMessage.hasOwnProperty("error"))
 			{
 				if(
-					this._objSessions.hasOwnProperty(nWebSocketConnectionID)
-					&& this._objSessions[nWebSocketConnectionID].clientWebSocketTransportPlugin === null
+					this._objSessions.hasOwnProperty(nConnectionID)
+					&& this._objSessions[nConnectionID].clientWebSocketTransportPlugin === null
 				)
 				{
 					if(!this._jsonrpcServer)
@@ -364,13 +292,13 @@ class BidirectionalWebsocketRouter extends EventEmitter
 					throw new Error("How can the client be not initialized, and yet getting responses from phantom requests?");
 				}
 				
-				if(this._objSessions.hasOwnProperty(nWebSocketConnectionID))
+				if(this._objSessions.hasOwnProperty(nConnectionID))
 				{
-					await this._objSessions[nWebSocketConnectionID].clientWebSocketTransportPlugin.processResponse(strMessage, objMessage);
+					await this._objSessions[nConnectionID].clientWebSocketTransportPlugin.processResponse(strMessage, objMessage);
 				}
 				else
 				{
-					console.error("Connection ID " + nWebSocketConnectionID + " is closed and session is missing. Ignoring response: " + strMessage);
+					console.error("Connection ID " + nConnectionID + " is closed and session is missing. Ignoring response: " + strMessage);
 				}
 			}
 			else
@@ -385,8 +313,8 @@ class BidirectionalWebsocketRouter extends EventEmitter
 
 			if(
 				this._jsonrpcServer 
-				&& this._objSessions.hasOwnProperty(nWebSocketConnectionID)
-				&& this._objSessions[nWebSocketConnectionID].clientWebSocketTransportPlugin === null
+				&& this._objSessions.hasOwnProperty(nConnectionID)
+				&& this._objSessions[nConnectionID].clientWebSocketTransportPlugin === null
 			)
 			{
 				if(webSocket.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN)

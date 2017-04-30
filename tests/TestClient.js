@@ -54,4 +54,14 @@ class TestClient extends JSONRPC.Client
 	{
 		return this.rpc("ImHereForTheParty", [...arguments]);
 	}
+
+
+	/**
+	 * @param {number} nPID 
+	 * @returns {never}
+	 */
+	async killWorker(nPID)
+	{
+		return this.rpc("killWorker", [...arguments]);
+	}
 };

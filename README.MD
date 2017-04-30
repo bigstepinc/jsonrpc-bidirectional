@@ -11,7 +11,7 @@ This library is tested in __browsers__ (>= IE10) and in __Node.js__ (>=7.8).
 
 ## Transports
 
-Both the server and client support two __transports, HTTP and WebSocket__, and allow more through plugin extensibility. 
+Both the server and client support three __transports, HTTP, WebSocket and Worker__, and allow more through plugin extensibility. 
 
 #### WebSocket
 
@@ -26,6 +26,11 @@ There is a wrapper for [uWebSockets](https://github.com/uWebSockets/uWebSockets)
 #### HTTP
 
 `JSONRPC.Client` has embeded support for HTTP requests, through [fetch](https://developer.mozilla.org/en/docs/Web/API/Fetch_API) (polyfills for older browsers exist, and work just fine). `JSONRPC.Server` has the `attachToHTTPServer` method.
+
+#### Worker
+For Worker client support in Node.js and browsers, `JSONRPC.Plugins.Client.WorkerTransport` and `JSONRPC.BidirectionalWorkerRouter` accept Node.js or W3C compatible `Worker` class instances. See `tests/AllTests.runClusterTests()` for an example of how to setup a servers and clients for master-worker asynchronous communication.
+TODO: Browser Worker support is not finished or tested.
+
 
 #### Other
 

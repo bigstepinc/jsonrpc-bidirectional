@@ -119,9 +119,11 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 		assert(typeof outgoingRequest.requestObject.id === "number");
 		
 		this._objWebSocketRequestsPromises[outgoingRequest.requestObject.id] = {
-			unixtimeMilliseconds: (new Date()).getTime(),
-			outgoingRequest: outgoingRequest
+			// unixtimeMilliseconds: (new Date()).getTime(),
+			outgoingRequest: outgoingRequest,
+			promise: null
 		};
+
 		this._objWebSocketRequestsPromises[outgoingRequest.requestObject.id].promise = new Promise((fnResolve, fnReject) => {
 			this._objWebSocketRequestsPromises[outgoingRequest.requestObject.id].fnResolve = fnResolve;
 			this._objWebSocketRequestsPromises[outgoingRequest.requestObject.id].fnReject = fnReject;
@@ -139,7 +141,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 	rejectAllPromises(error)
 	{
 		//console.error(error);
-		console.log("[" + process.pid + "] Rejecting all Promise instances in WebSockets/JSONRPCClientPlugin.");
+		console.log("[" + process.pid + "] Rejecting all Promise instances in WebSocketTransport.");
 
 		let nCount = 0;
 
@@ -153,7 +155,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 
 		if(nCount)
 		{
-			console.error("[" + process.pid + "] Rejected " + nCount + " Promise instances in WebSockets/JSONRPCClientPlugin.");
+			console.error("[" + process.pid + "] Rejected " + nCount + " Promise instances in WebSocketTransport.");
 		}
 	}
 

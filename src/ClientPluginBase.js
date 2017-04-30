@@ -16,6 +16,7 @@ class ClientPluginBase
 		// outgoingRequest.requestObject is available here.
 
 		// outgoingRequest.headers and outgoingRequest.enpointURL may be modified here.
+		// outgoingRequest.requestBody may be set to a non-NULL value to replace JSON.stringy() (and thus replace serialization).
 	}
 
 
@@ -52,6 +53,7 @@ class ClientPluginBase
 	async beforeJSONDecode(outgoingRequest)
 	{
 		// outgoingRequest.responseBody is available here.
+		// outgoingRequest.responseObject may be set to a non-NULL value to replace JSON.parse() (and thus replace serialization).
 	}
 
 

@@ -12,6 +12,7 @@ const sleep = require("sleep-promise");
 
 const Phantom = require("phantom");
 
+const cluster = require("cluster");
 
 // @TODO: Test with other WebSocket implementations.
 
@@ -138,6 +139,8 @@ class AllTests
 	 */
 	async runTests()
 	{
+		assert(cluster.isMaster);
+
 		if(this._bBenchmarkMode)
 		{
 			this.disableConsole();
@@ -258,6 +261,85 @@ class AllTests
 		if(this._bBenchmarkMode)
 		{
 			this.enableConsole();
+		}
+	}
+
+
+	/**
+	 * @returns {undefined}
+	 */
+	async runClusterTests()
+	{
+		const jsonrpcServer = new JSONRPC.Server();
+		jsonrpcServer.registerEndpoint(new TestEndpoint()); // See "Define an endpoint" section above.
+
+		// By default, JSONRPC.Server rejects all requests as not authenticated and not authorized.
+		jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthenticationSkip());
+		jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthorizeAll());
+
+		const wsJSONRPCRouter = new JSONRPC.BidirectionalWorkerRouter(jsonrpcServer);
+
+		wsJSONRPCRouter.on("madeReverseCallsClient", (clientReverseCalls) => {
+			clientReverseCalls.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
+			clientReverseCalls.addPlugin(new ClientDebugMarkerPlugin((cluster.isMaster ? "Master" : "Worker") + "; reverse calls;"));
+		});
+
+		if(cluster.isMaster)
+		{
+			const workerA = cluster.fork();
+			const nConnectionIDA = await wsJSONRPCRouter.addWorker(workerA);
+
+			const workerB = cluster.fork();
+			const nConnectionIDB = await wsJSONRPCRouter.addWorker(workerB);
+			
+			const clientA = wsJSONRPCRouter.connectionIDToSingletonClient(nConnectionIDA, TestClient);
+			const clientB = wsJSONRPCRouter.connectionIDToSingletonClient(nConnectionIDB, TestClient);
+
+			const strMessageA = "Master => Worker A " + process.pid;
+			assert(strMessageA === await clientA.ping(strMessageA));
+
+			const strMessageB = "Master => Worker B " + process.pid;
+			assert(strMessageB === await clientB.ping(strMessageB));
+
+			while(!workerA.isDead() && !workerB.isDead())
+			{
+				await sleep(10);
+			}
+		}
+		else
+		{
+			assert(cluster.isWorker);
+
+			const nConnectionID = await wsJSONRPCRouter.addWorker(process, "/api");
+			const client = wsJSONRPCRouter.connectionIDToSingletonClient(nConnectionID, TestClient);
+
+			// This is a mandatory call to signal to the master, that the worker is ready to receive JSONRPC requests on a chosen endpoint.
+			// This can be hidden in an JSONRPC.Client extending class, inside an overriden .rpc() method. 
+			// And awaited once.
+			await client.rpc("rpc.connectToEndpoint", ["/api"]);
+
+			const strMessage = "Worker " + process.pid + " => Master";
+			assert(strMessage === await client.ping(strMessage));
+
+			const arrPromises = [];
+			for(let i = 0; i < 100; i++)
+			{
+				arrPromises.push(client.ping(i + " " + strMessage, /*bRandomSleep*/ true));
+			}
+
+			await Promise.all(arrPromises);
+
+
+			// const clientStandAlone = new TestClient("/api");
+			// clientStandAlone.addPlugin(new JSONRPC.Plugins.Client.WorkerTransport(process));
+			
+			// This can be hidden in an JSONRPC.Client extending class, inside an overriden .rpc() method. 
+			// And awaited once.
+			//await clientStandAlone.rpc("rpc.connectToEndpoint", [clientStandAlone.endpointURL]);
+			//console.log(await clientStandAlone.ping(strMessage + " stand-alone client."));
+
+
+			client.killWorker(process.pid);
 		}
 	}
 
@@ -696,7 +778,7 @@ class AllTests
 				throw error;
 			}
 			
-			//console.log(error);
+			console.log(error);
 			assert(error instanceof JSONRPC.Exception);
 			assert.strictEqual(error.code, JSONRPC.Exception.NOT_AUTHENTICATED);
 			assert.strictEqual(error.message, "Not authenticated.");
