@@ -277,23 +277,26 @@ class AllTests
 		jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthenticationSkip());
 		jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthorizeAll());
 
-		const wsJSONRPCRouter = new JSONRPC.BidirectionalWorkerRouter(jsonrpcServer);
+		const workerJSONRPCRouter = new JSONRPC.BidirectionalWorkerRouter(jsonrpcServer);
 
-		wsJSONRPCRouter.on("madeReverseCallsClient", (clientReverseCalls) => {
+		workerJSONRPCRouter.on("madeReverseCallsClient", (clientReverseCalls) => {
 			clientReverseCalls.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 			clientReverseCalls.addPlugin(new ClientDebugMarkerPlugin((cluster.isMaster ? "Master" : "Worker") + "; reverse calls;"));
 		});
 
 		if(cluster.isMaster)
 		{
+			// Unless the worker is immediately added to the router, and the add operation awaited, 
+			// deadlocks may occur because of the awaits on addWorker which may miss the ready call from the worker.
+			// Use await Promise.all or add them one by one as below.
 			const workerA = cluster.fork();
-			const nConnectionIDA = await wsJSONRPCRouter.addWorker(workerA);
+			const nConnectionIDA = await workerJSONRPCRouter.addWorker(workerA);
 
 			const workerB = cluster.fork();
-			const nConnectionIDB = await wsJSONRPCRouter.addWorker(workerB);
+			const nConnectionIDB = await workerJSONRPCRouter.addWorker(workerB);
 			
-			const clientA = wsJSONRPCRouter.connectionIDToSingletonClient(nConnectionIDA, TestClient);
-			const clientB = wsJSONRPCRouter.connectionIDToSingletonClient(nConnectionIDB, TestClient);
+			const clientA = workerJSONRPCRouter.connectionIDToSingletonClient(nConnectionIDA, TestClient);
+			const clientB = workerJSONRPCRouter.connectionIDToSingletonClient(nConnectionIDB, TestClient);
 
 			const strMessageA = "Master => Worker A " + process.pid;
 			assert(strMessageA === await clientA.ping(strMessageA));
@@ -310,8 +313,8 @@ class AllTests
 		{
 			assert(cluster.isWorker);
 
-			const nConnectionID = await wsJSONRPCRouter.addWorker(process, "/api");
-			const client = wsJSONRPCRouter.connectionIDToSingletonClient(nConnectionID, TestClient);
+			const nConnectionID = await workerJSONRPCRouter.addWorker(process, "/api");
+			const client = workerJSONRPCRouter.connectionIDToSingletonClient(nConnectionID, TestClient);
 
 			// This is a mandatory call to signal to the master, that the worker is ready to receive JSONRPC requests on a chosen endpoint.
 			// This can be hidden in an JSONRPC.Client extending class, inside an overriden .rpc() method. 

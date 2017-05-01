@@ -35,17 +35,17 @@ TestEndpoint.prototype.ping = function(incomingRequest, strReturn, RandomSleep, 
 	return new Promise(function(fnResolve, fnReject){
 		if(typeof strATeamCharacterName === "string")
 		{
-			var strReturn;
+			var strReturnReverseCall;
 			if(strATeamCharacterName === "CallMeBackOnceAgain")
 			{
-				strReturn = "Calling you back once again";
+				strReturnReverseCall = "Calling you back once again";
 			}
 			else
 			{
-				strReturn = strATeamCharacterName + " called back to confirm this: " + strReturn + ".";
+				strReturnReverseCall = strATeamCharacterName + " called back to confirm this: " + strReturn + ".";
 			}
 
-			incomingRequest.reverseCallsClient.rpc("ping", [strReturn, /*bRandomSleep*/ true])
+			incomingRequest.reverseCallsClient.rpc("ping", [strReturnReverseCall, /*bRandomSleep*/ true])
 				.then(function(strPingResult){
 					window.arrErrors.push(strPingResult);
 

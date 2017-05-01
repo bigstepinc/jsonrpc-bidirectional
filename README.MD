@@ -28,8 +28,8 @@ There is a wrapper for [uWebSockets](https://github.com/uWebSockets/uWebSockets)
 `JSONRPC.Client` has embeded support for HTTP requests, through [fetch](https://developer.mozilla.org/en/docs/Web/API/Fetch_API) (polyfills for older browsers exist, and work just fine). `JSONRPC.Server` has the `attachToHTTPServer` method.
 
 #### Worker
-For Worker client support in Node.js and browsers, `JSONRPC.Plugins.Client.WorkerTransport` and `JSONRPC.BidirectionalWorkerRouter` accept Node.js or W3C compatible `Worker` class instances. See `tests/AllTests.runClusterTests()` for an example of how to setup a servers and clients for master-worker asynchronous communication.
-TODO: Browser Worker support is not finished or tested.
+For Worker client support in Node.js and browsers, `JSONRPC.Plugins.Client.WorkerTransport` and `JSONRPC.BidirectionalWorkerRouter` accept Node.js [cluster.Worker](https://nodejs.org/api/cluster.html#cluster_class_worker) or standard browser [Worker](https://developer.mozilla.org/en-US/docs/Web/API/Worker) class instances. 
+See `tests/AllTests.runClusterTests()` and `tests/Browser/index.html` for an example of how to setup servers and clients for master-worker asynchronous communication.
 
 
 #### Other

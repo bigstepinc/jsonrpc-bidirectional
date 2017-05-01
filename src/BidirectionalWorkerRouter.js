@@ -1,6 +1,13 @@
 const assert = require("assert");
 
-const cluster = require("cluster");
+let cluster = require("cluster");
+if(!cluster)
+{
+	cluster = {
+		isMaster: !(self && self.document === undefined),
+		isWorker: !!(self && self.document === undefined)
+	};
+}
 
 const JSONRPC = {};
 JSONRPC.Exception = require("./Exception");
@@ -73,7 +80,7 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 			strEndpointPath = JSONRPC.EndpointBase.normalizePath(strEndpointPath);
 		}
 
-		assert(cluster.isMaster || process === worker);
+		assert(cluster.isMaster || process === worker || self === worker);
 
 
 		const nConnectionID = ++this._nConnectionIDCounter;
