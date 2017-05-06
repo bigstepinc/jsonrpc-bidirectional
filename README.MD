@@ -30,7 +30,7 @@ There is a wrapper for [uWebSockets](https://github.com/uWebSockets/uWebSockets)
 #### Worker
 For Worker client support in Node.js and browsers, `JSONRPC.Plugins.Client.WorkerTransport` and `JSONRPC.BidirectionalWorkerRouter` accept Node.js [cluster.Worker](https://nodejs.org/api/cluster.html#cluster_class_worker) or standard browser [Worker](https://developer.mozilla.org/en-US/docs/Web/API/Worker) class instances. 
 
-See `tests/AllTests.runClusterTests()` and `tests/Browser/index.html` for an example of how to setup servers and clients for master-worker asynchronous communication.
+See `tests/Tests/AllTests.runClusterTests()` and `tests/Browser/index.html` for an example of how to setup servers and clients for master-worker asynchronous communication.
 
 
 #### Other

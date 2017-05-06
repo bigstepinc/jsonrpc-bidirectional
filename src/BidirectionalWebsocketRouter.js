@@ -185,10 +185,13 @@ class BidirectionalWebsocketRouter extends JSONRPC.RouterBase
 			}
 
 			console.log("[" + process.pid + "] Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request or response.");
-			webSocket.close(
-				/*CLOSE_NORMAL*/ 1000, // Chrome only supports 1000 or the 3000-3999 range ///* CloseEvent.Internal Error */ 1011, 
-				"Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request or response."
-			);
+			if(webSocket.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN)
+			{
+				webSocket.close(
+					/*CLOSE_NORMAL*/ 1000, // Chrome only supports 1000 or the 3000-3999 range ///* CloseEvent.Internal Error */ 1011, 
+					"Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request or response."
+				);
+			}
 
 			return;
 		}

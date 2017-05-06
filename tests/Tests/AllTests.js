@@ -46,7 +46,10 @@ class AllTests
 	 */
 	constructor(bBenchmarkMode, bWebSocketMode, classWebSocket, classWebSocketServer, classWebSocketAdapter, bDisableVeryLargePacket)
 	{
-		this.bAwaitServerClose = false;
+		// uws hangs on .close(), ws doesn't.
+		// Without the await, the process will exit just fine on Windows 10, 64 bit.
+		// On Travis (Linux) it throws segmentation fault.
+		this.bAwaitServerClose = os.platform() !== "win32";
 
 		this._bBenchmarkMode = bBenchmarkMode;
 		this.savedConsole = null;
@@ -98,6 +101,8 @@ class AllTests
 
 		this._nHTTPPort = 8234;
 		this._nWebSocketsPort = this._nHTTPPort;
+
+		this._strBindIPAddress = "127.0.0.1";
 
 		Object.seal(this);
 	}
@@ -212,6 +217,33 @@ class AllTests
 
 		if(this._webSocketServerSiteA)
 		{
+			if(
+				this._webSocketClientSiteB
+				&& this._webSocketClientSiteB.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN
+			)
+			{
+				this._webSocketClientSiteB.close(
+					/*CloseEvent.CLOSE_NORMAL*/ 1000,
+					"Normal close."
+				);
+
+				this._webSocketClientSiteB = null;
+			}
+
+			if(
+				this._webSocketClientSiteC
+				&& this._webSocketClientSiteC.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN
+			)
+			{
+				this._webSocketClientSiteC.close(
+					/*CloseEvent.CLOSE_NORMAL*/ 1000,
+					"Normal close."
+				);
+
+				this._webSocketClientSiteC = null;
+			}
+
+
 			console.log("Closing WebSocket server.");
 			const awaitWebSocketServerClose = new Promise((fnResolve, fnReject) => {
 				this._webSocketServerSiteA.close((result, error) => {
@@ -355,6 +387,135 @@ class AllTests
 	/**
 	 * @returns {undefined}
 	 */
+	async runEndlessNewWebSockets()
+	{
+		assert(this._bWebSocketMode);
+		assert(this._bBenchmarkMode);
+
+		this.disableConsole();
+
+		if(cluster.isMaster)
+		{
+			await this.setupHTTPServer();
+			await this.setupWebsocketServerSiteA();
+			await this.disableServerSecuritySiteA();
+			
+			const arrWorkers = [];
+
+			for(let i = 0; i < Math.max(1, -1 /*server core*/ + os.cpus().length); i++)
+			{
+				const worker = cluster.fork();
+
+				worker.send(i.toString());
+
+				arrWorkers.push(worker);
+			}
+
+			let nRoundedConnectionsCount = 0;
+			let nNoChangeCount = 0;
+			while(true)
+			{
+				await sleep(2000);
+
+				const nNewRoundedConnectionsCount = Math.round(Object.keys(this._webSocketAuthorizeSiteA._objSessions).length / 10, 0) * 10;
+
+				if(nRoundedConnectionsCount !== nNewRoundedConnectionsCount)
+				{
+					nNoChangeCount = 0;
+					nRoundedConnectionsCount = nNewRoundedConnectionsCount;
+					
+					this.console.log(Object.keys(this._webSocketAuthorizeSiteA._objSessions).length + " connections.");
+					this.console.log("heapTotal: " + Math.round(process.memoryUsage().heapTotal / 1024 / 1024, 2) + " MB");
+				}
+				else
+				{
+					if(++nNoChangeCount === 4)
+					{
+						process.exit(0);
+					}
+				}
+
+				for(let i = arrWorkers.length - 1; i >= 0; i--)
+				{
+					if(arrWorkers[i].isDead())
+					{
+						arrWorkers.splice(i, 1);
+
+						if(!arrWorkers.length)
+						{
+							process.exit(1);
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			await new Promise((fnResolve, fnReject) => {
+				const nTimeoutID = setTimeout(
+					() => {
+						fnReject(new Error("Timed out waiting for IPC message."));
+					},
+					60 * 1000
+				);
+
+				process.on(
+					"message",
+					(strMessage) => {
+						clearTimeout(nTimeoutID);
+
+						this._strBindIPAddress = "127.0.0." + (parseInt(strMessage, 10) + 2);
+						fnResolve();
+					}
+				);
+			});
+
+			assert(cluster.isWorker);
+
+			const arrWebSocketClients = [];
+			const arrJSONRPCClients = [];
+
+			while(true)
+			{
+				let webSocketClient;
+				try
+				{
+					webSocketClient = await this._makeClientWebSocket();
+					arrWebSocketClients.push(webSocketClient);
+				}
+				catch(error)
+				{
+					console.error(error);
+					await sleep(1000);
+					continue;
+				}
+
+				const jsonrpcServer = new JSONRPC.Server();
+				jsonrpcServer.registerEndpoint(new TestEndpoint(this._bBenchmarkMode || !this._bWebSocketMode));
+
+				jsonrpcServer.addPlugin(this._serverAuthenticationSkipPlugin);
+				jsonrpcServer.addPlugin(this._serverAuthorizeAllPlugin);
+
+				const wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(jsonrpcServer);
+
+				const nWebSocketConnectionID = await wsJSONRPCRouter.addWebSocket(webSocketClient);
+				const jsonrpcClient = wsJSONRPCRouter.connectionIDToSingletonClient(nWebSocketConnectionID, TestClient);
+
+				arrJSONRPCClients.push(jsonrpcClient);
+				setInterval(
+					() => {
+						jsonrpcClient.ping("Hello there! I'm here.");
+					},
+					1000
+				);
+			}
+		}
+	}
+
+
+	/**
+	 * @returns {undefined}
+	 */
 	async setupHTTPServer()
 	{
 		console.log("[" + process.pid + "] setupHTTPServer.");
@@ -377,12 +538,12 @@ class AllTests
 				const strFilePath = path.join(path.dirname(path.dirname(__dirname)), objParsedURL.pathname);
 
 				if(
-					(
+					incomingRequest.method === "GET"
+					&& (
 						objParsedURL.pathname.substr(0, "/tests/".length) === "/tests/"
 						|| objParsedURL.pathname.substr(0, "/builds/".length) === "/builds/"
 						|| objParsedURL.pathname.substr(0, "/node_modules/".length) === "/node_modules/"
 					)
-					&& incomingRequest.method === "GET"
 					&& !objParsedURL.pathname.includes("..")
 					&& fs.existsSync(strFilePath)
 				)
@@ -464,6 +625,7 @@ class AllTests
 				clientReverseCalls.addPlugin(new Tests.Plugins.Client.DebugMarker("SiteA; reverse calls;"));
 			}
 		);
+
 
 		this._webSocketServerSiteA.on(
 			"connection", 
@@ -551,7 +713,7 @@ class AllTests
 		}
 		else
 		{
-			this._jsonrpcClientSiteB = new TestClient("http://localhost:" + this._nHTTPPort + "/api");
+			this._jsonrpcClientSiteB = new TestClient("http://" + this._strBindIPAddress + ":" + this._nHTTPPort + "/api");
 			this._jsonrpcClientSiteB.addPlugin(new Tests.Plugins.Client.DebugMarker("SiteB"));
 			this._jsonrpcClientSiteB.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 		}
@@ -603,7 +765,7 @@ class AllTests
 		}
 		else
 		{
-			this._jsonrpcClientSiteC = new TestClient("http://localhost:" + this._nHTTPPort + "/api");
+			this._jsonrpcClientSiteC = new TestClient("http://" + this._strBindIPAddress + ":" + this._nHTTPPort + "/api");
 			this._jsonrpcClientSiteC.addPlugin(new Tests.Plugins.Client.DebugMarker("SiteC"));
 			this._jsonrpcClientSiteC.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 		}
@@ -655,7 +817,7 @@ class AllTests
 		}
 		else
 		{
-			this._jsonrpcClientSiteDisconnecter = new TestClient("http://localhost:" + this._nHTTPPort + "/api");
+			this._jsonrpcClientSiteDisconnecter = new TestClient("http://" + this._strBindIPAddress + ":" + this._nHTTPPort + "/api");
 			this._jsonrpcClientSiteDisconnecter.addPlugin(new Tests.Plugins.Client.DebugMarker("SiteDisconnecter"));
 			this._jsonrpcClientSiteDisconnecter.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 		}
@@ -709,7 +871,7 @@ class AllTests
 
 		console.log("[" + process.pid + "] endpointNotFoundError");
 
-		const client = new TestClient("http://localhost:" + this._nHTTPPort + "/api/bad-endpoint-path");
+		const client = new TestClient("http://" + this._strBindIPAddress + ":" + this._nHTTPPort + "/api/bad-endpoint-path");
 		client.addPlugin(new Tests.Plugins.Client.DebugMarker("SiteB"));
 		client.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 
@@ -744,7 +906,7 @@ class AllTests
 	{
 		console.log("[" + process.pid + "] outsideJSONRPCPathError");
 
-		const client = new TestClient("http://localhost:" + this._nHTTPPort + "/unhandled-path");
+		const client = new TestClient("http://" + this._strBindIPAddress + ":" + this._nHTTPPort + "/unhandled-path");
 		client.addPlugin(new Tests.Plugins.Client.DebugMarker("SiteB"));
 		client.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
 
@@ -1094,6 +1256,12 @@ class AllTests
 
 	async callRPCMethodFromWebPage()
 	{
+		// There are some issues on Linux with this.
+		if(os.platform() !== "win32")
+		{
+			return;
+		}
+
 		assert(fs.existsSync(path.resolve(path.dirname(path.dirname(__dirname)) + "/builds/browser/es5/jsonrpc.min.js")));
 		assert(fs.existsSync(path.resolve(path.dirname(__dirname) + "/Browser/index.html")));
 
@@ -1171,7 +1339,7 @@ class AllTests
 			this._testEndpoint.fnResolveWaitForWebPage = fnResolve;
 		});
 
-		const strPhatomPageURL = `http://localhost:${this._nHTTPPort}/tests/Browser/index.html?websocketmode=${this._bWebSocketMode ? 1 : 0}&websocketsport=${this._nWebSocketsPort}`.replace(/\\+/g, "/").replace(/^\//, "");
+		const strPhatomPageURL = `http://${this._strBindIPAddress}:${this._nHTTPPort}/tests/Browser/index.html?websocketmode=${this._bWebSocketMode ? 1 : 0}&websocketsport=${this._nWebSocketsPort}`.replace(/\\+/g, "/").replace(/^\//, "");
 		console.log("Trying to open " + strPhatomPageURL);
 		const strStatus = await phantomPage.open(strPhatomPageURL);
 		console.log("[" + process.pid + "] Phantom page open: " + strStatus);
@@ -1289,7 +1457,7 @@ class AllTests
 	async _makeClientWebSocket()
 	{
 		console.log("[" + process.pid + "] Connecting WebSocket to " + this.localEndpointWebSocket + ".");
-		let webSocket = new this._classWebSocket(this.localEndpointWebSocket);
+		let webSocket = new this._classWebSocket(this.localEndpointWebSocket, undefined, {localAddress: this._strBindIPAddress});
 
 		if(this._classWebSocketAdapter)
 		{
@@ -1311,7 +1479,7 @@ class AllTests
 	get localEndpointWebSocket()
 	{
 		assert(this._nWebSocketsPort, JSON.stringify(this._nWebSocketsPort));
-		return "ws://localhost:" + this._nWebSocketsPort + "/api";
+		return "ws://" + this._strBindIPAddress + ":" + this._nWebSocketsPort + "/api";
 	}
 
 
@@ -1336,5 +1504,11 @@ class AllTests
 
 			this.savedConsole = null;
 		}
+	}
+
+
+	get console()
+	{
+		return this.savedConsole ? this.savedConsole : console;
 	}
 };

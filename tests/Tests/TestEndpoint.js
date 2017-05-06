@@ -17,7 +17,7 @@ class TestEndpoint extends JSONRPC.EndpointBase
 		super(
 			/*strName*/ "Test", 
 			/*strPath*/ "/api", 
-			/*objReflection*/ {},
+			/*objReflection*/ {}, 
 			/*classReverseCallsClient*/ TestClient
 		);
 
@@ -122,10 +122,13 @@ class TestEndpoint extends JSONRPC.EndpointBase
 					}
 					else
 					{
-						plugin.webSocket.close(
-							/* CloseEvent.Internal Error */ 1011, 
-							"[TestEndpoint.closeConnection()] Intentionally closing websocket for testing."
-						);
+						if(plugin.webSocket.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN)
+						{
+							plugin.webSocket.close(
+								/* CloseEvent.Internal Error */ 1011, 
+								"[TestEndpoint.closeConnection()] Intentionally closing websocket for testing."
+							);
+						}
 					}
 				}
 			}
