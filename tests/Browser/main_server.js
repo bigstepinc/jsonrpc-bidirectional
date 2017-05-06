@@ -1,6 +1,6 @@
 // Use this CLI server to support browser development, debugging or manual testing.
 
-const AllTests = require("../AllTests");
+const AllTests = require("../Tests/AllTests");
 
 process.on(
 	"unhandledRejection", 

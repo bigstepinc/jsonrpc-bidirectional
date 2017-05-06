@@ -1,5 +1,5 @@
 const JSONRPC = require("..");
-const AllTests = require("./AllTests");
+const AllTests = require("./Tests/AllTests");
 const os = require("os");
 const cluster = require("cluster");
 

@@ -2,13 +2,7 @@ const sleep = require("sleep-promise");
 
 const cluster = require("cluster");
 
-const JSONRPC = {};
-JSONRPC.Exception = require("../src/Exception");
-JSONRPC.Client = require("../src/Client");
-JSONRPC.EndpointBase = require("../src/EndpointBase");
-
-JSONRPC.Plugins = {};
-JSONRPC.Plugins.Client = require("../src/Plugins/Client");
+const JSONRPC = require("../..");
 
 const TestClient = require("./TestClient");
 

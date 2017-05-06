@@ -1,9 +1,7 @@
-const JSONRPC = {};
-JSONRPC.ClientPluginBase = require("../src/ClientPluginBase");
-JSONRPC.Exception = require("../src/Exception");
+const JSONRPC = require("../../../..");
 
 module.exports =
-class ClientPluginInvalidRequestJSON extends JSONRPC.ClientPluginBase
+class InvalidRequestJSON extends JSONRPC.ClientPluginBase
 {
 	/**
 	 * @param {JSONRPC.OutgoingRequest} outgoingRequest

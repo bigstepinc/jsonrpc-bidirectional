@@ -1,5 +1,5 @@
 const JSONRPC = require("..");
-const AllTests = require("./AllTests");
+const AllTests = require("./Tests/AllTests");
 
 process.on(
 	"unhandledRejection", 
