@@ -5,19 +5,27 @@
 
 		<!-- These are external to jsonrpc.min.js intentionally, to reduce file size and reuse them for other libraries. -->
 		<!-- Also, babel polyfill cannot be included twice, so an external file plays nice with multiple transpiled libraries. -->
-		<script id="polyfill.min.js" type="text/javascript" src="/node_modules/babel-polyfill/dist/polyfill.min.js"></script>
-		<script id="fetch.js" type="text/javascript" src="/node_modules/whatwg-fetch/fetch.js"></script>
-		<script id="es6-promise.auto.min.js" type="text/javascript" src="/node_modules/es6-promise/dist/es6-promise.auto.min.js"></script>
+		<script src="/node_modules/babel-polyfill/dist/polyfill.min.js"></script>
+		<script src="/node_modules/whatwg-fetch/fetch.js"></script>
+		<script src="/node_modules/es6-promise/dist/es6-promise.auto.min.js"></script>
 
-		<!-- Already covered by babel-polyfill: script type="text/javascript" src="/node_modules/regenerator-runtime/runtime.js"></script-->
-		<script id="jsonrpc.min.js" type="text/javascript" src="/builds/browser/es5/jsonrpc.min.js"></script>
+		<!-- Already covered by babel-polyfill: script src="/node_modules/regenerator-runtime/runtime.js"></script-->
+		<script src="/builds/browser/es5/jsonrpc.min.js"></script>
 		
-		<script id="TestEndpoint.js" type="text/javascript" src="/tests/Browser/TestEndpoint.js"></script>
+		<script src="/tests/Browser/TestEndpoint.js"></script>
 
 		<script>
 			var strWorkerJSURL = "/tests/Browser/Worker.js";
-			var arrSupportScriptIDs = ["polyfill.min.js", "fetch.js", "es6-promise.auto.min.js", "jsonrpc.min.js", "TestEndpoint.js"];
-			var arrSupportScriptsURLs = []; // Filled on window load.
+			var arrSupportScriptsURLs = [
+				"/node_modules/babel-polyfill/dist/polyfill.min.js",
+				"/node_modules/whatwg-fetch/fetch.js",
+				"/node_modules/es6-promise/dist/es6-promise.auto.min.js",
+				
+				//"/node_modules/regenerator-runtime/runtime.js"
+				"/builds/browser/es5/jsonrpc.min.js",
+
+				"/tests/Browser/TestEndpoint.js"
+			]; 
 
 			/**
 			 * These tests have to make a total of 3 calls to ping() on the other side.
@@ -33,18 +41,6 @@
 			
 			var client;
 			var clientOfBidirectionalWS;
-
-
-			if(!console)
-				console = {};
-			if(!console.log)
-				console.log = function(){};
-			if(!console.info)
-				console.info = console.log;
-			if(!console.debug)
-				console.debug = console.log;
-			if(!console.error)
-				console.error = console.log;
 
 
 			var arrErrors = [];
@@ -153,11 +149,6 @@
 					jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.DebugLogger());
 
 					var workerJSONRPCRouter = new JSONRPC.BidirectionalWorkerRouter(jsonrpcServer);
-
-					for(var i in arrSupportScriptIDs)
-					{
-						arrSupportScriptsURLs.push(document.getElementById(arrSupportScriptIDs[i]).src);
-					}
 					
 					makeWorker(arrSupportScriptsURLs.concat(strWorkerJSURL))
 						.then(function(worker){
@@ -239,7 +230,7 @@
 						var blob = new Blob([strJavaScriptWorkerSupportBundle], {type: "application/javascript"});
 						window.URL = window.URL || window.webkitURL;
 
-						console.log(URL.createObjectURL(blob));
+						//console.log(URL.createObjectURL(blob));
 						var worker = new Worker(URL.createObjectURL(blob));
 						worker.onmessage = console.log;
 						worker.onerror = genericTestsPromiseCatch;
