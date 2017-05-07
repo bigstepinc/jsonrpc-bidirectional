@@ -13,12 +13,12 @@ This library is tested in __browsers__ (>= IE10) and in __Node.js__ (>=7.8).
 
 These transports are already implemented, and they all offer promise-based asynchronous method invocations:
 
-| Transport | Type | Browser | Node.js |
-|-----------|----------------------------------|:-----:|:-----:|
-| HTTP | one-way, new connection per call | :heavy_check_mark: | :heavy_check_mark: |
-| WebSocket | bidirectional, single connection | :heavy_check_mark: | :heavy_check_mark: |
-| Worker | bidirectional, IPC, single connection | :heavy_check_mark: | :heavy_check_mark: | 
-| ProcessStdIO | one-way, IPC, new child process per call | | :heavy_check_mark: |
+| Transport | Type | Browser | Node.js | Serialization |
+|-----------|----------------------------------|:-----:|:-----:|-------|
+| HTTP | one-way, new connection per call | :heavy_check_mark: | :heavy_check_mark: | JSON |
+| WebSocket | bidirectional, single connection | :heavy_check_mark: | :heavy_check_mark: | JSON |
+| Worker | bidirectional, IPC, single connection | :heavy_check_mark: | :heavy_check_mark: | Structured cloning
+| ProcessStdIO | one-way, IPC, new child process per call | | :heavy_check_mark: | JSON
  
 #### WebSocket
 
