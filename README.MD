@@ -10,7 +10,7 @@ This library is tested in __browsers__ (>= IE10) and in __Node.js__ (>=7.8).
 
 Very simple usage allows for very easy application development: 
  * export methods in an endpoint (which extends JSONRPC.EndpointBase), and call those method remotely through a client (which extends JSONRPC.Client);
- * on bidirectional transports, there may be endpoints at both ends of a connection, or reversed poles (TCP client is a JSONRPC server, while TCP server is JSONRPC client).
+ * on bidirectional transports, there may be endpoints at both ends of a connection, or reversed roles (TCP client is a JSONRPC server, while TCP server is JSONRPC client).
 
 ## Transports
 
