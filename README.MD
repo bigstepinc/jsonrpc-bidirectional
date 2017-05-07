@@ -12,11 +12,12 @@ This library is tested in __browsers__ (>= IE10) and in __Node.js__ (>=7.8).
 ## Transports
 
 These transports are already implemented:
-| Transport | Type					 		   |
+
+| Transport | Type |
 |-----------|----------------------------------|
-| HTTP		| one-way, new connection per call |
+| HTTP | one-way, new connection per call |
 | WebSocket | bidirectional, single connection |
-| Worker	| bidirectional, IPC (aka single connection) |
+| Worker | bidirectional, IPC (aka single connection) |
 | ProcessStdIO | one-way, new child process per call |
  
 #### WebSocket
