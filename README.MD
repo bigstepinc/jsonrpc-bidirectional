@@ -13,12 +13,12 @@ This library is tested in __browsers__ (>= IE10) and in __Node.js__ (>=7.8).
 
 These transports are already implemented:
 
-| Transport | Type | Browser | Node |
+| Transport | Type | Browser | Node.js |
 |-----------|----------------------------------|:-----:|:-----:|
 | HTTP | one-way, new connection per call | :heavy_check_mark: | :heavy_check_mark: |
 | WebSocket | bidirectional, single connection | :heavy_check_mark: | :heavy_check_mark: |
-| Worker | bidirectional, IPC (aka single connection) | :heavy_check_mark: | :heavy_check_mark: | 
-| ProcessStdIO | one-way, new child process per call | | :heavy_check_mark: |
+| Worker | bidirectional, IPC, single connection | :heavy_check_mark: | :heavy_check_mark: | 
+| ProcessStdIO | one-way, IPC, new child process per call | | :heavy_check_mark: |
  
 #### WebSocket
 
