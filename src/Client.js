@@ -100,7 +100,10 @@ class Client extends EventEmitter
 			}
 
 
-			outgoingRequest.requestBody = JSON.stringify(outgoingRequest.requestObject, null, "\t");
+			if(outgoingRequest.requestBody === null)
+			{
+				outgoingRequest.requestBody = JSON.stringify(outgoingRequest.requestObject, null, "\t");
+			}
 			// console.log(outgoingRequest.requestObject);
 			// console.log(outgoingRequest.requestBody);
 

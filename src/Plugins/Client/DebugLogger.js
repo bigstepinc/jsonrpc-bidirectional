@@ -9,13 +9,15 @@ class DebugLogger extends JSONRPC.ClientPluginBase
 	 */
 	async afterJSONEncode(outgoingRequest)
 	{
-		if(outgoingRequest.requestBody.length > 1024 * 1024)
+		const strBody = typeof outgoingRequest.requestBody === "string" ? outgoingRequest.requestBody : JSON.stringify(outgoingRequest.requestBody);
+
+		if(strBody.length > 1024 * 1024)
 		{
 			console.log("[" + process.pid + "] [" + (new Date()).toISOString() + "] Sent JSONRPC request, " + outgoingRequest.requestObject.method + "(). Larger than 1 MB, not logging. \n");
 		}
 		else
 		{
-			console.log("[" + process.pid + "] [" + (new Date()).toISOString() + "] Sent JSONRPC request: " + outgoingRequest.requestBody + "\n");
+			console.log("[" + process.pid + "] [" + (new Date()).toISOString() + "] Sent JSONRPC request: " + strBody + "\n");
 		}
 	}
 
@@ -24,13 +26,15 @@ class DebugLogger extends JSONRPC.ClientPluginBase
 	 */
 	async beforeJSONDecode(outgoingRequest)
 	{
-		if(outgoingRequest.responseBody.length > 1024 * 1024)
+		const strBody = typeof outgoingRequest.responseBody === "string" ? outgoingRequest.responseBody : JSON.stringify(outgoingRequest.responseBody);
+
+		if(strBody.length > 1024 * 1024)
 		{
 			console.log("[" + process.pid + "] [" + (new Date()).toISOString() + "] Received JSONRPC response, " + outgoingRequest.requestObject.method + "(). Larger than 1 MB, not logging. \n");
 		}
 		else
 		{
-			console.log("[" + process.pid + "] [" + (new Date()).toISOString() + "] Received JSONRPC response: " + outgoingRequest.responseBody + "\n");
+			console.log("[" + process.pid + "] [" + (new Date()).toISOString() + "] Received JSONRPC response: " + strBody + "\n");
 		}
 	}
 };

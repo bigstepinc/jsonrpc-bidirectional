@@ -1,12 +1,10 @@
 const sleep = require("sleep-promise");
 
-const JSONRPC = {};
-JSONRPC.Exception = require("../src/Exception");
-JSONRPC.Client = require("../src/Client");
-JSONRPC.EndpointBase = require("../src/EndpointBase");
+const cluster = require("cluster");
 
-JSONRPC.Plugins = {};
-JSONRPC.Plugins.Client = require("../src/Plugins/Client");
+const JSONRPC = require("../..");
+
+const TestClient = require("./TestClient");
 
 module.exports =
 class TestEndpoint extends JSONRPC.EndpointBase 
@@ -19,8 +17,8 @@ class TestEndpoint extends JSONRPC.EndpointBase
 		super(
 			/*strName*/ "Test", 
 			/*strPath*/ "/api", 
-			/*objReflection*/ {},
-			/*classReverseCallsClient*/ JSONRPC.Client
+			/*objReflection*/ {}, 
+			/*classReverseCallsClient*/ TestClient
 		);
 
 		this._bBenchmarkMode = !!bBenchmarkMode;
@@ -124,10 +122,13 @@ class TestEndpoint extends JSONRPC.EndpointBase
 					}
 					else
 					{
-						plugin.webSocket.close(
-							/* CloseEvent.Internal Error */ 1011, 
-							"[TestEndpoint.closeConnection()] Intentionally closing websocket for testing."
-						);
+						if(plugin.webSocket.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN)
+						{
+							plugin.webSocket.close(
+								/* CloseEvent.Internal Error */ 1011, 
+								"[TestEndpoint.closeConnection()] Intentionally closing websocket for testing."
+							);
+						}
 					}
 				}
 			}
@@ -181,5 +182,28 @@ class TestEndpoint extends JSONRPC.EndpointBase
 		return {
 			"teamMember": strTeamMember
 		};
+	}
+
+
+	/**
+	 * @param {number} nPID 
+	 */
+	async killWorker(nPID)
+	{
+		if(!cluster.isMaster)
+		{
+			throw new Error("Only available on the master.");
+		}
+
+		for(let worker of cluster.workers)
+		{
+			if(worker.pid === nPID)
+			{
+				worker.kill();
+				return;
+			}
+		}
+
+		throw new Error("Worker with pid " + nPID + " not found.");
 	}
 };

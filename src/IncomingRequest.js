@@ -4,6 +4,7 @@ const JSONRPC = {};
 JSONRPC.EndpointBase = require("./EndpointBase");
 JSONRPC.Exception = require("./Exception");
 JSONRPC.Server = require("./Server");
+JSONRPC.RouterBase = require("./RouterBase");
 
 
 module.exports =
@@ -13,10 +14,10 @@ class IncomingRequest
 	{
 		this._bAuthenticated = false;
 		this._bAuthorized = false;
-		this._strRequestBody = null;
+		this._mxRequestBody = null;
 		this._requestObject = null;
 		this._endpoint = null;
-		this._bidirectionalWebsocketRouter = null;
+		this._router = null;
 		
 		this._mxResult = null;
 		this._objResponseToBeSerialized = null;
@@ -95,22 +96,20 @@ class IncomingRequest
 
 
 	/**
-	 * @returns {String|null}
+	 * @returns {string|Object|null}
 	 */
 	get requestBody()
 	{
-		return this._strRequestBody;
+		return this._mxRequestBody;
 	}
 
 
 	/**
-	 * @param {string} strRequestBody
+	 * @param {string|Object} mxRequestBody
 	 */
-	set requestBody(strRequestBody)
+	set requestBody(mxRequestBody)
 	{
-		assert(typeof strRequestBody === "string");
-
-		this._strRequestBody = strRequestBody;
+		this._mxRequestBody = mxRequestBody;
 	}
 
 
@@ -163,7 +162,7 @@ class IncomingRequest
 
 	/**
 	 * endpoint.ReverseCallsClientClass may be null or a class for an API client.
-	 * See .bidirectionalWebsocketRouter
+	 * See .router
 	 * 
 	 * @param {JSONRPC.EndpointBase} endpoint
 	 */
@@ -176,13 +175,14 @@ class IncomingRequest
 
 
 	/**
-	 * @param {JSONRPC.BidirectionalWebsocketRouter} bidirectionalWebsocketRouter
+	 * @param {JSONRPC.RouterBase} router
 	 */
-	set bidirectionalWebsocketRouter(bidirectionalWebsocketRouter)
+	set router(router)
 	{
-		assert(bidirectionalWebsocketRouter.constructor.name === "BidirectionalWebsocketRouter", "bidirectionalWebsocketRouter must be an instance of BidirectionalWebsocketRouter.");
+		//assert(router.constructor.name === "BidirectionalWebsocketRouter", "router must be an instance of BidirectionalWebsocketRouter.");
+		assert(router instanceof JSONRPC.RouterBase);
 
-		this._bidirectionalWebsocketRouter = bidirectionalWebsocketRouter;
+		this._router = router;
 	}
 
 
@@ -199,7 +199,7 @@ class IncomingRequest
 				&& this.endpoint.ReverseCallsClientClass
 			)
 			{
-				this._classClient = this._bidirectionalWebsocketRouter.connectionIDToSingletonClient(this.connectionID, this.endpoint.ReverseCallsClientClass);
+				this._classClient = this._router.connectionIDToSingletonClient(this.connectionID, this.endpoint.ReverseCallsClientClass);
 			}
 		}
 
@@ -264,7 +264,7 @@ class IncomingRequest
 
 
 	/**
-	 * @returns {string|Buffer}
+	 * @returns {string|Buffer|Object}
 	 */
 	get callResultSerialized()
 	{
@@ -273,7 +273,7 @@ class IncomingRequest
 
 
 	/**
-	 * @param {string|Buffer} mxResultSerialized
+	 * @param {string|Buffer|Object} mxResultSerialized
 	 */
 	set callResultSerialized(mxResultSerialized)
 	{

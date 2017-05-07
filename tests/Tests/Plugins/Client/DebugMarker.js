@@ -1,9 +1,7 @@
-const JSONRPC = {};
-JSONRPC.ClientPluginBase = require("../src/ClientPluginBase");
-JSONRPC.Exception = require("../src/Exception");
+const JSONRPC = require("../../../..");
 
 module.exports =
-class ClientDebugMarkerPlugin extends JSONRPC.ClientPluginBase
+class DebugMarker extends JSONRPC.ClientPluginBase
 {
 	/**
 	 * @param {string} strSite

@@ -12,6 +12,9 @@ objExports.Server = require("./src/Server.js");
 objExports.ServerPluginBase = require("./src/ServerPluginBase");
 
 objExports.BidirectionalWebsocketRouter = require("./src/BidirectionalWebsocketRouter.js");
+objExports.BidirectionalWorkerRouter = require("./src/BidirectionalWorkerRouter.js");
+objExports.RouterBase = require("./src/RouterBase.js");
+
 
 objExports.Plugins = objExports.Plugins || {};
 objExports.Plugins.Client = require("./src/Plugins/Client");

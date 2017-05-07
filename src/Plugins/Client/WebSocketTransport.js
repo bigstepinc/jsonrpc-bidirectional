@@ -60,10 +60,14 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 			{
 				console.error(error);
 				console.error("Unable to parse JSON. RAW remote response: " + strResponse);
-				this._webSocket.close(
-					/*CLOSE_NORMAL*/ 1000, // Chrome only supports 1000 or the 3000-3999 range ///* CloseEvent.Internal Error */ 1011, 
-					"Unable to parse JSON. RAW remote response: " + strResponse
-				);
+
+				if(this._webSocket.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN)
+				{
+					this._webSocket.close(
+						/*CLOSE_NORMAL*/ 1000, // Chrome only supports 1000 or the 3000-3999 range ///* CloseEvent.Internal Error */ 1011, 
+						"Unable to parse JSON. RAW remote response: " + strResponse
+					);
+				}
 
 				return;
 			}
@@ -77,10 +81,14 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 			console.error(new Error("Couldn't find JSONRPC response call ID in this._objWebSocketRequestsPromises. RAW response: " + strResponse));
 			console.error(new Error("RAW remote message: " + strResponse));
 			console.log("[" + process.pid + "] Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request.");
-			this.webSocket.close(
-				/*CLOSE_NORMAL*/ 1000, // Chrome only supports 1000 or the 3000-3999 range ///* CloseEvent.Internal Error */ 1011, 
-				"Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request."
-			);
+
+			if(this._webSocket.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN)
+			{
+				this.webSocket.close(
+					/*CLOSE_NORMAL*/ 1000, // Chrome only supports 1000 or the 3000-3999 range ///* CloseEvent.Internal Error */ 1011, 
+					"Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request."
+				);
+			}
 
 			return;
 		}
@@ -119,9 +127,11 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 		assert(typeof outgoingRequest.requestObject.id === "number");
 		
 		this._objWebSocketRequestsPromises[outgoingRequest.requestObject.id] = {
-			unixtimeMilliseconds: (new Date()).getTime(),
-			outgoingRequest: outgoingRequest
+			// unixtimeMilliseconds: (new Date()).getTime(),
+			outgoingRequest: outgoingRequest,
+			promise: null
 		};
+
 		this._objWebSocketRequestsPromises[outgoingRequest.requestObject.id].promise = new Promise((fnResolve, fnReject) => {
 			this._objWebSocketRequestsPromises[outgoingRequest.requestObject.id].fnResolve = fnResolve;
 			this._objWebSocketRequestsPromises[outgoingRequest.requestObject.id].fnReject = fnReject;
@@ -139,7 +149,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 	rejectAllPromises(error)
 	{
 		//console.error(error);
-		console.log("[" + process.pid + "] Rejecting all Promise instances in WebSockets/JSONRPCClientPlugin.");
+		console.log("[" + process.pid + "] Rejecting all Promise instances in WebSocketTransport.");
 
 		let nCount = 0;
 
@@ -153,7 +163,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 
 		if(nCount)
 		{
-			console.error("[" + process.pid + "] Rejected " + nCount + " Promise instances in WebSockets/JSONRPCClientPlugin.");
+			console.error("[" + process.pid + "] Rejected " + nCount + " Promise instances in WebSocketTransport.");
 		}
 	}
 

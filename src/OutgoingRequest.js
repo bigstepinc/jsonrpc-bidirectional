@@ -18,9 +18,9 @@ class OutgoingRequest
 		this._arrParams = arrParams;
 
 		this._requestObject = null;
-		this._strRequestBody = null;
+		this._mxRequestBody = null;
 
-		this._strResponseBody = null;
+		this._mxResponseBody = null;
 		this._responseObject = null;
 
 		this._mxResult = null;
@@ -144,18 +144,16 @@ class OutgoingRequest
 	 */
 	get requestBody()
 	{
-		return this._strRequestBody;
+		return this._mxRequestBody;
 	}
 
 
 	/**
-	 * @param {string} strRequestBody 
+	 * @param {string|Object} mxRequestBody 
 	 */
-	set requestBody(strRequestBody)
+	set requestBody(mxRequestBody)
 	{
-		assert(typeof strRequestBody === "string");
-
-		this._strRequestBody = strRequestBody;
+		this._mxRequestBody = mxRequestBody;
 	}
 
 	
@@ -179,22 +177,25 @@ class OutgoingRequest
 
 
 	/**
-	 * @returns {string|null} 
+	 * @returns {string|object|null} 
 	 */
 	get responseBody()
 	{
-		return this._strResponseBody;
+		return this._mxResponseBody;
 	}
 
 
 	/**
-	 * @param {string} strResponseBody 
+	 * @param {string|object} mxResponseBody 
 	 */
-	set responseBody(strResponseBody)
+	set responseBody(mxResponseBody)
 	{
-		assert(typeof strResponseBody === "string");
+		assert(
+			typeof mxResponseBody === "string"
+			|| typeof mxResponseBody === "object"
+		);
 
-		this._strResponseBody = strResponseBody;
+		this._mxResponseBody = mxResponseBody;
 	}
 
 
@@ -218,7 +219,7 @@ class OutgoingRequest
 			&& !objResponse.hasOwnProperty("error")
 		)
 		{
-			throw new JSONRPC.Exception("Invalid response structure. RAW response: " + JSON.stringify(this._strResponseBody, undefined, "\t"), JSONRPC.Exception.PARSE_ERROR);
+			throw new JSONRPC.Exception("Invalid response structure. RAW response: " + JSON.stringify(this._mxResponseBody, undefined, "\t"), JSONRPC.Exception.PARSE_ERROR);
 		}
 
 		this._responseObject = objResponse;

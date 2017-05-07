@@ -1,5 +1,4 @@
-const JSONRPC = {};
-JSONRPC.Client = require("../src/Client");
+const JSONRPC = require("../..");
 
 module.exports =
 class TestClient extends JSONRPC.Client
@@ -53,5 +52,15 @@ class TestClient extends JSONRPC.Client
 	async ImHereForTheParty(strTeamMember, strSecretKnock, bDoNotAuthorizeMe)
 	{
 		return this.rpc("ImHereForTheParty", [...arguments]);
+	}
+
+
+	/**
+	 * @param {number} nPID 
+	 * @returns {never}
+	 */
+	async killWorker(nPID)
+	{
+		return this.rpc("killWorker", [...arguments]);
 	}
 };

@@ -1,15 +1,9 @@
-const JSONRPC = {};
-JSONRPC.ServerPluginBase = require("../src/ServerPluginBase");
-JSONRPC.Exception = require("../src/Exception");
-
-JSONRPC.Plugins = {};
-JSONRPC.Plugins.Client = require("../src/Plugins/Client");
-JSONRPC.Utils = require("../src/Utils");
+const JSONRPC = require("../../../..");
 
 const assert = require("assert");
 
 module.exports =
-class ServerPluginAuthorizeWebSocket extends JSONRPC.ServerPluginBase
+class WebSocketAuthorize extends JSONRPC.ServerPluginBase
 {
 	constructor()
 	{
