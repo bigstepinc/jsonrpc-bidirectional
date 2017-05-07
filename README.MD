@@ -11,8 +11,14 @@ This library is tested in __browsers__ (>= IE10) and in __Node.js__ (>=7.8).
 
 ## Transports
 
-Both the server and client support three __transports, HTTP, WebSocket and Worker__, and allow more through plugin extensibility. 
-
+These transports are already implemented:
+| Transport | Type					 		   |
+|-----------|----------------------------------|
+| HTTP		| one-way, new connection per call |
+| WebSocket | bidirectional, single connection |
+| Worker	| bidirectional, IPC (aka single connection) |
+| ProcessStdIO | one-way, new child process per call |
+ 
 #### WebSocket
 
 __Any WebSocket implementation may be used__, as handling of the HTTP server and WebSocket is external to these JSONRPC classes.
