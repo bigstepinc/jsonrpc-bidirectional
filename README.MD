@@ -17,8 +17,8 @@ These transports are already implemented, and they all offer promise-based async
 |-----------|----------------------------------|:-----:|:-----:|-------|
 | HTTP | one-way, new connection per call | :heavy_check_mark: | :heavy_check_mark: | JSON |
 | WebSocket | bidirectional, single connection | :heavy_check_mark: | :heavy_check_mark: | JSON |
-| Worker | bidirectional, IPC, single connection | :heavy_check_mark: | :heavy_check_mark: | Structured cloning
-| ProcessStdIO | one-way, IPC, new child process per call | | :heavy_check_mark: | JSON
+| Worker | bidirectional, IPC, single connection | :heavy_check_mark: | :heavy_check_mark: | Structured cloning |
+| ProcessStdIO | one-way, IPC, new child process per call | | :heavy_check_mark: | JSON |
  
 #### WebSocket
 
