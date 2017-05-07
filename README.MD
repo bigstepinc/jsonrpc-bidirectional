@@ -11,7 +11,7 @@ This library is tested in __browsers__ (>= IE10) and in __Node.js__ (>=7.8).
 
 ## Transports
 
-These transports are already implemented:
+These transports are already implemented, and they all offer promise-based asynchronous method invocations:
 
 | Transport | Type | Browser | Node.js |
 |-----------|----------------------------------|:-----:|:-----:|
