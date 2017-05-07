@@ -31,7 +31,7 @@ For WebSocket client support in Node.js and browsers, `JSONRPC.Plugins.Client.We
 
 On the Node.js side, this library is tested to work with [websockets/ws](https://github.com/websockets/ws). Other `WebSocketServer` implementations are supported if API compatible with `websockets/ws` (constructor and events), or made compatible through an adapter.
 
-There is a wrapper for [uWebSockets](https://github.com/uWebSockets/uWebSockets) in `JSONRPC.WebSocketAdapters.uws.WebSocketWrapper`. All obtained `uws.WebSocket` instances (from the `connection` event, or instantiated directly) must be wrapped (and thus replaced) with an instance of this class. According to localhost benchmarks, ws performs better than uws. __Warning:__ uws is buggy when calling .close() on the server (segmentation fault or infinite hang) and it also immediately closes connections with an empty reason string if very large payloads are sent. See `tests/uws_bug*`.
+There is a wrapper for [uWebSockets](https://github.com/uWebSockets/uWebSockets) in `JSONRPC.WebSocketAdapters.uws.WebSocketWrapper`. All obtained `uws.WebSocket` instances (from the `connection` event, or instantiated directly) must be wrapped (and thus replaced) with an instance of this class. According to localhost benchmarks of this library, ws performs better than uws. __Warning:__ uws is buggy when calling .close() on the server (segmentation fault or infinite hang) and it also immediately closes connections with an empty reason string if very large payloads are sent. See `tests/uws_bug*`.
 
 #### HTTP
 
