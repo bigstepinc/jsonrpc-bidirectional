@@ -46,11 +46,11 @@ class TestEndpoint extends JSONRPC.EndpointBase
 					const nRTCConnectionID = ++this._nWebRTCConnectionID;
 
 					const arrIceServers = [
-						{
+						/*{
 							urls: "turn:192.168.137.3:3478",
 							username: "guest",
 							credential: "thirdeye"
-						}
+						}*/
 					];
 
 					try
