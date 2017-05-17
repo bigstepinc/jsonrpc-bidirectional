@@ -1,23 +1,27 @@
-# Bidirectional JSON-RPC 2.0 server and client
+# Bidirectional JSON-RPC
 
 [![Version npm](https://img.shields.io/npm/v/jsonrpc-bidirectional.svg)](https://www.npmjs.com/package/jsonrpc-bidirectional)
 [![Linux build](https://travis-ci.org/oxygens/jsonrpc-bidirectional.svg?branch=master)](https://travis-ci.org/oxygens/jsonrpc-bidirectional)
 [![Windows Build](https://ci.appveyor.com/api/projects/status/github/oxygens/jsonrpc-bidirectional?branch=master&svg=true)](https://ci.appveyor.com/project/oxygens/jsonrpc-bidirectional)
 
-A main goal of this project is to have the JSON-RPC server and client support __bidirectional JSON-RPC requests over a single WebSocket connection.__ Simply put, it makes it possible to have a JSONRPC __Server__ in the browser and a separate one in the back-end.
+A main goal of this project is to have the JSON-RPC server and client support __bidirectional JSON-RPC requests over a single WebSocket connection.__ In short, it makes it possible to have a JSONRPC __Server__ on the client side, or on both sides at once.
 
 This library is tested in __browsers__ (>= IE10) and in __Node.js__ (>=7.8).
 
+Very simple usage allows for very easy application development: 
+ * export methods in an endpoint (which extends JSONRPC.EndpointBase), and call those method remotely through a client (which extends JSONRPC.Client);
+ * on bidirectional transports, there may be endpoints at both ends of a connection, or reversed roles (TCP client is a JSONRPC server, while TCP server is JSONRPC client).
 
 ## Transports
 
-These transports are already implemented:
-| Transport | Type					 		   |
-|-----------|----------------------------------|
-| HTTP		| one-way, new connection per call |
-| WebSocket | bidirectional, single connection |
-| Worker	| bidirectional, IPC (aka single connection) |
-| ProcessStdIO | one-way, new child process per call |
+These transports are already implemented, and they all offer promise-based asynchronous method invocations:
+
+| Transport | Type | Browser | Node.js | Serialization |
+|-----------|----------------------------------|:-----:|:-----:|-------|
+| HTTP | one-way, new connection per call | [fetch](https://developer.mozilla.org/en/docs/Web/API/Fetch_API) | [node-fetch](https://github.com/bitinn/node-fetch) | JSON |
+| WebSocket | bidirectional, single connection | [WebSocket](https://developer.mozilla.org/en/docs/Web/API/WebSocket) | [ws](https://github.com/websockets/ws) | JSON |
+| Worker | bidirectional, IPC, single connection | [Worker](https://developer.mozilla.org/en-US/docs/Web/API/Worker) | [Worker](https://nodejs.org/api/cluster.html#cluster_class_worker) | [Structured cloning](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm) |
+| ProcessStdIO | one-way, IPC, new child process per call | | [Process](https://nodejs.org/api/process.html#process_process) | JSON |
  
 #### WebSocket
 
@@ -27,7 +31,7 @@ For WebSocket client support in Node.js and browsers, `JSONRPC.Plugins.Client.We
 
 On the Node.js side, this library is tested to work with [websockets/ws](https://github.com/websockets/ws). Other `WebSocketServer` implementations are supported if API compatible with `websockets/ws` (constructor and events), or made compatible through an adapter.
 
-There is a wrapper for [uWebSockets](https://github.com/uWebSockets/uWebSockets) in `JSONRPC.WebSocketAdapters.uws.WebSocketWrapper`. All obtained `uws.WebSocket` instances (from the `connection` event, or instantiated directly) must be wrapped (and thus replaced) with an instance of this class.
+There is a wrapper for [uWebSockets](https://github.com/uWebSockets/uWebSockets) in `JSONRPC.WebSocketAdapters.uws.WebSocketWrapper`. All obtained `uws.WebSocket` instances (from the `connection` event, or instantiated directly) must be wrapped (and thus replaced) with an instance of this class. According to localhost benchmarks of this library, ws performs better than uws. __Warning:__ uws is buggy when calling .close() on the server (segmentation fault or infinite hang) and it also immediately closes connections with an empty reason string if very large payloads are sent. See `tests/uws_bug*`.
 
 #### HTTP
 
