@@ -20,7 +20,7 @@ class RouterBase extends EventEmitter
 	{
 		super();
 
-		assert(jsonrpcServer === null || jsonrpcServer instanceof JSONRPC.Server);
+		assert(jsonrpcServer === null || jsonrpcServer instanceof JSONRPC.Server, "jsonrpcServer must be either null or an instance or subclass of JSONRPC.Server.");
 
 		this._jsonrpcServer = jsonrpcServer;
 

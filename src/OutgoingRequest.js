@@ -45,7 +45,7 @@ class OutgoingRequest
 	 */
 	get callID()
 	{
-		assert(typeof this._nCallID === "number");
+		assert(typeof this._nCallID === "number", "this._nCallID must be of type number.");
 		return this._nCallID;
 	}
 
@@ -64,7 +64,7 @@ class OutgoingRequest
 	 */
 	set params(arrParams)
 	{
-		assert(Array.isArray(arrParams));
+		assert(Array.isArray(arrParams), "arrParams must be of type Array.");
 		this._arrParams = arrParams;
 	}
 
@@ -83,7 +83,7 @@ class OutgoingRequest
 	 */
 	set methodName(strMethod)
 	{
-		assert(typeof strMethod === "string");
+		assert(typeof strMethod === "string", "strMethod must be of type string.");
 
 		this._strMethod = strMethod;
 	}
@@ -112,7 +112,7 @@ class OutgoingRequest
 	 */
 	set endpointURL(strEndpointURL)
 	{
-		assert(typeof strEndpointURL === "string");
+		assert(typeof strEndpointURL === "string", "strEndpointURL must be of type string.");
 
 		this._strEndpointURL = strEndpointURL;
 	}
@@ -132,8 +132,8 @@ class OutgoingRequest
 	 */
 	set requestObject(objRequest)
 	{
-		assert(typeof objRequest === "object" || Array.isArray(objRequest));
-		assert(objRequest.hasOwnProperty("method") || objRequest.hasOwnProperty("params"), JSON.stringify(objRequest));
+		assert(typeof objRequest === "object" || Array.isArray(objRequest), "objRequest must be of type Object or Array.");
+		assert(objRequest.hasOwnProperty("method") || objRequest.hasOwnProperty("params"), JSON.stringify(objRequest), "objRequest must have either a method or params property.");
 
 		this._requestObject = objRequest;
 	}
@@ -190,10 +190,7 @@ class OutgoingRequest
 	 */
 	set responseBody(mxResponseBody)
 	{
-		assert(
-			typeof mxResponseBody === "string"
-			|| typeof mxResponseBody === "object"
-		);
+		assert(typeof mxResponseBody === "string" || typeof mxResponseBody === "object", "mxResponseBody must be of type string or Object.");
 
 		this._mxResponseBody = mxResponseBody;
 	}
@@ -254,8 +251,8 @@ class OutgoingRequest
 	 */
 	toRequestObject()
 	{
-		assert(this.methodName !== null);
-		assert(Array.isArray(this.params));
+		assert(this.methodName !== null, "this.methodName cannot be null.");
+		assert(Array.isArray(this.params), "this.params must be an Array.");
 
 		return {
 			"method": this.methodName,

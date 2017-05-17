@@ -80,7 +80,7 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 			strEndpointPath = JSONRPC.EndpointBase.normalizePath(strEndpointPath);
 		}
 
-		assert(cluster.isMaster || process === worker || self === worker);
+		assert(cluster.isMaster || process === worker || self === worker, "Unknown worker type.");
 
 
 		const nConnectionID = ++this._nConnectionIDCounter;

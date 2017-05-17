@@ -61,7 +61,7 @@ class IncomingRequest
 	 */
 	set connectionID(nConnectionID)
 	{
-		assert(typeof nConnectionID === "number" && parseInt(nConnectionID, 10) === nConnectionID);
+		assert(typeof nConnectionID === "number" && parseInt(nConnectionID, 10) === nConnectionID, "Connection ID must be an integer.");
 		this._nConnectionID = nConnectionID;
 	}
 
@@ -71,7 +71,7 @@ class IncomingRequest
 	 */
 	set isAuthenticated(bAuthenticated)
 	{
-		assert(typeof bAuthenticated === "boolean");
+		assert(typeof bAuthenticated === "boolean", "bAuthenticated must be of type boolean.");
 		this._bAuthenticated = bAuthenticated;
 	}
 
@@ -90,7 +90,7 @@ class IncomingRequest
 	 */
 	set isAuthorized(bAuthorized)
 	{
-		assert(typeof bAuthorized === "boolean");
+		assert(typeof bAuthorized === "boolean", "bAuthorized must be of type boolean.");
 		this._bAuthorized = bAuthorized;
 	}
 
@@ -127,7 +127,7 @@ class IncomingRequest
 	 */
 	set requestObject(objRequest)
 	{
-		assert(typeof objRequest === "object" || Array.isArray(objRequest));
+		assert(typeof objRequest === "object" || Array.isArray(objRequest), "objRequest must be of type Array or Object.");
 
 		this._requestObject = objRequest;
 	}
@@ -168,7 +168,7 @@ class IncomingRequest
 	 */
 	set endpoint(endpoint)
 	{
-		assert(endpoint instanceof JSONRPC.EndpointBase);
+		assert(endpoint instanceof JSONRPC.EndpointBase, "endpoint must extend JSONRPC.EndpointBase");
 
 		this._endpoint = endpoint;
 	}
@@ -180,7 +180,7 @@ class IncomingRequest
 	set router(router)
 	{
 		//assert(router.constructor.name === "BidirectionalWebsocketRouter", "router must be an instance of BidirectionalWebsocketRouter.");
-		assert(router instanceof JSONRPC.RouterBase);
+		assert(router instanceof JSONRPC.RouterBase, "router must extend JSONRPC.RouterBase.");
 
 		this._router = router;
 	}
@@ -221,7 +221,7 @@ class IncomingRequest
 	 */
 	set isMethodCalled(bMethodCalled)
 	{
-		assert(typeof bMethodCalled === "boolean");
+		assert(typeof bMethodCalled === "boolean", "bMethodCalled must be of type boolean.");
 		this._bMethodCalled = bMethodCalled;
 	}
 
