@@ -12,7 +12,7 @@ class TestEndpoint extends JSONRPC.EndpointBase
 	{
 		super(
 			/*strName*/ "Test", 
-			/*strPath*/ location.protocol + "//" + location.host + "/api", 
+			/*strPath*/ "/api", 
 			/*objReflection*/ {},
 			/*classReverseCallsClient*/ JSONRPC.Client
 		);
@@ -22,6 +22,32 @@ class TestEndpoint extends JSONRPC.EndpointBase
 		this._nRTCConnectionID = null;
 		this._rtcConnection = null;
 		this._rtcDataChannel = null;
+	}
+
+
+	/** 
+	 * @param {number} nRTCConnectionID
+	 * 
+	 * @returns {RTCDataChannel}
+	 */
+	getRTCDataChannel(nRTCConnectionID)
+	{
+		if(nRTCConnectionID !== this._nRTCConnectionID)
+		{
+			throw new Error("Unknown connection ID.");
+		}
+
+		if(!this._rtcDataChannel)
+		{
+			throw new Error("Data channel does not exist yet.");
+		}
+
+		if(this._rtcDataChannel.readyState !== "open")
+		{
+			throw new Error("Data channel is in readyState " + this._rtcDataChannel.readyState + ".");
+		}
+
+		return this._rtcDataChannel;
 	}
 
 
@@ -63,9 +89,9 @@ class TestEndpoint extends JSONRPC.EndpointBase
 		};
 
 
-		this._rtcDataChannel = this._rtcConnection.createDataChannel("jsonrpc");
-		this._rtcDataChannel.onmessage = console.log;
-		this._rtcDataChannel.onerror = console.error;
+		this._rtcDataChannel = this._rtcConnection.createDataChannel(this.path, {protocol: "jsonrpc"});
+		//this._rtcDataChannel.onmessage = console.log;
+		//this._rtcDataChannel.onerror = console.error;
 		this._rtcDataChannel.addEventListener(
 			"close",
 			() => {
@@ -125,12 +151,17 @@ class TestEndpoint extends JSONRPC.EndpointBase
 
 
 		this._rtcConnection.ondatachannel = async (event) => {
-			if(event.channel.label === "jsonrpc")
+			if(event.channel.protocol === "jsonrpc")
 			{
+				if(JSONRPC.EndpointBase.normalizePath(event.channel.label) !== this.path)
+				{
+					throw new Error("Both ends of a RTCConnection must have the same endpoint path property value. Incoming value: " + JSONRPC.EndpointBase.normalizePath(event.channel.label) + ". This endpoint's value: " + this.path);
+				}
+
 				this._rtcDataChannel = event.channel;
 
-				this._rtcDataChannel.onmessage = console.log;
-				this._rtcDataChannel.onerror = console.error;
+				//this._rtcDataChannel.onmessage = console.log;
+				//this._rtcDataChannel.onerror = console.error;
 				this._rtcDataChannel.addEventListener(
 					"close",
 					() => {
@@ -141,11 +172,11 @@ class TestEndpoint extends JSONRPC.EndpointBase
 				// Init JSONRPC over WebRTC data channel here.
 				await incomingRequest.reverseCallsClient.rpc("femaleDataChannelIsOpen", [nRTCConnectionID]);
 
-				this._rtcDataChannel.send("test from female.");
+				//this._rtcDataChannel.send("test from female.");
 			}
 			else
 			{
-				console.log("Ignoring event.channel.label: " + event.channel.label);
+				console.log("Ignoring event.channel.protocol: " + event.channel.protocol);
 			}
 		};
 
@@ -216,13 +247,31 @@ class TestEndpoint extends JSONRPC.EndpointBase
 
 
 	/**
-	 * @param {JSONRPC.IncomingRequest | null} incomingRequest
+	 * @param {JSONRPC.IncomingRequest} incomingRequest
 	 * @param {number} nRTCConnectionID
 	 */
 	async femaleDataChannelIsOpen(incomingRequest, nRTCConnectionID)
 	{
 		// Init JSONRPC over WebRTC data channel here.
-		this._rtcDataChannel.send("test from male.");
+		// this._rtcDataChannel.send("test from male.");
+	}
+
+
+	/**
+	 * @param {JSONRPC.IncomingRequest} incomingRequest
+	 * @param {string} strReturn
+	 */
+	async ping(incomingRequest, strReturn)
+	{
+		if(strReturn !== "Yes!")
+		{
+			if(await incomingRequest.reverseCallsClient.rpc("ping", ["Yes!"]) !== "Yes!")
+			{
+				throw new Error("I think we need to see other browsers!");
+			}
+		}
+
+		return strReturn;
 	}
 };
 

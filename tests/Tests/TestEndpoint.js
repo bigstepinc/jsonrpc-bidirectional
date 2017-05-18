@@ -307,7 +307,7 @@ class TestEndpoint extends JSONRPC.EndpointBase
 
 	/**
 	 * @param {JSONRPC.IncomingRequest} incomingRequest
-	 * @param {number} nConnectionID
+	 * @param {number} nRTCConnectionID
 	 * @param {Object} objRTCIceCandidate
 	 * 
 	 * @returns {null}

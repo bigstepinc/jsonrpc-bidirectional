@@ -23,6 +23,13 @@
 			let jsonrpcClient;
 			let jsonrpcServer;
 			let ws;
+			let testEndpoint;
+
+
+			let jsonrpcClientRTC;
+			let jsonrpcServerRTC;
+			let rtcDataChannel;
+			let testEndpointRTC;
 
 
 			const arrErrors = [];
@@ -48,8 +55,9 @@
 			 */
 			async function setupJSONRPC()
 			{
+				testEndpoint = new TestEndpoint();
 				jsonrpcServer = new JSONRPC.Server();
-				jsonrpcServer.registerEndpoint(new TestEndpoint());
+				jsonrpcServer.registerEndpoint(testEndpoint);
 
 				// By default, JSONRPC.Server rejects all requests as not authenticated and not authorized.
 				jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthenticationSkip());
@@ -76,8 +84,24 @@
 				async function(event){
 					await setupJSONRPC();
 
+
 					const nConnectionID = await jsonrpcClient.rpc("cupidonTheWebRTCConnection", []);
-					console.log("SDP exchange has completed successfully, server assigned WebRTC connection ID: " + nConnectionID);
+					console.log("SDP exchange has completed successfully, server assigned RTCDataChannel connection ID: " + nConnectionID);
+
+
+					rtcDataChannel = testEndpoint.getRTCDataChannel(nConnectionID);
+
+
+					testEndpointRTC = new TestEndpoint();
+					jsonrpcServerRTC = new JSONRPC.Server();
+					jsonrpcServerRTC.registerEndpoint(testEndpointRTC);
+
+
+					const webRTCJSONRPCRouter = new JSONRPC.BidirectionalWebRTCRouter(jsonrpcServer);
+					const nWebRTCConnectionID = await webRTCJSONRPCRouter.addRTCDataChannel(rtcDataChannel);
+					jsonrpcClientRTC = webRTCJSONRPCRouter.connectionIDToSingletonClient(nWebRTCConnectionID, JSONRPC.Client);
+
+					console.log(await jsonrpcClientRTC.rpc("ping", ["Do you think we have a connection?"]));
 				}
 			);
 		</script>

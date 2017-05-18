@@ -1,7 +1,7 @@
 {
   "name": "jsonrpc-bidirectional",
   "description": "Bidirectional JSONRPC over web sockets or HTTP with extensive plugin support.",
-  "version": "4.2.1",
+  "version": "4.3.1",
   "scripts": {
     "build": "node build.js",
     "test": "node --expose-gc --max-old-space-size=1024 tests/main.js",
@@ -24,10 +24,6 @@
     {
       "name": "Ionut Stan",
       "email": "oxygenus@gmail.com"
-    },
-    {
-      "name": "Ovidiu Giorgi",
-      "email": "ovidiu.giorgi@bigstep.com"
     }
   ],
   "preferGlobal": false,

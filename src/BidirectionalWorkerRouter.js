@@ -131,7 +131,7 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 		{
 			worker.addEventListener(
 				"message", 
-				(messageEvent) => {
+				async (messageEvent) => {
 					if(
 						cluster.isMaster
 						&& typeof messageEvent.data === "object"
@@ -142,7 +142,7 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 						return this._onRPCConnectToEndpoint(messageEvent.data, nConnectionID);
 					}
 
-					this._routeMessage(messageEvent.data, objSession).catch((error) => { throw error; });
+					await this._routeMessage(messageEvent.data, objSession);
 				}
 			);
 
@@ -155,7 +155,7 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 		{
 			worker.on(
 				"message", 
-				(objMessage, handle) => {
+				async (objMessage, handle) => {
 					if(
 						cluster.isMaster
 						&& typeof objMessage === "object"
@@ -166,7 +166,7 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 						return this._onRPCConnectToEndpoint(objMessage, nConnectionID);
 					}
 
-					this._routeMessage(objMessage, objSession).catch((error) => { throw error; });
+					await this._routeMessage(objMessage, objSession);
 				}
 			);
 
