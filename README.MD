@@ -20,8 +20,9 @@ These transports are already implemented, and they all offer promise-based async
 |-----------|----------------------------------|:-----:|:-----:|-------|
 | HTTP | one-way, new connection per call | [fetch](https://developer.mozilla.org/en/docs/Web/API/Fetch_API) | [node-fetch](https://github.com/bitinn/node-fetch) | JSON |
 | WebSocket | bidirectional, single connection | [WebSocket](https://developer.mozilla.org/en/docs/Web/API/WebSocket) | [ws](https://github.com/websockets/ws) | JSON |
-| Worker | bidirectional, IPC, single connection | [Worker](https://developer.mozilla.org/en-US/docs/Web/API/Worker) | [Worker](https://nodejs.org/api/cluster.html#cluster_class_worker) | Structured cloning |
+| Worker | bidirectional, IPC, single connection | [Worker](https://developer.mozilla.org/en-US/docs/Web/API/Worker) | [Worker](https://nodejs.org/api/cluster.html#cluster_class_worker) | [Structured cloning](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm) |
 | ProcessStdIO | one-way, IPC, new child process per call | | [Process](https://nodejs.org/api/process.html#process_process) | JSON |
+| WebRTC | bidirectional, RTCDataChannel, single connection | [RTCDataChannel](https://developer.mozilla.org/en/docs/Web/API/RTCDataChannel) |  | JSON
  
 #### WebSocket
 
@@ -42,6 +43,14 @@ For Worker client support in Node.js and browsers, `JSONRPC.Plugins.Client.Worke
 
 See `tests/Tests/AllTests.runClusterTests()` and `tests/Browser/index.html` for an example of how to setup servers and clients for master-worker asynchronous communication.
 
+#### WebRTC
+Browser to browser asynchronous RPC.
+
+The `JSONRPC.Plugins.Client.WebRTCTransport` and `JSONRPC.BidirectionalWebRTCRouter` classes accept standard browser connected [RTCConnection](https://developer.mozilla.org/en/docs/Web/API/RTCDataChannel) class instances. 
+
+See `tests/Tests/BrowserWebRTC/*` for a browser side example. See `tests/Tests/TestEndpoint` for the server side mediator.
+
+WebRTC is experimental technology with very little vendor support, and constantly changing. The WebRTC code in this library is tested to work in Chrome.
 
 #### Other
 

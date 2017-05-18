@@ -42,7 +42,7 @@ class Server extends EventEmitter
 	async attachToHTTPServer(httpServer, strRootPath, bSharedWithWebSocketServer)
 	{
 		bSharedWithWebSocketServer = !!bSharedWithWebSocketServer;
-		assert(typeof strRootPath === "string", typeof strRootPath);
+		assert(typeof strRootPath === "string", "strRootPath must be of type string, received " + (typeof strRootPath));
 
 		strRootPath = JSONRPC.EndpointBase.normalizePath(strRootPath);
 

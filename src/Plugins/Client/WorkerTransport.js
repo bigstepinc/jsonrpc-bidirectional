@@ -109,7 +109,7 @@ class WorkerTransport extends JSONRPC.ClientPluginBase
 
 		outgoingRequest.isMethodCalled = true;
 
-		assert(typeof outgoingRequest.requestObject.id === "number");
+		assert(typeof outgoingRequest.requestObject.id === "number", "outgoingRequest.requestObject.id must be of type number.");
 		
 		this._objWorkerRequestsPromises[outgoingRequest.requestObject.id] = {
 			// unixtimeMilliseconds: (new Date()).getTime(),

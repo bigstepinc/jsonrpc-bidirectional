@@ -1,0 +1,112 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Tests</title>
+
+		<script src="/node_modules/regenerator-runtime/runtime.js"></script>
+		<script src="/builds/browser/es7/jsonrpc.min.js"></script>
+		
+		<script src="/tests/BrowserWebRTC/TestEndpoint.js"></script>
+
+		<script>
+			/**
+			 * Usage: open this in different browsers (or browser tabs) as many times as you want.
+			 * 
+			 * WebRTC is still nascent technology, all the APIs change frequently, and lots bug workarounds are necessary.
+			 * This is basically a copy paste of working examples found in bug reporting threads, as the docs are behind the current state of the WebRTC API.
+			 * Tested only in Chrome.
+			 * Expect for these to stop working at any point due to future WebRTC API changes.
+			 * 2017-05-15
+			 */
+
+
+			let jsonrpcClient;
+			let jsonrpcServer;
+			let ws;
+			let testEndpoint;
+
+
+			let jsonrpcClientRTC;
+			let jsonrpcServerRTC;
+			let rtcDataChannel;
+			let testEndpointRTC;
+
+
+			const arrErrors = [];
+			function genericTestsPromiseCatch(error)
+			{
+				arrErrors.push(error);
+				console.log(error);
+			};
+
+
+			window.onerror = function(errorMsg, url, lineNumber){
+				arrErrors.push([errorMsg, url, lineNumber]);
+			};
+
+			const nWebsocketsPort = location.href.match(/websocketsport=([0-9]+)/) ? location.href.match(/websocketsport=([0-9]+)/)[1] : location.port;
+
+
+			/**
+			 * JSONRPC.Server with JSONRPC.BidirectionalWebsocketRouter 
+			 * and reverse calls JSONRPC.Client instances (one per connection) on the endpoint.
+			 * 
+			 * @returns {undefined}
+			 */
+			async function setupJSONRPC()
+			{
+				testEndpoint = new TestEndpoint();
+				jsonrpcServer = new JSONRPC.Server();
+				jsonrpcServer.registerEndpoint(testEndpoint);
+
+				// By default, JSONRPC.Server rejects all requests as not authenticated and not authorized.
+				jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthenticationSkip());
+				jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthorizeAll());
+
+				ws = new WebSocket("ws://" + location.hostname + ":" + nWebsocketsPort + "/api");
+
+				await new Promise((fnResolve, fnReject) => {
+					ws.addEventListener("open", fnResolve);
+					ws.addEventListener("error", fnReject);
+				});
+
+				const wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(jsonrpcServer);
+
+				const nWebSocketConnectionID = await wsJSONRPCRouter.addWebSocket(ws);
+				jsonrpcClient = wsJSONRPCRouter.connectionIDToSingletonClient(nWebSocketConnectionID, JSONRPC.Client);
+
+				const objTeamMember = await jsonrpcClient.rpc("ImHereForTheParty", ["Lynch", "Lynch does the harlem shake", /*bDoNotAuthorizeMe*/ false]);
+			}
+
+
+			window.addEventListener(
+				"load",
+				async function(event){
+					await setupJSONRPC();
+
+
+					const nConnectionID = await jsonrpcClient.rpc("cupidonTheWebRTCConnection", []);
+					console.log("SDP exchange has completed successfully, server assigned RTCDataChannel connection ID: " + nConnectionID);
+
+
+					rtcDataChannel = testEndpoint.getRTCDataChannel(nConnectionID);
+
+
+					testEndpointRTC = new TestEndpoint();
+					jsonrpcServerRTC = new JSONRPC.Server();
+					jsonrpcServerRTC.registerEndpoint(testEndpointRTC);
+
+
+					const webRTCJSONRPCRouter = new JSONRPC.BidirectionalWebRTCRouter(jsonrpcServer);
+					const nWebRTCConnectionID = await webRTCJSONRPCRouter.addRTCDataChannel(rtcDataChannel);
+					jsonrpcClientRTC = webRTCJSONRPCRouter.connectionIDToSingletonClient(nWebRTCConnectionID, JSONRPC.Client);
+
+					console.log(await jsonrpcClientRTC.rpc("ping", ["Do you think we have a connection?"]));
+				}
+			);
+		</script>
+	</head>
+	<body>
+		Open the developer tools console (F12 for most browsers, CTRL+SHIFT+I in Electron) to see errors or manually make calls.
+	</body>
+</html>

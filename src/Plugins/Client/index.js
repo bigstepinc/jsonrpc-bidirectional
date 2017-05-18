@@ -7,5 +7,6 @@ objExports.SignatureAdd = require("./SignatureAdd");
 objExports.WebSocketTransport = require("./WebSocketTransport");
 objExports.WorkerTransport = require("./WorkerTransport");
 objExports.ProcessStdIOTransport = require("./ProcessStdIOTransport");
+objExports.WebRTCTransport = require("./WebRTCTransport");
 
 module.exports = objExports;

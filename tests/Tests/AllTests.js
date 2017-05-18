@@ -149,7 +149,7 @@ class AllTests
 	 */
 	async runTests()
 	{
-		assert(cluster.isMaster);
+		assert(cluster.isMaster, "Expecting cluster.isMaster to be true.");
 
 		if(this._bBenchmarkMode)
 		{

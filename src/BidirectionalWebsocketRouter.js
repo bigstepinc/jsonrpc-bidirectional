@@ -77,8 +77,8 @@ class BidirectionalWebsocketRouter extends JSONRPC.RouterBase
 		{
 			webSocket.addEventListener(
 				"message", 
-				(messageEvent) => {
-					this._routeMessage(messageEvent.data, objSession).catch((error) => {throw error;});
+				async (messageEvent) => {
+					await this._routeMessage(messageEvent.data, objSession);
 				}
 			);
 
@@ -99,8 +99,8 @@ class BidirectionalWebsocketRouter extends JSONRPC.RouterBase
 		{
 			webSocket.on(
 				"message", 
-				(strData, objFlags) => {
-					this._routeMessage(strData, objSession).catch((error) => { throw error; });
+				async (strData, objFlags) => {
+					await this._routeMessage(strData, objSession);
 				}
 			);
 
@@ -172,6 +172,7 @@ class BidirectionalWebsocketRouter extends JSONRPC.RouterBase
 				this._jsonrpcServer 
 				&& this._objSessions.hasOwnProperty(nConnectionID)
 				&& this._objSessions[nConnectionID].clientWebSocketTransportPlugin === null
+				&& webSocket.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN
 			)
 			{
 				webSocket.send(JSON.stringify({
