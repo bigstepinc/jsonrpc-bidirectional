@@ -11,9 +11,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/oxygens/jsonrpc-bidirectional.git"
+    "url": "git+https://github.com/oxygen/jsonrpc-bidirectional.git"
   },
-  "homepage": "https://github.com/oxygens/jsonrpc-bidirectional",
+  "homepage": "https://github.com/oxygen/jsonrpc-bidirectional",
   "author": "Ionut Stan <Ionut.Stan@bigstep.com>",
   "license": "MIT",
   "contributors": [
