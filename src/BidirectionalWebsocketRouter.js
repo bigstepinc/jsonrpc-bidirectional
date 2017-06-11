@@ -73,12 +73,30 @@ class BidirectionalWebsocketRouter extends JSONRPC.RouterBase
 		};
 		
 
-		if(webSocket.addEventListener)
+		if(webSocket.on)
+		{
+			webSocket.on(
+				"message", 
+				(strData, objFlags) => {
+					this._routeMessage(strData, objSession);
+				}
+			);
+
+			webSocket.on(
+				"close",
+				(nCode, strReason) => {
+					this.onConnectionEnded(nConnectionID);
+				}
+			);
+
+			webSocket.on("error", fnOnError);
+		}
+		else if(webSocket.addEventListener)
 		{
 			webSocket.addEventListener(
 				"message", 
-				async (messageEvent) => {
-					await this._routeMessage(messageEvent.data, objSession);
+				(messageEvent) => {
+					this._routeMessage(messageEvent.data, objSession);
 				}
 			);
 
@@ -97,21 +115,7 @@ class BidirectionalWebsocketRouter extends JSONRPC.RouterBase
 		}
 		else
 		{
-			webSocket.on(
-				"message", 
-				async (strData, objFlags) => {
-					await this._routeMessage(strData, objSession);
-				}
-			);
-
-			webSocket.on(
-				"close",
-				(nCode, strReason) => {
-					this.onConnectionEnded(nConnectionID);
-				}
-			);
-
-			webSocket.on("error", fnOnError);
+			throw new Error("Not a supported WebSocket interface.");
 		}
 
 
