@@ -74,7 +74,7 @@
 
 				const wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(jsonrpcServer);
 
-				const nWebSocketConnectionID = await wsJSONRPCRouter.addWebSocket(ws);
+				const nWebSocketConnectionID = wsJSONRPCRouter.addWebSocketSync(ws);
 				jsonrpcClient = wsJSONRPCRouter.connectionIDToSingletonClient(nWebSocketConnectionID, JSONRPC.Client);
 
 				const objTeamMember = await jsonrpcClient.rpc("ImHereForTheParty", ["Lynch", "Lynch does the harlem shake", /*bDoNotAuthorizeMe*/ false]);
@@ -100,7 +100,7 @@
 
 
 					const webRTCJSONRPCRouter = new JSONRPC.BidirectionalWebRTCRouter(jsonrpcServer);
-					const nWebRTCConnectionID = await webRTCJSONRPCRouter.addRTCDataChannel(rtcDataChannel);
+					const nWebRTCConnectionID = webRTCJSONRPCRouter.addRTCDataChannelSync(rtcDataChannel);
 					jsonrpcClientRTC = webRTCJSONRPCRouter.connectionIDToSingletonClient(nWebRTCConnectionID, JSONRPC.Client);
 
 					console.log(await jsonrpcClientRTC.rpc("ping", ["Do you think we have a connection?"]));

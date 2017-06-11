@@ -21,6 +21,8 @@ module.exports =
 class BidirectionalWebsocketRouter extends JSONRPC.RouterBase
 {
 	/**
+	 * This function must be synchronous, otherwise it will allow of race conditions where critical plugins (if any) haven't been initialized yet.
+	 * 
 	 * Returns the connection ID.
 	 * 
 	 * WebSocket instances which will emit an error or close event will get automatically removed.
@@ -31,7 +33,7 @@ class BidirectionalWebsocketRouter extends JSONRPC.RouterBase
 	 * 
 	 * @returns {number}
 	 */
-	async addWebSocket(webSocket)
+	addWebSocketSync(webSocket)
 	{
 		if(webSocket.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.CLOSED)
 		{
@@ -41,7 +43,7 @@ class BidirectionalWebsocketRouter extends JSONRPC.RouterBase
 			// @TODO: test cases for the above, somehow.
 
 			// WebSocket.CLOSED would not recover and should never be added, because it would not get cleaned up.
-			console.log("[" + process.pid + "] addWebSocket ignoring closed webSocket.");
+			console.log("[" + process.pid + "] addWebSocketSync ignoring closed webSocket.");
 			return;
 		}
 
