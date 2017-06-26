@@ -17,6 +17,8 @@ module.exports =
 class BidirectionalWebRTCRouter extends JSONRPC.RouterBase
 {
 	/**
+	 * This function must be synchronous, otherwise it will allow of race conditions where critical plugins (if any) haven't been initialized yet.
+	 * 
 	 * Returns the connection ID.
 	 * 
 	 * RTCDataChannel instances which will emit an error or close event will get automatically removed.
@@ -27,7 +29,7 @@ class BidirectionalWebRTCRouter extends JSONRPC.RouterBase
 	 * 
 	 * @returns {number}
 	 */
-	async addRTCDataChannel(dataChannel)
+	addRTCDataChannelSync(dataChannel)
 	{
 		if(dataChannel.readyState === "closed")
 		{
@@ -37,7 +39,7 @@ class BidirectionalWebRTCRouter extends JSONRPC.RouterBase
 			// @TODO: test cases for the above, somehow.
 
 			// "closed" would not recover and should never be added, because it would not get cleaned up.
-			console.log("[" + process.pid + "] addRTCDataChannel ignoring closed dataChannel.");
+			console.log("[" + process.pid + "] addRTCDataChannelSync ignoring closed dataChannel.");
 
 			return;
 		}
@@ -74,6 +76,8 @@ class BidirectionalWebRTCRouter extends JSONRPC.RouterBase
 		dataChannel.addEventListener(
 			"error", 
 			(error) => {
+				console.error(error);
+
 				this.onConnectionEnded(nConnectionID);
 
 				if(dataChannel.readyState === "open")

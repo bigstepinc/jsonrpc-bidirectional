@@ -498,7 +498,7 @@ class AllTests
 
 				const wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(jsonrpcServer);
 
-				const nWebSocketConnectionID = await wsJSONRPCRouter.addWebSocket(webSocketClient);
+				const nWebSocketConnectionID = wsJSONRPCRouter.addWebSocketSync(webSocketClient);
 				const jsonrpcClient = wsJSONRPCRouter.connectionIDToSingletonClient(nWebSocketConnectionID, TestClient);
 
 				arrJSONRPCClients.push(jsonrpcClient);
@@ -636,7 +636,7 @@ class AllTests
 					webSocket = new this._classWebSocketAdapter(webSocket);
 				}
 
-				const nWebSocketConnectionID = await wsJSONRPCRouter.addWebSocket(webSocket);
+				const nWebSocketConnectionID = wsJSONRPCRouter.addWebSocketSync(webSocket);
 
 				console.log("[" + process.pid + "] Passing a new incoming connection to Tests.Plugins.Server.WebSocketAuthorize.");
 				this._webSocketAuthorizeSiteA.addConnection(nWebSocketConnectionID, webSocket);
@@ -703,7 +703,7 @@ class AllTests
 				this._jsonrpcServerSiteB
 			);
 
-			const nWebSocketConnectionID = await wsJSONRPCRouter.addWebSocket(this._webSocketClientSiteB);
+			const nWebSocketConnectionID = wsJSONRPCRouter.addWebSocketSync(this._webSocketClientSiteB);
 
 			// Alternatively, the madeReverseCallsClient event can be used.
 			// In this case however, only a single client is suposed to exist.
@@ -755,7 +755,7 @@ class AllTests
 				this._jsonrpcServerSiteC
 			);
 
-			const nWebSocketConnectionID = await wsJSONRPCRouter.addWebSocket(this._webSocketClientSiteC);
+			const nWebSocketConnectionID = wsJSONRPCRouter.addWebSocketSync(this._webSocketClientSiteC);
 
 			// Alternatively, the madeReverseCallsClient event can be used.
 			// In this case however, only a single client is suposed to exist.
@@ -807,7 +807,7 @@ class AllTests
 				this._jsonrpcServerSiteDisconnecter
 			);
 
-			const nWebSocketConnectionID = await wsJSONRPCRouter.addWebSocket(this._webSocketClientSiteDisconnecter);
+			const nWebSocketConnectionID = wsJSONRPCRouter.addWebSocketSync(this._webSocketClientSiteDisconnecter);
 
 			// Alternatively, the madeReverseCallsClient event can be used.
 			// In this case however, only a single client is suposed to exist.

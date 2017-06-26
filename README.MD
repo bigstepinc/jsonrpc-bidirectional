@@ -11,6 +11,7 @@ This library is tested in __browsers__ (>= IE10) and in __Node.js__ (>=7.8).
 Very simple usage allows for very easy application development: 
  * export methods in an endpoint (which extends JSONRPC.EndpointBase), and call those method remotely through a client (which extends JSONRPC.Client);
  * on bidirectional transports, there may be endpoints at both ends of a connection, or reversed roles (TCP client is a JSONRPC server, while TCP server is JSONRPC client).
+ * all remote invocations are asynchronous (multiple responses on the same connection are matched to the right waiting promises)
 
 ## Transports
 
@@ -269,7 +270,7 @@ webSocketServer.on(
 	"connection", 
 	async (webSocket) => 
 	{
-		const nWebSocketConnectionID = await wsJSONRPCRouter.addWebSocket(webSocket);
+		const nWebSocketConnectionID = wsJSONRPCRouter.addWebSocketSync(webSocket);
 		// Do something with nWebSocketConnectionID and webSocket here, like register them as a pair with an authorization plugin.
 
 		// const clientForThisConnection = wsJSONRPCRouter.connectionIDToSingletonClient(nWebSocketConnectionID, JSONRPC.Client);
@@ -299,7 +300,7 @@ await new Promise((fnResolve, fnReject) => {
 const wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(jsonrpcServer);
 
 
-const nWebSocketConnectionID = await wsJSONRPCRouter.addWebSocket(webSocket);
+const nWebSocketConnectionID = wsJSONRPCRouter.addWebSocketSync(webSocket);
 
 
 // Obtain single client. See above section "Extending the client" for the TestClient class (subclass of JSONRPC.Client).
@@ -388,15 +389,12 @@ __Site B (ES5 browser). WebSocket client (connects to the above WebSocket TCP se
 				ws.addEventListener("open", function(event){
 					var wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(jsonrpcServer);
 
-					wsJSONRPCRouter.addWebSocket(ws)
-						.then(function(nWebSocketConnectionID){
-							clientOfBidirectionalWS = wsJSONRPCRouter.connectionIDToSingletonClient(nWebSocketConnectionID, JSONRPC.Client);
+					var nWebSocketConnectionID = wsJSONRPCRouter.addWebSocketSync(ws);
 
-							clientOfBidirectionalWS.rpc("ping", ["Calling from html es5 client, websocket transport with bidirectional JSONRPC."])
-								.then(console.log)
-								.catch(console.log)
-							;
-						})
+					clientOfBidirectionalWS = wsJSONRPCRouter.connectionIDToSingletonClient(nWebSocketConnectionID, JSONRPC.Client);
+
+					clientOfBidirectionalWS.rpc("ping", ["Calling from html es5 client, websocket transport with bidirectional JSONRPC."])
+						.then(console.log)
 						.catch(console.log)
 					;
 				});

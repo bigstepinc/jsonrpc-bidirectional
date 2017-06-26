@@ -1,7 +1,7 @@
 {
   "name": "jsonrpc-bidirectional",
   "description": "Bidirectional JSONRPC over web sockets or HTTP with extensive plugin support.",
-  "version": "4.3.1",
+  "version": "5.1.1",
   "scripts": {
     "build": "node build.js",
     "test": "node --expose-gc --max-old-space-size=1024 tests/main.js",
@@ -11,9 +11,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/oxygens/jsonrpc-bidirectional.git"
+    "url": "git+https://github.com/oxygen/jsonrpc-bidirectional.git"
   },
-  "homepage": "https://github.com/oxygens/jsonrpc-bidirectional",
+  "homepage": "https://github.com/oxygen/jsonrpc-bidirectional",
   "author": "Ionut Stan <Ionut.Stan@bigstep.com>",
   "license": "MIT",
   "contributors": [
@@ -34,6 +34,7 @@
     "child_process": false
   },
   "dependencies": {
+    "extendable-error-class": "^0.1.1",
     "node-fetch": "^1.6.3"
   },
   "optionalDependencies": {
@@ -55,6 +56,7 @@
     "eslint": "^3.19.0",
     "eslint-plugin-jsdoc": "^3.0.2",
     "phantom": "^4.0.2",
+    "recursive-keys": "^0.9.0",
     "sleep-promise": "^2.0.0",
     "uglify-js": "^2.8.22",
     "uws": "^0.14.1",
