@@ -1,10 +1,13 @@
+const ExtendableError = require("extendable-error-class");
+
+
 /**
  * Class representing the JSONRPC Exceptions.
  * @class
  * @extends Error
  */
 module.exports =
-class Exception extends Error
+class Exception extends ExtendableError
 {
 	/**
 	 * @param {string} strMessage
