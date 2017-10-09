@@ -29,12 +29,27 @@ process.on(
 
 			// uws "Segmentation fault" on .close() in Travis (CentOS 7).
 			// https://github.com/uWebSockets/uWebSockets/issues/583
-			//if(os.platform() === "win32")
-			//{
-			//	allTests = new AllTests(bBenchmarkMode, /*bWebSocketMode*/ true, require("uws"), require("uws").Server, JSONRPC.WebSocketAdapters.uws.WebSocketWrapper, /*bDisableVeryLargePacket*/ true);
-			//	allTests.websocketServerPort = allTests.httpServerPort + 1;
-			//	await allTests.runTests();
-			//}
+			if(os.platform() === "win32")
+			{
+				let bUwsLoaded = false;
+				try
+				{
+					// Requires a compilation toolset to be installed if precompiled binaries are not available.
+					require("uws");
+					bUwsLoaded = true;
+				}
+				catch(error)
+				{
+					console.error(error);
+				}
+				
+				if(bUwsLoaded)
+				{
+					allTests = new AllTests(bBenchmarkMode, /*bWebSocketMode*/ true, require("uws"), require("uws").Server, JSONRPC.WebSocketAdapters.uws.WebSocketWrapper, /*bDisableVeryLargePacket*/ true);
+					allTests.websocketServerPort = allTests.httpServerPort + 1;
+					await allTests.runTests();
+				}
+			}
 
 			allTests = new AllTests(bBenchmarkMode, /*bWebSocketMode*/ true, require("ws"), require("ws").Server, undefined, /*bDisableVeryLargePacket*/ false);
 			await allTests.runTests();
