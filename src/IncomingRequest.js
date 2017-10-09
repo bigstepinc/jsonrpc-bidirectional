@@ -30,6 +30,7 @@ class IncomingRequest
 
 		this._objHeaders = {};
 		this._strRemoteAddress = "";
+		this._strLocalAddress = "";
 
 		//this._webSocket
 		//this._httpRequest
@@ -314,6 +315,24 @@ class IncomingRequest
 	set remoteAddress(strRemoteAddress)
 	{
 		this._strRemoteAddress = strRemoteAddress;
+	}
+
+
+	/**
+	 * @returns {string}
+	 */
+	get localAddress()
+	{
+		return this._strLocalAddress;
+	}
+
+
+	/**
+	 * @param {string} strLocalAddress
+	 */
+	set localAddress(strLocalAddress)
+	{
+		this._strLocalAddress = strLocalAddress;
 	}
 
 
