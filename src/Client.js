@@ -23,8 +23,9 @@ class Client extends EventEmitter
 {
 	/**
 	 * @param {string} strEndpointURL
+	 * @param {Object|undefined} objFetchOptions
 	 */
-	constructor(strEndpointURL)
+	constructor(strEndpointURL, objFetchOptions)
 	{
 		super();
 
@@ -35,6 +36,8 @@ class Client extends EventEmitter
 		this._strHTTPUser = null;
 		this._strHTTPPassword = null;
 		this._strBase64BasicAuthentication = null;
+
+		this._objFetchOptions = objFetchOptions;
 
 		/*const strProtocol = url.parse(strEndpointURL).protocol;
 
@@ -145,7 +148,7 @@ class Client extends EventEmitter
 					}
 				);
 
-				response = await fetch(request);
+				response = await fetch(request, this._objFetchOptions);
 
 				bHTTPErrorMode = !response.ok; 
 
