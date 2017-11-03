@@ -1416,7 +1416,16 @@ class AllTests
 		// http://smallvoid.com/article/winnt-tcpip-max-limit.html
 		// https://blog.jayway.com/2015/04/13/600k-concurrent-websocket-connections-on-aws-using-node-js/
 		// http://stackoverflow.com/questions/17033631/node-js-maxing-out-at-1000-concurrent-connections
-		const nCallCount = this._bWebSocketMode ? (this._bBenchmarkMode ? 20000 : 2000) : 500;
+		// On OSX there some OS rate limit with ECONNRESET errors.
+		let nCallCount;
+		if(os.platform() === "darwin")
+		{
+			nCallCount = this._bWebSocketMode ? (this._bBenchmarkMode ? 20 : 20) : 20;
+		}
+		else
+		{
+			nCallCount = this._bWebSocketMode ? (this._bBenchmarkMode ? 20000 : 2000) : 500;
+		}
 
 		const fnPickAMethodIndex = (i) => {
 			if(this._bBenchmarkMode)
