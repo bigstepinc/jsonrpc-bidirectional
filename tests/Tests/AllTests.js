@@ -198,7 +198,11 @@ class AllTests
 
 
 		await this.callRPCMethodSiteB(/*bDoNotSleep*/ true);
-		await this.callRPCMethodSiteB(/*bDoNotSleep*/ true, /*bVeryLargePayload*/ true);
+		await this.callRPCMethodSiteB(/*bDoNotSleep*/ true, /*bNotification*/ true);
+		await this.callRPCMethodSiteB(/*bDoNotSleep*/ true, /*bNotification*/ false, /*bVeryLargePayload*/ true);
+		await this.callRPCMethodSiteB(/*bDoNotSleep*/ true, /*bNotification*/ true);
+		await this.callRPCMethodSiteB(/*bDoNotSleep*/ true, /*bNotification*/ true);
+
 
 		if(this._bWebSocketMode)
 		{
@@ -1070,14 +1074,15 @@ class AllTests
 
 	/**
 	 * @param {boolean} bDoNotSleep
-	 * @param {boolean|undefined} bVeryLargePayload
+	 * @param {boolean} bNotification = false
+	 * @param {boolean} bVeryLargePayload = false
 	 * 
 	 * @returns {undefined}
 	 */
-	async callRPCMethodSiteB(bDoNotSleep, bVeryLargePayload)
+	async callRPCMethodSiteB(bDoNotSleep, bNotification = false, bVeryLargePayload = false)
 	{
 		const bRandomSleep = !bDoNotSleep;
-		bVeryLargePayload = !!bVeryLargePayload && !this._bDisableVeryLargePacket;
+		bVeryLargePayload = bVeryLargePayload && !this._bDisableVeryLargePacket;
 
 		console.log("[" + process.pid + "] callRPCMethodSiteB");
 
@@ -1099,7 +1104,16 @@ class AllTests
 			arrParams.push("Hannibal");
 		}
 
-		assert.strictEqual(strParam, await this._jsonrpcClientSiteB.rpc("ping", arrParams));
+		const mxResponse = await this._jsonrpcClientSiteB.rpc("ping", arrParams, bNotification);
+
+		if(bNotification)
+		{
+			assert(mxResponse === null || mxResponse === undefined, "Notifications cannot return " + JSON.stringify(mxResponse));
+		}
+		else
+		{
+			assert.strictEqual(strParam, mxResponse);
+		}
 	}
 
 
@@ -1221,6 +1235,7 @@ class AllTests
 				throw error;
 			}
 			
+			console.error(error);
 			assert(error instanceof JSONRPC.Exception);
 			assert.strictEqual(error.code, JSONRPC.Exception.INTERNAL_ERROR);
 			assert.strictEqual(error.message, "JSONRPC.Exception");

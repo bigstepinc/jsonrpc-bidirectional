@@ -151,6 +151,20 @@ class TestClient extends JSONRPC.Client
 
 
 	/**
+	 * JSONRPC 2.0 notification. 
+	 * The server may keep processing "after" this function returns, as the server will never send a response.
+	 * 
+	 * @param {JSONRPC.IncomingRequest} incomingRequest
+	 * 
+	 * @returns null
+	 */
+	async pingFireAndForget()
+	{
+		return this.rpc("ping", [...arguments], /*bNotification*/ true);
+	}
+
+
+	/**
 	 * @param {number} nLeft
 	 * @param {number} nRight
 	 *

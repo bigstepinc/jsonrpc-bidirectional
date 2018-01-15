@@ -73,14 +73,22 @@ class Client extends EventEmitter
 	/**
 	 * Function used to send the JSONRPC request.
 	 * 
+	 * If bNotification is true, it makes this request into a JSONRPC 2.0 notification request, which does not expect an answer from the server.
+	 * Aka fire and forget.
+	 * Defaults to false.
+	 * 
 	 * @param {string} strFunctionName
 	 * @param {Array} arrParams
+	 * @param {boolean} bNotification = false
 	 */
-	async rpc(strFunctionName, arrParams)
+	async rpc(strFunctionName, arrParams, bNotification = false)
 	{
+		assert(typeof bNotification === "boolean", "bNotification must be of type boolean.");
 		assert(Array.isArray(arrParams), "arrParams must be an Array.");
 
-		const outgoingRequest = new JSONRPC.OutgoingRequest(strFunctionName, arrParams, this._nCallID);
+		const outgoingRequest = new JSONRPC.OutgoingRequest(strFunctionName, arrParams, bNotification ? undefined : this._nCallID);
+		
+		// Increment even for notification requests, just in case it is referenced somehow elsewhere for other purposes.
 		this._nCallID++;
 
 		try
@@ -174,6 +182,18 @@ class Client extends EventEmitter
 			}
 
 
+			if(bNotification)
+			{
+				outgoingRequest.responseObject = {
+					"jsonrpc": Client.JSONRPC_VERSION,
+					"result": null
+					// Notifications don't even have responses. The response object is faked to make it easier for plugins and this class as well.
+					// Notifications must not have an id property.
+				}; 
+				outgoingRequest.responseBody = JSON.stringify(outgoingRequest.responseObject, undefined, "\t");
+			}
+
+
 			this.emit("beforeJSONDecode", outgoingRequest);
 			for(let plugin of this._arrPlugins)
 			{
@@ -181,7 +201,7 @@ class Client extends EventEmitter
 			}
 
 
-			if(outgoingRequest.responseObject === null)
+			if(outgoingRequest.responseObject === null || outgoingRequest.responseObject === undefined)
 			{
 				outgoingRequest.responseObject = JSONRPC.Utils.jsonDecodeSafe(outgoingRequest.responseBody);
 			}
