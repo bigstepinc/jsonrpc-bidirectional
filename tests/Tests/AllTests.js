@@ -629,14 +629,14 @@ class AllTests
 
 		this._webSocketServerSiteA.on(
 			"connection", 
-			async (webSocket) => 
+			async (webSocket, upgradeRequest) => 
 			{
 				if(this._classWebSocketAdapter)
 				{
 					webSocket = new this._classWebSocketAdapter(webSocket);
 				}
 
-				const nWebSocketConnectionID = wsJSONRPCRouter.addWebSocketSync(webSocket);
+				const nWebSocketConnectionID = wsJSONRPCRouter.addWebSocketSync(webSocket, upgradeRequest);
 
 				console.log("[" + process.pid + "] Passing a new incoming connection to Tests.Plugins.Server.WebSocketAuthorize.");
 				this._webSocketAuthorizeSiteA.addConnection(nWebSocketConnectionID, webSocket);
