@@ -268,9 +268,9 @@ webSocketServer.on("error", (error) => {console.error(error); process.exit(1);})
 
 webSocketServer.on(
 	"connection", 
-	async (webSocket) => 
+	async (webSocket, upgradeRequest) => 
 	{
-		const nWebSocketConnectionID = wsJSONRPCRouter.addWebSocketSync(webSocket);
+		const nWebSocketConnectionID = wsJSONRPCRouter.addWebSocketSync(webSocket, upgradeRequest);
 		// Do something with nWebSocketConnectionID and webSocket here, like register them as a pair with an authorization plugin.
 
 		// const clientForThisConnection = wsJSONRPCRouter.connectionIDToSingletonClient(nWebSocketConnectionID, JSONRPC.Client);

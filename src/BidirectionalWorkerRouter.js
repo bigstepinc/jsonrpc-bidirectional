@@ -61,10 +61,11 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 	 * 
 	 * @param {Worker} worker
 	 * @param {string|undefined} strEndpointPath
+	 * @param {number} nWorkerReadyTimeoutMilliseconds = 60000
 	 * 
 	 * @returns {number}
 	 */
-	async addWorker(worker, strEndpointPath)
+	async addWorker(worker, strEndpointPath, nWorkerReadyTimeoutMilliseconds = 60000)
 	{
 		if(!strEndpointPath)
 		{
@@ -187,7 +188,7 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 				(event) => {
 					this._objWaitForWorkerReadyPromises[nConnectionID].fnReject(new Error("Timed out waiting for worker to be ready for JSONRPC."));
 				},
-				10000
+				nWorkerReadyTimeoutMilliseconds
 			);
 			await promiseWaitForWorkerReady;
 			clearTimeout(nTimeoutWaitForWorkerReady);

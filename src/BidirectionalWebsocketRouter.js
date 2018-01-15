@@ -30,10 +30,11 @@ class BidirectionalWebsocketRouter extends JSONRPC.RouterBase
 	 * Already closed WebSocket instances are ignored by this function.
 	 * 
 	 * @param {WebSocket} webSocket
+	 * @param {http.IncomingMessage|undefined} upgradeRequest
 	 * 
 	 * @returns {number}
 	 */
-	addWebSocketSync(webSocket)
+	addWebSocketSync(webSocket, upgradeRequest)
 	{
 		if(webSocket.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.CLOSED)
 		{
@@ -49,7 +50,15 @@ class BidirectionalWebsocketRouter extends JSONRPC.RouterBase
 
 		const nConnectionID = ++this._nConnectionIDCounter;
 
-		const strEndpointPath = JSONRPC.EndpointBase.normalizePath(webSocket.url ? webSocket.url : webSocket.upgradeReq.url);
+		const strEndpointPath = JSONRPC.EndpointBase.normalizePath(
+			webSocket.url 
+			? /*WebSocket client*/ webSocket.url
+			: (
+				webSocket.upgradeReq 
+				? /*ws 2.4*/ webSocket.upgradeReq.url 
+				: /*ws >= 4.x*/ upgradeRequest.url
+			)
+		);
 
 		const objSession = {
 			webSocket: webSocket,
