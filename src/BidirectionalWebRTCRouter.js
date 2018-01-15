@@ -166,13 +166,15 @@ class BidirectionalWebRTCRouter extends JSONRPC.RouterBase
 			return;
 		}
 
+		const bNotification = !objMessage.hasOwnProperty("id");
+
 		try
 		{
 			if(objMessage.hasOwnProperty("method"))
 			{
 				if(!this._jsonrpcServer)
 				{
-					if(dataChannel.readyState === "open")
+					if(!bNotification && dataChannel.readyState === "open")
 					{
 						dataChannel.send(JSON.stringify({
 							id: null,
@@ -221,7 +223,10 @@ class BidirectionalWebRTCRouter extends JSONRPC.RouterBase
 					console.error("dataChannel.readyState: " + JSON.stringify(dataChannel.readyState) + ". Request was " + strMessage + ". Attempted responding with " + JSON.stringify(incomingRequest.callResultToBeSerialized, undefined, "\t") + ".");
 				}
 
-				dataChannel.send(incomingRequest.callResultSerialized);
+				if(!bNotification)
+				{
+					dataChannel.send(incomingRequest.callResultSerialized);
+				}
 			}
 			else if(objMessage.hasOwnProperty("result") || objMessage.hasOwnProperty("error"))
 			{
@@ -232,7 +237,7 @@ class BidirectionalWebRTCRouter extends JSONRPC.RouterBase
 				{
 					if(!this._jsonrpcServer)
 					{
-						if(dataChannel.readyState === "open")
+						if(!bNotification && dataChannel.readyState === "open")
 						{
 							dataChannel.send(JSON.stringify({
 								id: null,
@@ -278,7 +283,7 @@ class BidirectionalWebRTCRouter extends JSONRPC.RouterBase
 				&& this._objSessions[nConnectionID].clientWebRTCTransportPlugin === null
 			)
 			{
-				if(dataChannel.readyState === "open")
+				if(!bNotification && dataChannel.readyState === "open")
 				{
 					dataChannel.send(JSON.stringify({
 						id: null,

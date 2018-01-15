@@ -221,6 +221,7 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 				result: null,
 				jsonrpc: "2.0"
 			};
+
 			if(worker.postMessage)
 			{
 				worker.postMessage(objResponse);
@@ -294,6 +295,8 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 			return;
 		}
 
+		const bNotification = !objMessage.hasOwnProperty("id");
+
 		try
 		{
 			if(objMessage.hasOwnProperty("method"))
@@ -332,13 +335,17 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 
 				await this._jsonrpcServer.processRequest(incomingRequest);
 
-				if(worker.postMessage)
+
+				if(!bNotification)
 				{
-					worker.postMessage(incomingRequest.callResultSerialized);
-				}
-				else
-				{
-					worker.send(incomingRequest.callResultSerialized);
+					if(worker.postMessage)
+					{
+						worker.postMessage(incomingRequest.callResultSerialized);
+					}
+					else
+					{
+						worker.send(incomingRequest.callResultSerialized);
+					}
 				}
 			}
 			else if(objMessage.hasOwnProperty("result") || objMessage.hasOwnProperty("error"))

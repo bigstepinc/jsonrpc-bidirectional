@@ -8,11 +8,16 @@ module.exports =
 class OutgoingRequest
 {
 	/**
+	 * An undefined mxCallID value represents a JSONRPC 2.0 notification request which results in omitting the "id" property in the JSONRPC 2.0 request.
+	 * 
+	 * A mxCallID null is not allowed for this JSONRPC 2.0 client library as it cannot be used to match asynchronous requests to out of order responses.
+	 * The spec also recommends in avoiding null when composing requests.
+	 * 
 	 * @param {string} strMethod
 	 * @param {Array} arrParams
-	 * @param {number} nCallID
+	 * @param {number|string|undefined} mxCallID
 	 */
-	constructor(strMethod, arrParams, nCallID)
+	constructor(strMethod, arrParams, mxCallID)
 	{
 		this._strMethod = strMethod;
 		this._arrParams = arrParams;
@@ -34,19 +39,41 @@ class OutgoingRequest
 		//this._webSocket
 		//this._httpRequest
 
-		this._nCallID = nCallID;
+		this._mxCallID = mxCallID;
 
 		Object.seal(this);
 	}
 
 
 	/**
-	 * @returns {number}
+	 * An undefined value represents a JSONRPC 2.0 notification request which results in omitting the "id" property in the JSONRPC 2.0 request.
+	 * 
+	 * null is not allowed for this JSONRPC 2.0 client library as it cannot be used to match asynchronous requests to out of order responses.
+	 * The spec also recommends in avoiding null when composing requests.
+	 * 
+	 * @returns {number|string|undefined}
 	 */
 	get callID()
 	{
-		assert(typeof this._nCallID === "number", "this._nCallID must be of type number.");
-		return this._nCallID;
+		assert(
+			typeof this._mxCallID === "number" || typeof this._mxCallID === "string" || typeof this._mxCallID === "undefined",
+			"this._mxCallID must be of type number."
+		);
+		return this._mxCallID;
+	}
+
+
+	/**
+	 * JSON-RPC 2.0 specification:
+	 * An identifier established by the Client that MUST contain a String, Number, or NULL value if included.
+	 * If it is not included it is assumed to be a notification.
+	 * The value SHOULD normally not be Null and Numbers SHOULD NOT contain fractional parts.
+	 * 
+	 * @returns {boolean}
+	 */
+	get isNotification()
+	{
+		return typeof this._mxCallID === "undefined";
 	}
 
 
@@ -254,12 +281,33 @@ class OutgoingRequest
 		assert(this.methodName !== null, "this.methodName cannot be null.");
 		assert(Array.isArray(this.params), "this.params must be an Array.");
 
-		return {
-			"method": this.methodName,
-			"params": this.params,
+		if(typeof this.callID !== "undefined")
+		{
+			return {
+				"method": this.methodName,
+				"params": this.params,
 
-			"id": this.callID,
-			"jsonrpc": "2.0"
-		};
+				// The "id" property can never be null in an asynchronous JSONRPC 2.0 client, because out of order responses must be matched to asynchronous requests. 
+				// The spec recommends against null values in general anyway.
+
+				"id": this.callID, 
+				"jsonrpc": "2.0"
+			};
+		}
+		else
+		{
+			// JSONRPC 2.0 notification request, which does not expect an answer at all from the server.
+
+			return {
+				"method": this.methodName,
+				"params": this.params,
+
+				// The ID property must be omitted entirely for JSONRPC 2.0 notification requests.
+				// A setting of undefined will ignore it when serializing to JSON, 
+				// however it is safer for custom non-JSON serializations to omit it explicitly here.
+
+				"jsonrpc": "2.0"
+			};
+		}
 	}
 };

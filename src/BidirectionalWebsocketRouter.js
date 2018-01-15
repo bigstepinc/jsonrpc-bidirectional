@@ -212,13 +212,15 @@ class BidirectionalWebsocketRouter extends JSONRPC.RouterBase
 			return;
 		}
 
+		const bNotification = !objMessage.hasOwnProperty("id");
+
 		try
 		{
 			if(objMessage.hasOwnProperty("method"))
 			{
 				if(!this._jsonrpcServer)
 				{
-					if(webSocket.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN)
+					if(!bNotification && webSocket.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN)
 					{
 						webSocket.send(JSON.stringify({
 							id: null,
@@ -277,7 +279,10 @@ class BidirectionalWebsocketRouter extends JSONRPC.RouterBase
 					console.error("webSocket.readyState: " + JSON.stringify(webSocket.readyState) + ". Request was " + strMessage + ". Attempted responding with " + JSON.stringify(incomingRequest.callResultToBeSerialized, undefined, "\t") + ".");
 				}
 
-				webSocket.send(incomingRequest.callResultSerialized);
+				if(!bNotification)
+				{
+					webSocket.send(incomingRequest.callResultSerialized);
+				}
 			}
 			else if(objMessage.hasOwnProperty("result") || objMessage.hasOwnProperty("error"))
 			{
@@ -288,7 +293,7 @@ class BidirectionalWebsocketRouter extends JSONRPC.RouterBase
 				{
 					if(!this._jsonrpcServer)
 					{
-						if(webSocket.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN)
+						if(!bNotification && webSocket.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN)
 						{
 							webSocket.send(JSON.stringify({
 								id: null,
@@ -337,7 +342,7 @@ class BidirectionalWebsocketRouter extends JSONRPC.RouterBase
 				&& this._objSessions[nConnectionID].clientWebSocketTransportPlugin === null
 			)
 			{
-				if(webSocket.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN)
+				if(!bNotification && webSocket.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN)
 				{
 					webSocket.send(JSON.stringify({
 						id: null,
