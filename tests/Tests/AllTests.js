@@ -14,6 +14,7 @@ const Phantom = require("phantom");
 
 const cluster = require("cluster");
 
+const querystring = require("querystring");
 // @TODO: Test with other WebSocket implementations.
 
 
@@ -60,7 +61,7 @@ class AllTests
 
 		this._testEndpoint = new TestEndpoint(this._bBenchmarkMode || !this._bWebSocketMode);
 
-		// SiteA is supposedly reachable over the internet. It listens for new connections (websocket or http). 
+		// SiteA is supposedly reachable over the internet. It listens for new connections (websocket or http).
 		this._httpServerSiteA = null;
 		this._webSocketServerSiteA = null;
 		this._jsonrpcServerSiteA = null;
@@ -87,14 +88,22 @@ class AllTests
 		this._jsonrpcClientSiteDisconnecter = null;
 		this._jsonrpcServerSiteDisconnecter = null; // reverse calls, TCP client using a JSONRPC server accepts requests from a TCP server with an attached JSONRPC client.
 
-		
+
 		// JSONRPC client on WebSocket client, nothing else.
 		this._jsonrpcClientNonBidirectional = null;
-		
+
 
 		// Used by SiteB and SiteC, which trusts the remote server based on SSL certificates.
 		this._serverAuthenticationSkipPlugin = new JSONRPC.Plugins.Server.AuthenticationSkip();
 		this._serverAuthorizeAllPlugin = new JSONRPC.Plugins.Server.AuthorizeAll();
+
+		let objRandomURLPublicConfig = this.randomURLPublicConfig;
+		this._serverURLPublicPlugin = new JSONRPC.Plugins.Server.URLPublic(
+			objRandomURLPublicConfig.encryptionKeys,
+			objRandomURLPublicConfig.activeKeyIndex,
+			objRandomURLPublicConfig.salt,
+			objRandomURLPublicConfig.compressionType
+		);
 
 		this._bWebSocketMode = !!bWebSocketMode;
 		this._bPreventHTTPAPIRequests = false;
@@ -143,6 +152,110 @@ class AllTests
 		return this._nWebSocketsPort;
 	}
 
+	get randomURLPublicConfig()
+	{
+		let strActiveKeyIndex = this.generateRandomString(2);
+
+		return {
+			activeKeyIndex: strActiveKeyIndex,
+			encryptionKeys: {
+				[strActiveKeyIndex]: this.generateRandomString(32)
+			},
+			salt: this.generateRandomString(64),
+			compressionType: JSONRPC.Plugins.Server.URLPublic.COMPRESSION_TYPE_ZLIB
+			// compressionType: JSONRPC.Plugins.Server.URLPublic.COMPRESSION_TYPE_BROTLI
+		};
+	}
+
+	/**
+	 * @returns {undefined}
+	 */
+	async urlPublicRequestSignatureAndIV()
+	{
+		const arrInputs = [
+			this.generateRandomString(16), //Normal random string
+			this.generateRandomString(50, "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-={}|[]\\<>?,./:\";'~`"), //Special characters
+			this.generateRandomString(255), //Long random string
+			this.generateRandomString(1000) //Extra long random string
+		];
+
+		for(let strInputString of arrInputs)
+		{
+			let bufferIV1 = this._serverURLPublicPlugin.JSONRequestSignatureAndIV(strInputString);
+			let bufferIV2 = this._serverURLPublicPlugin.JSONRequestSignatureAndIV(strInputString);
+	
+			assert(bufferIV1.equals(bufferIV2), `[FAILED] test_URLPublic_JSONRequestSignatureAndIV: buffers not equal for string input ${strInputString}`);
+		}
+
+		console.log(`[${process.pid}] [OK] urlPublicRequestSignatureAndIV`);
+	}
+
+	/**
+	 * @returns {undefined}
+	 */
+	async urlPublicRequestGenerate()
+	{
+		const strURL = "https://example.com/api/url";
+		const strFunctionName = "test_echo";
+		const arrParams = [1, "foo", "bar"];
+		const nExpireSeconds = 100;
+
+		for(let nEncryptionMode of this._serverURLPublicPlugin.allowedEncryptionModes)
+		{
+			let strEncryptedURL = await this._serverURLPublicPlugin.URLRequestGenerate(strURL, strFunctionName, arrParams, nExpireSeconds, nEncryptionMode);
+			console.log(`[${process.pid}] Encrypted URL with encryption mode ${nEncryptionMode}: ${strEncryptedURL}`);
+
+			let strQueryString = strEncryptedURL.split("?")[1];
+
+			let strJSONDecryptedURLRequest = await this._serverURLPublicPlugin.PublicURLParamsToJSONRequest(querystring.parse(strQueryString));
+			console.log(`[${process.pid}] Decrypted URL with encryption mode ${nEncryptionMode}: ${strJSONDecryptedURLRequest}`);
+
+			let objDecryptedURLRequest = JSON.parse(strJSONDecryptedURLRequest);
+
+			assert(
+				objDecryptedURLRequest[JSONRPC.Plugins.Server.URLPublic.REQUEST_PARAM_NAME_METHOD] === strFunctionName, 
+				`Invalid method value for decrypted request URL. Encryption mode: ${nEncryptionMode}`
+			);
+
+			for(let nParamIndex in arrParams)
+			{
+				assert(
+					objDecryptedURLRequest[JSONRPC.Plugins.Server.URLPublic.REQUEST_PARAM_NAME_PARAMS][nParamIndex] === arrParams[nParamIndex], 
+					`Invalid parameters for decrypted request URL. Encryption mode: ${nEncryptionMode}`
+				);
+			}
+
+			assert(
+				(objDecryptedURLRequest[JSONRPC.Plugins.Server.URLPublic.REQUEST_PARAM_NAME_EXPIRE] <= parseInt(((new Date()).getTime() / 1000), 10) + nExpireSeconds), 
+				`Invalid expire value for decrypted request URL. Encryption mode: ${nEncryptionMode}`
+			);
+
+			console.log(`[${process.pid}] [OK] urlPublicRequestGenerate Encryption mode: ${nEncryptionMode}`);
+		}
+	}
+
+
+	/**
+	 * Generates a random string of the given length from the char set.
+	 * 
+	 * @param {Integer} nLength 
+	 * @param {string} arrCharSet 
+	 * 
+	 * @returns {string}
+	 */
+	generateRandomString(nLength = 16, arrCharSet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")
+	{
+		let strResult = "";
+		let nCharSetLength = arrCharSet.length;
+
+		for (let i = 0; i < nLength; i++)
+		{
+			strResult += arrCharSet.charAt(Math.floor(Math.random() * nCharSetLength));
+		}
+
+		return strResult;
+	}
+
 
 	/**
 	 * @returns {undefined}
@@ -163,7 +276,7 @@ class AllTests
 
 
 		await this.setupHTTPServer();
-		
+
 		if(this._bWebSocketMode)
 		{
 			await this.setupWebsocketServerSiteA();
@@ -290,7 +403,7 @@ class AllTests
 					}
 				});
 			});
-			
+
 			this._httpServerSiteA = null;
 			global.gc();
 		}
@@ -298,6 +411,8 @@ class AllTests
 
 		this._bPreventHTTPAPIRequests = false;
 
+		await this.urlPublicRequestSignatureAndIV();
+		await this.urlPublicRequestGenerate();
 
 		if(this._bBenchmarkMode)
 		{
@@ -327,7 +442,7 @@ class AllTests
 
 		if(cluster.isMaster)
 		{
-			// Unless the worker is immediately added to the router, and the add operation awaited, 
+			// Unless the worker is immediately added to the router, and the add operation awaited,
 			// deadlocks may occur because of the awaits on addWorker which may miss the ready call from the worker.
 			// Use await Promise.all or add them one by one as below.
 			const workerA = cluster.fork();
@@ -335,7 +450,7 @@ class AllTests
 
 			const workerB = cluster.fork();
 			const nConnectionIDB = await workerJSONRPCRouter.addWorker(workerB);
-			
+
 			const clientA = workerJSONRPCRouter.connectionIDToSingletonClient(nConnectionIDA, TestClient);
 			const clientB = workerJSONRPCRouter.connectionIDToSingletonClient(nConnectionIDB, TestClient);
 
@@ -358,7 +473,7 @@ class AllTests
 			const client = workerJSONRPCRouter.connectionIDToSingletonClient(nConnectionID, TestClient);
 
 			// This is a mandatory call to signal to the master, that the worker is ready to receive JSONRPC requests on a chosen endpoint.
-			// This can be hidden in an JSONRPC.Client extending class, inside an overriden .rpc() method. 
+			// This can be hidden in an JSONRPC.Client extending class, inside an overriden .rpc() method.
 			// And awaited once.
 			await client.rpc("rpc.connectToEndpoint", ["/api"]);
 
@@ -376,8 +491,8 @@ class AllTests
 
 			// const clientStandAlone = new TestClient("/api");
 			// clientStandAlone.addPlugin(new JSONRPC.Plugins.Client.WorkerTransport(process));
-			
-			// This can be hidden in an JSONRPC.Client extending class, inside an overriden .rpc() method. 
+
+			// This can be hidden in an JSONRPC.Client extending class, inside an overriden .rpc() method.
 			// And awaited once.
 			//await clientStandAlone.rpc("rpc.connectToEndpoint", [clientStandAlone.endpointURL]);
 			//console.log(await clientStandAlone.ping(strMessage + " stand-alone client."));
@@ -403,7 +518,7 @@ class AllTests
 			await this.setupHTTPServer();
 			await this.setupWebsocketServerSiteA();
 			await this.disableServerSecuritySiteA();
-			
+
 			const arrWorkers = [];
 
 			for(let i = 0; i < Math.max(1, -1 /*server core*/ + os.cpus().length); i++)
@@ -427,7 +542,7 @@ class AllTests
 				{
 					nNoChangeCount = 0;
 					nRoundedConnectionsCount = nNewRoundedConnectionsCount;
-					
+
 					this.console.log(Object.keys(this._webSocketAuthorizeSiteA._objSessions).length + " connections.");
 					this.console.log("heapTotal: " + Math.round(process.memoryUsage().heapTotal / 1024 / 1024, 2) + " MB");
 				}
@@ -632,8 +747,8 @@ class AllTests
 
 
 		this._webSocketServerSiteA.on(
-			"connection", 
-			async (webSocket, upgradeRequest) => 
+			"connection",
+			async (webSocket, upgradeRequest) =>
 			{
 				if(this._classWebSocketAdapter)
 				{
@@ -829,7 +944,7 @@ class AllTests
 
 
 	/**
-	 * @returns {undefined} 
+	 * @returns {undefined}
 	 */
 	async triggerConnectionRefused()
 	{
@@ -837,7 +952,7 @@ class AllTests
 
 		assert(this._httpServerSiteA === null);
 		assert(this._jsonrpcServerSiteA === null);
-		
+
 		try
 		{
 			await this.setupSiteB();
@@ -851,7 +966,7 @@ class AllTests
 				console.error(error.constructor.name);
 				throw error;
 			}
-			
+
 			if(process.execPath)
 			{
 				console.error(error);
@@ -866,7 +981,7 @@ class AllTests
 
 
 	/**
-	 * @returns {undefined} 
+	 * @returns {undefined}
 	 */
 	async endpointNotFoundError()
 	{
@@ -892,7 +1007,7 @@ class AllTests
 			}
 
 			console.error(error);
-			
+
 			assert(error instanceof JSONRPC.Exception);
 			assert.strictEqual(error.code, JSONRPC.Exception.METHOD_NOT_FOUND);
 			assert(error.message.includes("Unknown JSONRPC endpoint"));
@@ -904,7 +1019,7 @@ class AllTests
 
 
 	/**
-	 * @returns {undefined} 
+	 * @returns {undefined}
 	 */
 	async outsideJSONRPCPathError()
 	{
@@ -925,7 +1040,7 @@ class AllTests
 			{
 				throw error;
 			}
-			
+
 			assert(error instanceof JSONRPC.Exception);
 			assert.strictEqual(error.code, JSONRPC.Exception.PARSE_ERROR);
 			assert(error.message.includes("Unexpected end of JSON input; RAW JSON string:"));
@@ -951,7 +1066,7 @@ class AllTests
 			{
 				throw error;
 			}
-			
+
 			console.log(error);
 			assert(error instanceof JSONRPC.Exception);
 			assert.strictEqual(error.code, JSONRPC.Exception.NOT_AUTHENTICATED);
@@ -981,7 +1096,7 @@ class AllTests
 			{
 				throw error;
 			}
-			
+
 			if(this._bWebSocketMode)
 			{
 				await this.setupSiteB();
@@ -1019,7 +1134,7 @@ class AllTests
 			{
 				throw error;
 			}
-			
+
 			if(this._bWebSocketMode)
 			{
 				await this.setupSiteB();
@@ -1037,7 +1152,7 @@ class AllTests
 
 
 	/**
-	 * @returns {undefined} 
+	 * @returns {undefined}
 	 */
 	async triggerAuthorizationError()
 	{
@@ -1064,7 +1179,7 @@ class AllTests
 			{
 				throw error;
 			}
-			
+
 			assert(error instanceof JSONRPC.Exception);
 			assert.strictEqual(error.code, JSONRPC.Exception.NOT_AUTHORIZED);
 			assert.strictEqual(error.message, "Not authorized.");
@@ -1076,7 +1191,7 @@ class AllTests
 	 * @param {boolean} bDoNotSleep
 	 * @param {boolean} bNotification = false
 	 * @param {boolean} bVeryLargePayload = false
-	 * 
+	 *
 	 * @returns {undefined}
 	 */
 	async callRPCMethodSiteB(bDoNotSleep, bNotification = false, bVeryLargePayload = false)
@@ -1119,7 +1234,7 @@ class AllTests
 
 	/**
 	 * @param {boolean} bDoNotSleep
-	 * 
+	 *
 	 * @returns {undefined}
 	 */
 	async callRPCMethodSiteC(bDoNotSleep)
@@ -1142,7 +1257,7 @@ class AllTests
 
 	/**
 	 * @param {boolean} bTerminate
-	 * 
+	 *
 	 * @returns {undefined}
 	 */
 	async callRPCMethodSiteDisconnecter(bTerminate)
@@ -1162,7 +1277,7 @@ class AllTests
 			{
 				throw error;
 			}
-			
+
 			assert(error instanceof Error, error.constructor.name);
 			assert(error.message.startsWith("WebSocket closed"));
 
@@ -1180,7 +1295,7 @@ class AllTests
 
 	/**
 	 * @param {boolean} bDoNotSleep
-	 * 
+	 *
 	 * @returns {undefined}
 	 */
 	async callRPCMethodNonBidirectionalClient(bDoNotSleep)
@@ -1202,13 +1317,13 @@ class AllTests
 			this._jsonrpcClientNonBidirectional = new TestClient(this.localEndpointWebSocket);
 			this._jsonrpcClientNonBidirectional.addPlugin(new Tests.Plugins.Client.DebugMarker("NonBidirectionalClient"));
 			this._jsonrpcClientNonBidirectional.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
-			
+
 			const webSocketTransport = new JSONRPC.Plugins.Client.WebSocketTransport(webSocket);
 			this._jsonrpcClientNonBidirectional.addPlugin(webSocketTransport);
 
 			await this._jsonrpcClientNonBidirectional.rpc("ImHereForTheParty", ["Face", "Face does the harlem shake", /*bDoNotAuthorizeMe*/ false]);
 		}
-		
+
 		const strParam = "pong_one_way";
 		const arrParams = [strParam, bRandomSleep];
 
@@ -1234,7 +1349,7 @@ class AllTests
 			{
 				throw error;
 			}
-			
+
 			console.error(error);
 			assert(error instanceof JSONRPC.Exception);
 			assert.strictEqual(error.code, JSONRPC.Exception.INTERNAL_ERROR);
@@ -1244,7 +1359,7 @@ class AllTests
 
 
 	/**
-	 * @returns {undefined} 
+	 * @returns {undefined}
 	 */
 	async callRPCMethodSiteBWhichThrowsSimpleError()
 	{
@@ -1261,7 +1376,7 @@ class AllTests
 			{
 				throw error;
 			}
-			
+
 			assert(error instanceof JSONRPC.Exception, error.constructor.name);
 			assert.strictEqual(error.code, 0);
 			assert.strictEqual(error.message, "Error");
@@ -1323,10 +1438,10 @@ class AllTests
 
 				process.exit(1);
 			}
-			
+
 			throw error;
 		}
-		
+
 		await phantomPage.setting("javascriptEnabled", true);
 
 
@@ -1374,10 +1489,10 @@ class AllTests
 
 		/**
 		 	If in websocket mode:
-		
+
 			2) Another call, on a different connection, from a JSONRPC client instantiated by BidirectionalWebsocketRouter in the browser.
 			Exactly this call from browser to node: ping("Calling from html es5 client, bidirectional websocket mode.");
-		
+
 			3) node's ping will call browser ping: await incomingRequest.reverseCallsClient.rpc("ping", [strATeamCharacterName + " called back to confirm this: " + strReturn + "!", false, "CallMeBackOnceAgain"]);
 			Where the character name is "CallMeBackOnceAgain".
 
@@ -1394,14 +1509,14 @@ class AllTests
 
 
 		await phantom.exit();
-		
+
 
 		console.log("[" + process.pid + "] Calling from the webpage worked!");
 	}
 
 
 	/**
-	 * @returns {undefined} 
+	 * @returns {undefined}
 	 */
 	async manyCallsInParallel()
 	{
@@ -1418,7 +1533,7 @@ class AllTests
 
 			this.callRPCMethodSiteBWhichThrowsSimpleError,
 			this.callRPCMethodSiteBWhichThrowsJSONRPCException,
-			
+
 			this.callRPCMethodSiteC,
 
 			this.callRPCMethodNonBidirectionalClient,

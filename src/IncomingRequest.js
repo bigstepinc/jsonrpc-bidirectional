@@ -15,6 +15,8 @@ class IncomingRequest
 		this._bAuthenticated = false;
 		this._bAuthorized = false;
 		this._mxRequestBody = null;
+		this._objRequestQuery = null;
+		this._strRequestHTTPMethod = "POST";
 		this._requestObject = null;
 		this._endpoint = null;
 		this._router = null;
@@ -31,6 +33,8 @@ class IncomingRequest
 		this._objHeaders = {};
 		this._strRemoteAddress = "";
 		this._strLocalAddress = "";
+
+		this._objExtraResponseHeaders = null;
 
 		//this._webSocket
 		//this._httpRequest
@@ -113,6 +117,47 @@ class IncomingRequest
 		this._mxRequestBody = mxRequestBody;
 	}
 
+	/**
+	 * @returns {Object|null}
+	 */
+	get requestQuery()
+	{
+		return this._objRequestQuery;
+	}
+
+
+	/**
+	 * @param {Object|null} objRequestQuery
+	 */
+	set requestQuery(objRequestQuery)
+	{
+		this._objRequestQuery = objRequestQuery;
+	}
+
+	/**
+	 * @returns {string}
+	 */
+	get requestHTTPMethod()
+	{
+		return this._strRequestHTTPMethod;
+	}
+
+	/**
+	 * @param {string} strRequestHTTPMethod
+	 */
+	set requestHTTPMethod(strRequestHTTPMethod)
+	{
+		assert(
+			(
+				typeof strRequestHTTPMethod === "string" 
+				&& strRequestHTTPMethod.length > 0
+				&& ["GET", "POST"/*, "PUT", "DELETE", "OPTIONS", "HEAD", "CONNECT"*/].includes(strRequestHTTPMethod.toUpperCase())
+			), 
+			`Invalid HTTP request method ${JSON.stringify(strRequestHTTPMethod)}.`
+		);
+
+		this._strRequestHTTPMethod = strRequestHTTPMethod.toUpperCase();
+	}
 
 	/**
 	 * @returns {Object|Array|null}
@@ -299,6 +344,31 @@ class IncomingRequest
 		this._objHeaders = objHeaders;
 	}
 
+	/**
+	 * @returns {Object}
+	 */
+	get extraResponseHeaders()
+	{
+		if(typeof this._objExtraResponseHeaders === "undefined" || this._objExtraResponseHeaders === null)
+		{
+			this._objExtraResponseHeaders = {};
+		}
+		return this._objExtraResponseHeaders;
+	}
+
+
+	/**
+	 * @param {Object} objExtraResponseHeaders
+	 */
+	set extraResponseHeaders(objExtraResponseHeaders)
+	{
+		assert(
+			typeof objExtraResponseHeaders === "object",
+			`Invalid type "${typeof objExtraResponseHeaders}" for extraResponseHeaders set on incomingRequest. Expected "object".`
+		);
+		this._objExtraResponseHeaders = objExtraResponseHeaders;
+	}
+
 
 	/**
 	 * @returns {string}
@@ -335,6 +405,16 @@ class IncomingRequest
 		this._strLocalAddress = strLocalAddress;
 	}
 
+
+	/**
+	 * Sets "location" header in the extra response headers.
+	 * 
+	 * @param {string} strRedirectURL 
+	 */
+	setRedirectURL(strRedirectURL)
+	{
+		this.extraResponseHeaders["location"] = strRedirectURL;
+	}
 
 	/**
 	 * @returns {Object}

@@ -42,7 +42,8 @@
     "babel-runtime": "^6.23.0",
     "es6-promise": "^4.1.0",
     "jssha": "^2.2.0",
-    "whatwg-fetch": "^2.0.3"
+    "whatwg-fetch": "^2.0.3",
+    "node-forge": "^0.7.1"
   },
   "devDependencies": {
     "@types/node": "^7.0.52",
