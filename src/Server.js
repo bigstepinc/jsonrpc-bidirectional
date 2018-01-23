@@ -8,6 +8,7 @@ const EventEmitter = require("events");
 
 
 const assert = require("assert");
+const querystring = require("querystring");
 
 module.exports =
 class Server extends EventEmitter
@@ -22,6 +23,13 @@ class Server extends EventEmitter
 		Object.seal(this);
 	}
 
+	/**
+	 * @returns {string}
+	 */
+	static get JSONRPC_VERSION()
+	{
+		return "2.0";
+	}
 
 	/**
 	 * It is assumed the httpServer is shared with outside code (other purposes).
@@ -90,11 +98,22 @@ class Server extends EventEmitter
 					{
 						httpResponse.statusCode = 204; // No Content
 					}
+					else if(
+						incomingRequest.extraResponseHeaders.hasOwnProperty("location")
+						|| incomingRequest.extraResponseHeaders.hasOwnProperty("Location")
+					)
+					{
+						httpResponse.statusCode = 301; // Moved Permanently
+					}
 					else
 					{
 						httpResponse.statusCode = 200; // Ok
 					}
 					
+					for(let strHeaderKey in incomingRequest.extraResponseHeaders)
+					{
+						httpResponse.setHeader(strHeaderKey, incomingRequest.extraResponseHeaders[strHeaderKey]);
+					}
 
 					if(incomingRequest.isNotification)
 					{
@@ -253,6 +272,16 @@ class Server extends EventEmitter
 					}
 				);
 			}
+			else if(httpRequest.method === "GET")
+			{
+				let strQuery = httpRequest.url;
+				if(strQuery.includes("?"))
+				{
+					strQuery = strQuery.split("?")[1];
+				}
+
+				incomingRequest.requestQuery = querystring.parse(strQuery);
+			}
 			else
 			{
 				throw new Error("JSONRPC does not handle HTTP " + httpRequest.method + " requests.");
@@ -261,6 +290,7 @@ class Server extends EventEmitter
 			incomingRequest.headers = httpRequest.headers;
 			incomingRequest.remoteAddress = httpRequest.socket.remoteAddress;
 			incomingRequest.localAddress = httpRequest.socket.localAddress;
+			incomingRequest.requestHTTPMethod = httpRequest.method;
 			
 
 			const strPath = JSONRPC.EndpointBase.normalizePath(httpRequest.url);
