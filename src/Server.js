@@ -93,7 +93,7 @@ class Server extends EventEmitter
 					}
 					else
 					{
-						httpResponse.statusCode = 200; // Ok
+						httpResponse.statusCode = httpResponse.statusCode || 200; // Ok, if nothig was set
 					}
 
 					if(incomingRequest.isNotification)

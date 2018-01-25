@@ -426,8 +426,8 @@ class IncomingRequest
 			mxHeaderValue = querystring.unescape(mxHeaderValue);
 
 			if(
-				typeof mxHeaderValue.includes("\n")
-				|| typeof mxHeaderValue.includes("\r")
+				mxHeaderValue.includes("\n")
+				|| mxHeaderValue.includes("\r")
 			)
 			{
 				throw new Error(`Invalid extra response header value ${JSON.stringify(mxHeaderValue)}.`);
