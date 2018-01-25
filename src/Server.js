@@ -77,15 +77,20 @@ class Server extends EventEmitter
 
 				try
 				{
-					// Default.
-					httpResponse.statusCode = 500;
-
 					const incomingRequest = await this.processHTTPRequest(httpRequest, httpResponse);
 					await this.processRequest(incomingRequest);
 
 					if(incomingRequest.callResult instanceof Error)
 					{
-						httpResponse.statusCode = 500; // Internal Server Error
+						// HTTP status code for an error must be a number between 500 and 599
+						if(
+							(typeof httpResponse.statusCode !== "number")
+							|| httpResponse.statusCode < 500 
+							|| httpResponse.statusCode > 599
+						)
+						{
+							httpResponse.statusCode = 500; // Internal Server Error
+						}
 					}
 					else if(incomingRequest.isNotification)
 					{
@@ -115,6 +120,7 @@ class Server extends EventEmitter
 				}
 				catch(error)
 				{
+					httpResponse.statusCode = 500; // Internal Server Error
 					console.error(error);
 				}
 
