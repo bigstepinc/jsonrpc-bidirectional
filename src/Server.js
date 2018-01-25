@@ -22,14 +22,7 @@ class Server extends EventEmitter
 
 		Object.seal(this);
 	}
-
-	/**
-	 * @returns {string}
-	 */
-	static get JSONRPC_VERSION()
-	{
-		return "2.0";
-	}
+	
 
 	/**
 	 * It is assumed the httpServer is shared with outside code (other purposes).
@@ -97,13 +90,6 @@ class Server extends EventEmitter
 					else if(incomingRequest.isNotification)
 					{
 						httpResponse.statusCode = 204; // No Content
-					}
-					else if(
-						incomingRequest.extraResponseHeaders.hasOwnProperty("location")
-						|| incomingRequest.extraResponseHeaders.hasOwnProperty("Location")
-					)
-					{
-						httpResponse.statusCode = 301; // Moved Permanently
 					}
 					else
 					{
@@ -280,7 +266,7 @@ class Server extends EventEmitter
 					strQuery = strQuery.split("?")[1];
 				}
 
-				incomingRequest.requestQuery = querystring.parse(strQuery);
+				incomingRequest.requestHTTPGetQuery = querystring.parse(strQuery);
 			}
 			else
 			{
