@@ -1,5 +1,6 @@
 const JSONRPC = {};
 JSONRPC.ServerPluginBase = require("../../ServerPluginBase");
+JSONRPC.Exception = require("../../Exception");
 
 const assert = require("assert");
 var forge = require("node-forge");
