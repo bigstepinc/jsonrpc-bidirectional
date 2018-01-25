@@ -97,7 +97,7 @@ class AllTests
 		this._serverAuthenticationSkipPlugin = new JSONRPC.Plugins.Server.AuthenticationSkip();
 		this._serverAuthorizeAllPlugin = new JSONRPC.Plugins.Server.AuthorizeAll();
 
-		let objRandomURLPublicConfig = this.randomURLPublicConfig;
+		let objRandomURLPublicConfig = this.urlPublicConfig;
 		this._serverURLPublicPlugin = new JSONRPC.Plugins.Server.URLPublic(
 			objRandomURLPublicConfig.encryptionKeys,
 			objRandomURLPublicConfig.activeKeyIndex,
@@ -152,20 +152,26 @@ class AllTests
 		return this._nWebSocketsPort;
 	}
 
-	get randomURLPublicConfig()
+	get urlPublicConfig()
 	{
-		let strActiveKeyIndex = this.generateRandomString(2);
+		if(typeof this._objURLPublicConfig === "undefined" || this._objURLPublicConfig === null)
+		{
+			let strActiveKeyIndex = "re";
 
-		return {
-			activeKeyIndex: strActiveKeyIndex,
-			encryptionKeys: {
-				[strActiveKeyIndex]: this.generateRandomString(32)
-			},
-			salt: this.generateRandomString(64),
-			compressionType: JSONRPC.Plugins.Server.URLPublic.COMPRESSION_TYPE_ZLIB
-			// compressionType: JSONRPC.Plugins.Server.URLPublic.COMPRESSION_TYPE_BROTLI
-		};
+			this._objURLPublicConfig = {
+				activeKeyIndex: strActiveKeyIndex,
+				encryptionKeys: {
+					[strActiveKeyIndex]: "hfkaisksua9812u98n191fuo9ofn9of9"
+				},
+				salt: "thisisthesupersecretsaltfortheencryptedrequest",
+				compressionType: JSONRPC.Plugins.Server.URLPublic.COMPRESSION_TYPE_ZLIB
+				// compressionType: JSONRPC.Plugins.Server.URLPublic.COMPRESSION_TYPE_BROTLI
+			};
+		}
+
+		return this._objURLPublicConfig;
 	}
+
 
 	/**
 	 * @returns {undefined}
@@ -183,7 +189,7 @@ class AllTests
 		{
 			let bufferIV1 = this._serverURLPublicPlugin.JSONRequestSignatureAndIV(strInputString);
 			let bufferIV2 = this._serverURLPublicPlugin.JSONRequestSignatureAndIV(strInputString);
-	
+
 			assert(bufferIV1.equals(bufferIV2), `[FAILED] test_URLPublic_JSONRequestSignatureAndIV: buffers not equal for string input ${strInputString}`);
 		}
 
@@ -195,14 +201,14 @@ class AllTests
 	 */
 	async urlPublicRequestGenerate()
 	{
-		const strURL = "https://example.com/api/url";
+		const strEndpointURL = `http://${this._strBindIPAddress}:${this._nHTTPPort}/api/url`;
 		const strFunctionName = "test_echo";
 		const arrParams = [1, "foo", "bar"];
 		const nExpireSeconds = 100;
 
 		for(let nEncryptionMode of this._serverURLPublicPlugin.allowedEncryptionModes)
 		{
-			let strEncryptedURL = await this._serverURLPublicPlugin.URLRequestGenerate(strURL, strFunctionName, arrParams, nExpireSeconds, nEncryptionMode);
+			let strEncryptedURL = await this._serverURLPublicPlugin.URLRequestGenerate(strEndpointURL, strFunctionName, arrParams, nExpireSeconds, nEncryptionMode);
 			console.log(`[${process.pid}] Encrypted URL with encryption mode ${nEncryptionMode}: ${strEncryptedURL}`);
 
 			let strQueryString = strEncryptedURL.split("?")[1];
@@ -213,20 +219,20 @@ class AllTests
 			let objDecryptedURLRequest = JSON.parse(strJSONDecryptedURLRequest);
 
 			assert(
-				objDecryptedURLRequest[JSONRPC.Plugins.Server.URLPublic.REQUEST_PARAM_NAME_METHOD] === strFunctionName, 
+				objDecryptedURLRequest[JSONRPC.Plugins.Server.URLPublic.REQUEST_PARAM_NAME_METHOD] === strFunctionName,
 				`Invalid method value for decrypted request URL. Encryption mode: ${nEncryptionMode}`
 			);
 
 			for(let nParamIndex in arrParams)
 			{
 				assert(
-					objDecryptedURLRequest[JSONRPC.Plugins.Server.URLPublic.REQUEST_PARAM_NAME_PARAMS][nParamIndex] === arrParams[nParamIndex], 
+					objDecryptedURLRequest[JSONRPC.Plugins.Server.URLPublic.REQUEST_PARAM_NAME_PARAMS][nParamIndex] === arrParams[nParamIndex],
 					`Invalid parameters for decrypted request URL. Encryption mode: ${nEncryptionMode}`
 				);
 			}
 
 			assert(
-				(objDecryptedURLRequest[JSONRPC.Plugins.Server.URLPublic.REQUEST_PARAM_NAME_EXPIRE] <= parseInt(((new Date()).getTime() / 1000), 10) + nExpireSeconds), 
+				(objDecryptedURLRequest[JSONRPC.Plugins.Server.URLPublic.REQUEST_PARAM_NAME_EXPIRE] <= parseInt(((new Date()).getTime() / 1000), 10) + nExpireSeconds),
 				`Invalid expire value for decrypted request URL. Encryption mode: ${nEncryptionMode}`
 			);
 
@@ -237,10 +243,10 @@ class AllTests
 
 	/**
 	 * Generates a random string of the given length from the char set.
-	 * 
-	 * @param {Integer} nLength 
-	 * @param {string} arrCharSet 
-	 * 
+	 *
+	 * @param {Integer} nLength
+	 * @param {string} arrCharSet
+	 *
 	 * @returns {string}
 	 */
 	generateRandomString(nLength = 16, arrCharSet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")

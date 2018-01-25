@@ -15,14 +15,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 	{
 		super();
 
-		assert(
-			(
-				typeof objEncryptionKeys === "object"
-				&& objEncryptionKeys !== null
-				&& Object.keys(objEncryptionKeys).length > 0
-			),
-			`Invalid objEncryptionKeys for URLPublic. Expected non-empty object, but got ${ objEncryptionKeys === null ? "null " : ""}${typeof objEncryptionKeys}.`
-		);
+		URLPublic.validateEncryptionKeys(objEncryptionKeys);
 
 		assert(typeof strKeyIndex === "string" && strKeyIndex.length > 0, `Invalid strKeyIndex set for URLPublic. Expected non-empty string, but got ${typeof strKeyIndex}.`);
 		assert(typeof strAPIKey === "string" && strAPIKey.length > 0, `Invalid strAPIKey set for URLPublic. Expected non-empty string, but got ${typeof strAPIKey}.`);
@@ -217,14 +210,14 @@ class URLPublic extends JSONRPC.ServerPluginBase
 	{
 		if(
 			incomingRequest.requestHTTPMethod !== "GET"
-			|| typeof incomingRequest.requestQuery !== "object" 
-			|| incomingRequest.requestQuery === null
+			|| typeof incomingRequest.requestHTTPGetQuery !== "object" 
+			|| incomingRequest.requestHTTPGetQuery === null
 		)
 		{
 			return;
 		}
 
-		let strJSONRequest = await this.PublicURLParamsToJSONRequest(incomingRequest.requestQuery);
+		let strJSONRequest = await this.PublicURLParamsToJSONRequest(incomingRequest.requestHTTPGetQuery);
 
 		let objRequest = null;
 		try
@@ -238,7 +231,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 		}
 
 		objRequest.id = null;
-		objRequest.jsonrpc = JSONRPC.Server.JSONRPC_VERSION;
+		objRequest.jsonrpc = this.constructor.DEFAULT_JSONRPC_VERSION;
 		objRequest.method = objRequest[this.constructor.REQUEST_PARAM_NAME_METHOD];
 		objRequest.params = objRequest[this.constructor.REQUEST_PARAM_NAME_PARAMS];
 		delete objRequest[this.constructor.REQUEST_PARAM_NAME_METHOD];
@@ -590,6 +583,39 @@ class URLPublic extends JSONRPC.ServerPluginBase
 	}
 
 	/**
+	 * Throws and error if the encryption keys object is not valid.
+	 * 
+	 * @param {Object} objEncryptionKeys 
+	 * 
+	 * @returns {undefined}
+	 * 
+	 * @throws {Error|TypeError}
+	 */
+	static validateEncryptionKeys(objEncryptionKeys)
+	{
+		if(
+			typeof objEncryptionKeys !== "object"
+			|| objEncryptionKeys === null
+			|| Object.keys(objEncryptionKeys).length === 0
+		)
+		{
+			throw new TypeError(`Invalid objEncryptionKeys for URLPublic. Expected non-empty object, but got ${ objEncryptionKeys === null ? "null " : ""}${typeof objEncryptionKeys}.`);
+		};
+
+		// Validate key length
+		// https://www.npmjs.com/package/node-forge#ciphers-1
+		// Note: a key size of 16 bytes will use AES-128, 24 => AES-192, 32 => AES-256
+		// Otherwise a not so explicit error is thrown in the crypto library
+		for(let strEncryptionKeyIndex in objEncryptionKeys)
+		{
+			if(![16, 24, 32].includes(objEncryptionKeys[strEncryptionKeyIndex].length))
+			{
+				throw new Error(`Invalid key with index ${JSON.stringify(strEncryptionKeyIndex)} in objEncryptionKeys for URLPublic. Key values must have 16, 24 or 32 characters, but ${objEncryptionKeys[strEncryptionKeyIndex].length} characters found.`);
+			}
+		}
+	}
+
+	/**
 	 * @returns {Array}
 	 */
 	static get allowedCompressionTypes()
@@ -619,4 +645,14 @@ class URLPublic extends JSONRPC.ServerPluginBase
 
 	static get COMPRESSION_TYPE_ZLIB() { return "zlib"; }
 	static get COMPRESSION_TYPE_BROTLI() { return "brotli"; }
+
+	/**
+	 * Represents the JSONRPC version of the constructed request object from the request encoded string.
+	 * 
+	 * @returns {string}
+	 */
+	static get DEFAULT_JSONRPC_VERSION()
+	{
+		return "2.0";
+	}
 };

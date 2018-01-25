@@ -6,6 +6,8 @@ JSONRPC.Exception = require("./Exception");
 JSONRPC.Server = require("./Server");
 JSONRPC.RouterBase = require("./RouterBase");
 
+const { URL } = require("url");
+const querystring = require("querystring");
 
 module.exports =
 class IncomingRequest
@@ -15,8 +17,8 @@ class IncomingRequest
 		this._bAuthenticated = false;
 		this._bAuthorized = false;
 		this._mxRequestBody = null;
-		this._objRequestQuery = null;
-		this._strRequestHTTPMethod = "POST";
+		this._objRequestHTTPGetQuery = null;
+		this._strRequestHTTPMethod = null;
 		this._requestObject = null;
 		this._endpoint = null;
 		this._router = null;
@@ -118,24 +120,32 @@ class IncomingRequest
 	}
 
 	/**
+	 * Contains the query of the HTTP GET request as an object.
+	 * 
 	 * @returns {Object|null}
 	 */
-	get requestQuery()
+	get requestHTTPGetQuery()
 	{
-		return this._objRequestQuery;
+		return this._objRequestHTTPGetQuery;
 	}
 
 
 	/**
-	 * @param {Object|null} objRequestQuery
+	 * Sets the query of the HTTP GET request as an object.
+	 * 
+	 * @param {Object|null} objRequestHTTPGetQuery
 	 */
-	set requestQuery(objRequestQuery)
+	set requestHTTPGetQuery(objRequestHTTPGetQuery)
 	{
-		this._objRequestQuery = objRequestQuery;
+		this._objRequestHTTPGetQuery = objRequestHTTPGetQuery;
 	}
 
 	/**
-	 * @returns {string}
+	 * Contains the HTTP method of the request. The value is converted to uppercase.
+	 * Supported values are: GET and POST.
+	 * This MUST be null when the request is not HTTP.
+	 * 
+	 * @returns {string|null}
 	 */
 	get requestHTTPMethod()
 	{
@@ -143,7 +153,11 @@ class IncomingRequest
 	}
 
 	/**
-	 * @param {string} strRequestHTTPMethod
+	 * Sets the HTTP method of the request. The value is converted to uppercase.
+	 * Supported values are: GET and POST.
+	 * This MUST be null when the request is not HTTP.
+	 * 
+	 * @param {string|null} strRequestHTTPMethod
 	 */
 	set requestHTTPMethod(strRequestHTTPMethod)
 	{
@@ -362,10 +376,38 @@ class IncomingRequest
 	 */
 	set extraResponseHeaders(objExtraResponseHeaders)
 	{
-		assert(
-			typeof objExtraResponseHeaders === "object",
-			`Invalid type "${typeof objExtraResponseHeaders}" for extraResponseHeaders set on incomingRequest. Expected "object".`
-		);
+		if(typeof objExtraResponseHeaders !== "object")
+		{
+			throw new TypeError(`Invalid type "${typeof objExtraResponseHeaders}" for extraResponseHeaders set on incomingRequest. Expected "object".`);
+		};
+
+		// Make sure headers are lowercased, like the specification from Node.js.
+		// And avoid header injection.
+		for(let strHeaderName in objExtraResponseHeaders)
+		{
+			if(strHeaderName !== strHeaderName.toLowerCase())
+			{
+				throw new TypeError(`Invalid extra response header key ${strHeaderName}. Keys must be lowercased.`);
+			}
+
+			let mxHeaderValue = objExtraResponseHeaders[strHeaderName];
+
+			if(typeof mxHeaderValue !== "string")
+			{
+				throw new TypeError(`Invalid extra response header value ${JSON.stringify(mxHeaderValue)} for key ${strHeaderName}. Only string values are allowed.`);
+			}
+
+			mxHeaderValue = querystring.unescape(mxHeaderValue);
+
+			if(
+				typeof mxHeaderValue.includes("\n")
+				|| typeof mxHeaderValue.includes("\r")
+			)
+			{
+				throw new Error(`Invalid extra response header value ${JSON.stringify(mxHeaderValue)}.`);
+			}
+		}
+
 		this._objExtraResponseHeaders = objExtraResponseHeaders;
 	}
 
@@ -413,7 +455,12 @@ class IncomingRequest
 	 */
 	setRedirectURL(strRedirectURL)
 	{
-		this.extraResponseHeaders["location"] = strRedirectURL;
+		if(strRedirectURL.includes("\n\t\r"))
+		{
+			throw new TypeError(`Invalid redirect URL ${JSON.stringify(strRedirectURL)}`);
+		}
+		const redirectURL = new URL(strRedirectURL);
+		this.extraResponseHeaders["location"] = redirectURL.toString();
 	}
 
 	/**
