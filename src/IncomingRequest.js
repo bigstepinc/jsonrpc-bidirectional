@@ -17,12 +17,10 @@ class IncomingRequest
 		this._bAuthenticated = false;
 		this._bAuthorized = false;
 		this._mxRequestBody = null;
-		this._objRequestHTTPGetQuery = null;
-		this._strRequestHTTPMethod = null;
 		this._requestObject = null;
 		this._endpoint = null;
 		this._router = null;
-		
+
 		this._mxResult = null;
 		this._objResponseToBeSerialized = null;
 		this._mxResultSerialized = null;
@@ -36,7 +34,8 @@ class IncomingRequest
 		this._strRemoteAddress = "";
 		this._strLocalAddress = "";
 
-		this._objExtraResponseHeaders = null;
+		this._objHTTPIncomingMessage = null;
+		this._objHTTPServerResponse = null;
 
 		//this._webSocket
 		//this._httpRequest
@@ -121,57 +120,42 @@ class IncomingRequest
 
 	/**
 	 * Contains the query of the HTTP GET request as an object.
-	 * 
+	 *
 	 * @returns {Object|null}
 	 */
 	get requestHTTPGetQuery()
 	{
-		return this._objRequestHTTPGetQuery;
+		if(typeof this.httpIncomingMessage === "undefined" || this.httpIncomingMessage === null)
+		{
+			return null;
+		}
+		let strQuery = this.httpIncomingMessage.url;
+		if(strQuery.includes("?"))
+		{
+			strQuery = strQuery.split("?")[1];
+		}
+
+		return querystring.parse(strQuery);
 	}
 
-
-	/**
-	 * Sets the query of the HTTP GET request as an object.
-	 * 
-	 * @param {Object|null} objRequestHTTPGetQuery
-	 */
-	set requestHTTPGetQuery(objRequestHTTPGetQuery)
-	{
-		this._objRequestHTTPGetQuery = objRequestHTTPGetQuery;
-	}
 
 	/**
 	 * Contains the HTTP method of the request. The value is converted to uppercase.
 	 * Supported values are: GET and POST.
-	 * This MUST be null when the request is not HTTP.
-	 * 
+	 * This is null when the request is not HTTP.
+	 *
 	 * @returns {string|null}
 	 */
 	get requestHTTPMethod()
 	{
-		return this._strRequestHTTPMethod;
+		if(typeof this.httpIncomingMessage === "undefined" || this.httpIncomingMessage === null)
+		{
+			return null;
+		}
+
+		return this.httpIncomingMessage.method;
 	}
 
-	/**
-	 * Sets the HTTP method of the request. The value is converted to uppercase.
-	 * Supported values are: GET and POST.
-	 * This MUST be null when the request is not HTTP.
-	 * 
-	 * @param {string|null} strRequestHTTPMethod
-	 */
-	set requestHTTPMethod(strRequestHTTPMethod)
-	{
-		assert(
-			(
-				typeof strRequestHTTPMethod === "string" 
-				&& strRequestHTTPMethod.length > 0
-				&& ["GET", "POST"/*, "PUT", "DELETE", "OPTIONS", "HEAD", "CONNECT"*/].includes(strRequestHTTPMethod.toUpperCase())
-			), 
-			`Invalid HTTP request method ${JSON.stringify(strRequestHTTPMethod)}.`
-		);
-
-		this._strRequestHTTPMethod = strRequestHTTPMethod.toUpperCase();
-	}
 
 	/**
 	 * @returns {Object|Array|null}
@@ -198,13 +182,13 @@ class IncomingRequest
 	 * An identifier established by the Client that MUST contain a String, Number, or NULL value if included.
 	 * If it is not included it is assumed to be a notification.
 	 * The value SHOULD normally not be Null and Numbers SHOULD NOT contain fractional parts.
-	 * 
+	 *
 	 * @returns {boolean}
 	 */
 	get isNotification()
 	{
 		return (
-			this._requestObject !== null 
+			this._requestObject !== null
 			&& typeof this._requestObject === "object"
 			&& !this.requestObject.hasOwnProperty("id")
 		);
@@ -223,7 +207,7 @@ class IncomingRequest
 	/**
 	 * endpoint.ReverseCallsClientClass may be null or a class for an API client.
 	 * See .router
-	 * 
+	 *
 	 * @param {JSONRPC.EndpointBase} endpoint
 	 */
 	set endpoint(endpoint)
@@ -294,7 +278,7 @@ class IncomingRequest
 		return this._mxResult;
 	}
 
-	
+
 	/**
 	 * @param {number|string|null|Object|Array|Error} mxResult
 	 */
@@ -340,6 +324,55 @@ class IncomingRequest
 		this._mxResultSerialized = mxResultSerialized;
 	}
 
+	/**
+	 * @returns {http.ServerResponse | null}
+	 */
+	get httpServerResponse()
+	{
+		return this._objHTTPServerResponse || null;
+	}
+
+
+	/**
+	 * Sets the HTTP Server Response.
+	 *
+	 * @param {Object | null} value
+	 */
+	set httpServerResponse(value)
+	{
+		if(typeof value !== "object")
+		{
+			throw new TypeError(`Invalid type ${typeof value} for httpServerResponse property in ${this.constructor.name}. Expected "object".`);
+		}
+
+		this._objHTTPServerResponse = value;
+	}
+
+
+	/**
+	 * @returns {http.IncomingMessage | null}
+	 */
+	get httpIncomingMessage()
+	{
+		return this._objHTTPIncomingMessage || null;
+	}
+
+
+	/**
+	 * Sets the HTTP Incoming Request.
+	 *
+	 * @param {Object | null} value
+	 */
+	set httpIncomingMessage(value)
+	{
+		if(typeof value !== "object")
+		{
+			throw new TypeError(`Invalid type ${typeof value} for httpServerResponse property in ${this.constructor.name}. Expected "object".`);
+		}
+
+		this._objHTTPIncomingMessage = value;
+	}
+
 
 	/**
 	 * @returns {Object}
@@ -358,39 +391,32 @@ class IncomingRequest
 		this._objHeaders = objHeaders;
 	}
 
+
 	/**
-	 * @returns {Object}
+	 * @param {Object} objResponseHeaders
 	 */
-	get extraResponseHeaders()
+	addHTTPResponseHeaders(objResponseHeaders)
 	{
-		if(typeof this._objExtraResponseHeaders === "undefined" || this._objExtraResponseHeaders === null)
+		if(typeof this.httpServerResponse === "undefined" || this.httpServerResponse === null)
 		{
-			this._objExtraResponseHeaders = {};
+			throw new Error("Error when trying to add HTTP response headers. The httpServerResponse is not set on the IncomingRequest instance.");
 		}
-		return this._objExtraResponseHeaders;
-	}
 
-
-	/**
-	 * @param {Object} objExtraResponseHeaders
-	 */
-	set extraResponseHeaders(objExtraResponseHeaders)
-	{
-		if(typeof objExtraResponseHeaders !== "object")
+		if(typeof objResponseHeaders !== "object")
 		{
-			throw new TypeError(`Invalid type "${typeof objExtraResponseHeaders}" for extraResponseHeaders set on incomingRequest. Expected "object".`);
+			throw new TypeError(`Invalid type "${typeof objResponseHeaders}" for extraResponseHeaders set on incomingRequest. Expected "object".`);
 		};
 
 		// Make sure headers are lowercased, like the specification from Node.js.
 		// And avoid header injection.
-		for(let strHeaderName in objExtraResponseHeaders)
+		for(let strHeaderName in objResponseHeaders)
 		{
 			if(strHeaderName !== strHeaderName.toLowerCase())
 			{
 				throw new TypeError(`Invalid extra response header key ${strHeaderName}. Keys must be lowercased.`);
 			}
 
-			let mxHeaderValue = objExtraResponseHeaders[strHeaderName];
+			let mxHeaderValue = objResponseHeaders[strHeaderName];
 
 			if(typeof mxHeaderValue !== "string")
 			{
@@ -408,7 +434,10 @@ class IncomingRequest
 			}
 		}
 
-		this._objExtraResponseHeaders = objExtraResponseHeaders;
+		for(let strHeaderName in objResponseHeaders)
+		{
+			this.httpServerResponse.setHeader(strHeaderName, objResponseHeaders[strHeaderName]);
+		}
 	}
 
 
@@ -417,6 +446,17 @@ class IncomingRequest
 	 */
 	get remoteAddress()
 	{
+		if(
+			this.httpIncomingMessage
+			&& (
+				typeof this._strRemoteAddress === "undefined"
+				|| this._strRemoteAddress === null
+			)
+		)
+		{
+			this._strRemoteAddress = this.httpIncomingMessage.socket.remoteAddress;
+		}
+
 		return this._strRemoteAddress;
 	}
 
@@ -435,6 +475,17 @@ class IncomingRequest
 	 */
 	get localAddress()
 	{
+		if(
+			this.httpIncomingMessage
+			&& (
+				typeof this._strLocalAddress === "undefined"
+				|| this._strLocalAddress === null
+			)
+		)
+		{
+			this._strLocalAddress = this.httpIncomingMessage.socket.localAddress;
+		}
+
 		return this._strLocalAddress;
 	}
 
@@ -450,8 +501,8 @@ class IncomingRequest
 
 	/**
 	 * Sets "location" header in the extra response headers.
-	 * 
-	 * @param {string} strRedirectURL 
+	 *
+	 * @param {string} strRedirectURL
 	 */
 	setRedirectURL(strRedirectURL)
 	{
@@ -459,8 +510,14 @@ class IncomingRequest
 		{
 			throw new TypeError(`Invalid redirect URL ${JSON.stringify(strRedirectURL)}`);
 		}
+
+		//Validate URL
 		const redirectURL = new URL(strRedirectURL);
-		this.extraResponseHeaders["location"] = redirectURL.toString();
+		this.addHTTPResponseHeaders({
+			"location": redirectURL.toString()
+		});
+		// without the status code set to 3xx, browsers do not make the redirect
+		this.httpServerResponse.statusCode = 301; //Moved permanently
 	}
 
 	/**
@@ -480,12 +537,12 @@ class IncomingRequest
 		}
 		else
 		{
-			objResponse.result = this.callResult === undefined ? null : this.callResult; 
+			objResponse.result = this.callResult === undefined ? null : this.callResult;
 		}
 
 		if(
 			this._requestObject !== null
-			&& typeof this._requestObject === "object" 
+			&& typeof this._requestObject === "object"
 			&& this._requestObject.hasOwnProperty("id")
 		)
 		{
