@@ -501,23 +501,31 @@ class IncomingRequest
 
 	/**
 	 * Sets "location" header in the extra response headers.
+	 * For redirect HTTP status code the default is 307 - Temporary Redirect.
+	 * Warning! Without the status code set to 3xx, browsers do not make the redirect
 	 *
 	 * @param {string} strRedirectURL
+	 * @param {Integer} nRedirectHTTPStatusCode
 	 */
-	setRedirectURL(strRedirectURL)
+	setRedirectURL(strRedirectURL, nRedirectHTTPStatusCode = 307 /*Temporary Redirect*/)
 	{
 		if(strRedirectURL.includes("\n\t\r"))
 		{
 			throw new TypeError(`Invalid redirect URL ${JSON.stringify(strRedirectURL)}`);
 		}
 
+		assert(
+			Number.isInteger(nRedirectHTTPStatusCode) && nRedirectHTTPStatusCode >= 300 && nRedirectHTTPStatusCode <= 399,
+			`Invalid redirect HTTP status code. Expected a number between 300 and 399, but got ${JSON.stringify(nRedirectHTTPStatusCode)}.`
+		);
+
 		//Validate URL
 		const redirectURL = new URL(strRedirectURL);
 		this.addHTTPResponseHeaders({
 			"location": redirectURL.toString()
 		});
-		// without the status code set to 3xx, browsers do not make the redirect
-		this.httpServerResponse.statusCode = 301; //Moved permanently
+
+		this.httpServerResponse.statusCode = nRedirectHTTPStatusCode;
 	}
 
 	/**

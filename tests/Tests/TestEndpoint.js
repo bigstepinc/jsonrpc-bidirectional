@@ -379,4 +379,15 @@ class TestEndpoint extends JSONRPC.EndpointBase
 			throw error;
 		}
 	}
+
+
+	/**
+	 * 
+	 * @param {JSONRPC.IncomingRequest} incomingRequest 
+	 * @param {string} strRedirectURL 
+	 */
+	async processAndRedirect(incomingRequest, strRedirectURL)
+	{
+		incomingRequest.setRedirectURL(strRedirectURL);
+	}
 };

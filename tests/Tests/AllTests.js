@@ -341,9 +341,10 @@ class AllTests
 		// URLPublic tests
 		await this.urlPublicRequestSignatureAndIV();
 		await this.urlPublicRequestGenerate();
-		
+
 		this.addURLPublicPluginSiteA();
 		await this.callURLPublicRPCMethod();
+		await this.callURLPublicWithRedirect();
 
 		await this.manyCallsInParallel();
 
@@ -1557,9 +1558,39 @@ class AllTests
 		assert(typeof objJSONResponse === "object", `Invalid response from URLPublic calling method ${strFunctionName}. Expected "object", but got ${JSON.stringify(objJSONResponse)}`);
 		assert(objJSONResponse.result === strReturnValue, `Invalid response result from URLPublic calling method ${strFunctionName}. Expected value ${JSON.stringify(strReturnValue)}, but got ${JSON.stringify(objJSONResponse.result)}`);
 
-		console.log(`[${process.pid}] Calling method through generated public URL worked! Response: ${JSON.stringify(objJSONResponse, null, 2)}`);
+		console.log(`[${process.pid}] [OK] Calling method through generated public URL worked! Response: ${JSON.stringify(objJSONResponse, null, 2)}`);
 	}
 
+
+	/**
+	 * It calls the "processAndRedirect" function on the "TestEndpoint" and expects the response to have
+	 * a redirect status code (3xx) and the "location" header to be the redirect URL given as first parameter.
+	 */
+	async callURLPublicWithRedirect()
+	{
+		const strEndpointURL = `http://${this._strBindIPAddress}:${this._nHTTPPort}/api/`;
+		const strFunctionName = "processAndRedirect";
+		const strRedirectURL = `${strEndpointURL}redirect/here/`;
+		const arrParams = [strRedirectURL];
+		const nExpireSeconds = 100;
+		const nEncryptionMode = JSONRPC.Plugins.Server.URLPublic.MODE_DEFAULT;
+
+		let strRequestPublicURL = await this._serverURLPublicPlugin.URLRequestGenerate(strEndpointURL, strFunctionName, arrParams, nExpireSeconds, nEncryptionMode);
+
+		let fetchResponse = await fetch(
+			strRequestPublicURL,
+			{
+				method: "GET",
+				redirect: "manual"
+			}
+		);
+
+		assert(fetchResponse.status >= 300 && fetchResponse.status <= 399, `Invalid redirect HTTP status code "${fetchResponse.status}". Expected a number between 300 and 399.`);
+		let strRedirectURLFromResonse = fetchResponse.headers.get("location");
+		assert(typeof strRedirectURLFromResonse === "string" && strRedirectURLFromResonse === strRedirectURL, `Invalid redirect "location" header in response. Expected "${strRedirectURL}", but got ${JSON.stringify(strRedirectURLFromResonse)}.`);
+
+		console.log(`[${process.pid}] [OK] Calling method through generated public URL and REDIRECT after worked! Response status code: ${fetchResponse.status} with location header: ${JSON.stringify(strRedirectURLFromResonse)}`);
+	}
 
 	/**
 	 * @returns {undefined}
