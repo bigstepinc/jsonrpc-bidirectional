@@ -15,6 +15,8 @@ const Phantom = require("phantom");
 const cluster = require("cluster");
 
 const querystring = require("querystring");
+const fetch = require("node-fetch");
+
 // @TODO: Test with other WebSocket implementations.
 
 
@@ -336,6 +338,13 @@ class AllTests
 
 		await this.callRPCMethodNonBidirectionalClient();
 
+		// URLPublic tests
+		await this.urlPublicRequestSignatureAndIV();
+		await this.urlPublicRequestGenerate();
+		
+		this.addURLPublicPluginSiteA();
+		await this.callURLPublicRPCMethod();
+
 		await this.manyCallsInParallel();
 
 		if(this._webSocketServerSiteA)
@@ -416,9 +425,6 @@ class AllTests
 
 
 		this._bPreventHTTPAPIRequests = false;
-
-		await this.urlPublicRequestSignatureAndIV();
-		await this.urlPublicRequestGenerate();
 
 		if(this._bBenchmarkMode)
 		{
@@ -1518,6 +1524,40 @@ class AllTests
 
 
 		console.log("[" + process.pid + "] Calling from the webpage worked!");
+	}
+
+
+	/**
+	 * Adds URLPublicPlugin to JSONRPC server for site A.
+	 */
+	addURLPublicPluginSiteA()
+	{
+		this._jsonrpcServerSiteA.addPlugin(this._serverURLPublicPlugin);
+	}
+
+
+	/**
+	 * Generates a public URL and makes a HTTP GET request to it.
+	 * It calls the "ping" function on the "TestEndpoint" and expects to be returned the same result as the first parameter.
+	 */
+	async callURLPublicRPCMethod()
+	{
+		const strEndpointURL = `http://${this._strBindIPAddress}:${this._nHTTPPort}/api/`;
+		const strFunctionName = "ping";
+		const strReturnValue = "return_ping_value";
+		const arrParams = [strReturnValue, /*bRandomSleep*/ false, /*strATeamCharacterName*/ null];
+		const nExpireSeconds = 100;
+		const nEncryptionMode = JSONRPC.Plugins.Server.URLPublic.MODE_DEFAULT;
+
+		let strRequestPublicURL = await this._serverURLPublicPlugin.URLRequestGenerate(strEndpointURL, strFunctionName, arrParams, nExpireSeconds, nEncryptionMode);
+
+		let fetchResponse = await fetch(strRequestPublicURL);
+		let objJSONResponse = await fetchResponse.json();
+
+		assert(typeof objJSONResponse === "object", `Invalid response from URLPublic calling method ${strFunctionName}. Expected "object", but got ${JSON.stringify(objJSONResponse)}`);
+		assert(objJSONResponse.result === strReturnValue, `Invalid response result from URLPublic calling method ${strFunctionName}. Expected value ${JSON.stringify(strReturnValue)}, but got ${JSON.stringify(objJSONResponse.result)}`);
+
+		console.log(`[${process.pid}] Calling method through generated public URL worked! Response: ${JSON.stringify(objJSONResponse, null, 2)}`);
 	}
 
 
