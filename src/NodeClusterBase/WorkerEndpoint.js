@@ -22,6 +22,8 @@ class WorkerEndpoint extends JSONRPC.EndpointBase
 {
 	constructor(classReverseCallsClient)
 	{
+		console.log(`Fired up ${cluster.isWorker ? "worker" : "master"} with PID ${process.pid}`);
+		
 		super(
 			/*strName*/ "ClusterIPC", 
 			/*strPath*/ "/api-cluster/IPC", 
