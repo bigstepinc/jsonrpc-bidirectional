@@ -65,6 +65,41 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 
 
 	/**
+	 * This overridable function is called and awaited inside startWorker().
+	 * 
+	 * This mustn't be called through JSONRPC.
+	 * 
+	 * @param {undefined} incomingRequest
+	 */
+	async _startServices(incomingRequest)
+	{
+		if(incomingRequest)
+		{
+			throw new Error("This mustn't be called through JSONRPC.");
+		}
+
+		// this.masterClient is available here.
+	}
+
+
+	/**
+	 * This overridable function is called and awaited inside gracefulExit().
+	 * Careful, gracefulExit() will timeout waiting after services to stop after a while.
+	 * 
+	 * This mustn't be called through JSONRPC.
+	 * 
+	 * @param {undefined} incomingRequest
+	 */
+	async _stopServices(incomingRequest)
+	{
+		if(incomingRequest)
+		{
+			throw new Error("This mustn't be called through JSONRPC.");
+		}
+	}
+
+
+	/**
 	 * Starts the JSONRPC server over cluster IPC, and forks worker processes.
 	 */
 	async start()
@@ -141,6 +176,8 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 				}
 			}
 		);
+
+		await this._startServices();
 
 		for (let i = 0; i < Math.max(os.cpus().length, 2); i++)
 		{
@@ -280,6 +317,7 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 		}
 		console.log("All workers have exited.");
 
+		await this._stopServices();
 
 		console.log("[" + process.pid + "] Master process exiting gracefully.");
 		process.exit(0);
