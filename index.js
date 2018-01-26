@@ -1,29 +1,35 @@
 // Do not use const here, webpack/babel issues.
-var objExports = {};
+var objExports = {
+	Client: require("./src/Client"),
+	ClientPluginBase: require("./src/ClientPluginBase"),
 
-objExports.Client = require("./src/Client");
-objExports.ClientPluginBase = require("./src/ClientPluginBase");
+	Server: require("./src/Server"),
+	ServerPluginBase: require("./src/ServerPluginBase"),
 
-objExports.Utils = require("./src/Utils.js");
-objExports.Exception = require("./src/Exception");
+	EndpointBase: require("./src/EndpointBase"),
 
-objExports.EndpointBase = require("./src/EndpointBase.js");
-objExports.Server = require("./src/Server.js");
-objExports.ServerPluginBase = require("./src/ServerPluginBase");
+	BidirectionalWebsocketRouter: require("./src/BidirectionalWebsocketRouter"),
+	BidirectionalWorkerRouter: require("./src/BidirectionalWorkerRouter"),
+	BidirectionalWebRTCRouter: require("./src/BidirectionalWebRTCRouter"),
+	RouterBase: require("./src/RouterBase"),
+	
+	Exception: require("./src/Exception"), 
 
-objExports.BidirectionalWebsocketRouter = require("./src/BidirectionalWebsocketRouter.js");
-objExports.BidirectionalWorkerRouter = require("./src/BidirectionalWorkerRouter.js");
-objExports.BidirectionalWebRTCRouter = require("./src/BidirectionalWebRTCRouter.js");
-objExports.RouterBase = require("./src/RouterBase.js");
+	Utils: require("./src/Utils"),
 
+	Plugins: {
+		Client: require("./src/Plugins/Client"),
+		Server: require("./src/Plugins/Server")
+	},
 
-objExports.Plugins = objExports.Plugins || {};
-objExports.Plugins.Client = require("./src/Plugins/Client");
-objExports.Plugins.Server = require("./src/Plugins/Server");
+	WebSocketAdapters: {
+		WebSocketWrapperBase: require("./src/WebSocketAdapters/WebSocketWrapperBase"),
+		uws: {
+			WebSocketWrapper: require("./src/WebSocketAdapters/uws/WebSocketWrapper")
+		}
+	},
 
-objExports.WebSocketAdapters = objExports.WebSocketAdapters || {};
-objExports.WebSocketAdapters.WebSocketWrapperBase = require("./src/WebSocketAdapters/WebSocketWrapperBase");
-objExports.WebSocketAdapters.uws = objExports.WebSocketAdapters.uws || {};
-objExports.WebSocketAdapters.uws.WebSocketWrapper = require("./src/WebSocketAdapters/uws/WebSocketWrapper");
+	NodeClusterBase: require("./src/NodeClusterBase")
+};
 
 module.exports = objExports;
