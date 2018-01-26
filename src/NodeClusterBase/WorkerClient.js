@@ -13,7 +13,7 @@ class WorkerClient extends JSONRPC.Client
 	 */
 	async gracefulExit()
 	{
-		return this.rpc("gracefulExit", []);
+		return this.rpc("gracefulExit", [], /*bNotification*/ true);
 	}
 };
 

@@ -1,7 +1,11 @@
 const JSONRPC = require("..");
+
 const cluster = require("cluster");
 const assert = require("assert");
+const path = require("path");
+
 const sleep = require("sleep-promise");
+
 
 process.on(
 	"unhandledRejection", 
@@ -33,6 +37,7 @@ setInterval(() => {}, 10000);
 		{
 			const endpoint = new JSONRPC.NodeClusterBase.MasterEndpoint(JSONRPC.NodeClusterBase.WorkerClient);
 			await endpoint.start();
+			await endpoint.watchForUpgrade(path.join(path.dirname(__dirname), "package.json"));
 
 			let bNotReady;
 			console.log("Waiting for workers to all signal they are ready.");
@@ -62,7 +67,7 @@ setInterval(() => {}, 10000);
 			assert(await endpoint.masterClient.ping("Test") === "Test", "Calling MasterEndpoint.ping() returned the wrong thing.");
 			
 			console.log("Will call masterClient.gracefulExit().");
-			await sleep(4000);
+			await sleep(40000);
 			// This will call all worker's gracefulExit() methods.
 			await endpoint.masterClient.gracefulExit();
 		}

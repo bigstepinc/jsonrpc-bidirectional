@@ -1,5 +1,7 @@
 const cluster = require("cluster");
 const os = require("os");
+const assert = require("assert");
+const fs = require("fs-promise");
 
 const sleep = require("sleep-promise");
 const JSONRPC = {
@@ -47,6 +49,7 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 		this.objWorkerIDToState = {};
 
 		this._bWorkersStarted = false;
+		this._bWatchingForUpgrade = false;
 	}
 
 
@@ -143,6 +146,64 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 		{
 			cluster.fork();
 		}
+	}
+
+
+	/**
+	 * If the version in package.json changes, this.gracefulExit() will be invoked.
+	 * 
+	 * @param {string} strPackageJSONPath
+	 * 
+	 * @returns {undefined}
+	 */
+	async watchForUpgrade(strPackageJSONPath)
+	{
+		assert(typeof strPackageJSONPath === "string");
+
+		if(this._bWatchingForUpgrade)
+		{
+			return;
+		}
+
+		this._bWatchingForUpgrade = true;
+
+		const strVersion = JSON.parse(await fs.readFile(strPackageJSONPath, "utf8")).version;
+		let nPackageJSONModificationTime = (await fs.stat(strPackageJSONPath)).mtime.getTime();
+		let strVersionNew = strVersion;
+
+		const nIntervalMilliseconds = 10 * 1000;
+
+		const nIntervalID = setInterval(
+			async () => {
+				try
+				{
+					if(nPackageJSONModificationTime !== (await fs.stat(strPackageJSONPath)).mtime.getTime())
+					{
+						nPackageJSONModificationTime = (await fs.stat(strPackageJSONPath)).mtime.getTime();
+						strVersionNew = JSON.parse(await fs.readFile(strPackageJSONPath, "utf8")).version;
+					}
+
+					if(strVersionNew !== strVersion)
+					{
+						clearInterval(nIntervalID);
+
+						console.log(`
+							Updated. 
+							Detected new version ${strVersionNew}. 
+							Old version ${strVersion}. 
+							Attempting to exit gracefully to allow starting with new version.
+						`.replace(/^\t+/gm, ""));
+
+						await this.gracefulExit(null);
+					}
+				}
+				catch(error)
+				{
+					console.error(error);
+				}
+			},
+			nIntervalMilliseconds
+		);
 	}
 
 

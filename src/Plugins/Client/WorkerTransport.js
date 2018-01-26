@@ -178,7 +178,6 @@ class WorkerTransport extends JSONRPC.ClientPluginBase
 	 */
 	async beforeJSONDecode(outgoingRequest)
 	{
-		outgoingRequest.responseObject = outgoingRequest.responseBody;
 	}
 
 
