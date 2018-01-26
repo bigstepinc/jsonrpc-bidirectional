@@ -1,4 +1,9 @@
 // Do not use const here, webpack/babel issues.
-module.exports = {
+var objExport = {
 	JSONRPC: require("./index")
 };
+
+objExport.JSONRPC.NodeClusterBase = null;
+delete objExport.JSONRPC.NodeClusterBase;
+
+module.exports = objExport;

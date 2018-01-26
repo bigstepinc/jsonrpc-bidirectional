@@ -12,7 +12,8 @@ module.exports = [
 			"ws": "WebSocket", 
 			"uws": "WebSocket", 
 			"node-fetch": "fetch",
-			"cluster": ""
+			"cluster": "",
+			"node-forge": "forge"
 		}, 
 		entry: [
 			// "babel-polyfill",
@@ -90,7 +91,8 @@ module.exports = [
 			"ws": "WebSocket",
 			"uws": "WebSocket",
 			"node-fetch": "fetch",
-			"cluster": ""
+			"cluster": "",
+			"node-forge": "forge"
 		}, 
 		entry: [
 			"./index_webpack"
