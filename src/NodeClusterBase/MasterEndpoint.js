@@ -3,15 +3,22 @@ const os = require("os");
 
 const sleep = require("sleep-promise");
 const JSONRPC = {
-	EndpointBase: require("../EndpointBase")
+	EndpointBase: require("../EndpointBase"),
+	Server: require("../Server"),
+	Client: require("../Client"),
+	BidirectionalWorkerRouter: require("../BidirectionalWorkerRouter"),
+	Plugins: {
+		Server: require("../Plugins/Server"),
+		Client: require("../Plugins/Client")
+	}
 };
 
 
 /**
- * Extend this class to provide extra master RPC APIs.
+ * Extend this class to export extra master RPC APIs.
  * 
- * Counter-intuitively, this class instantiates its own JSONRPC.Server and JSONRPC.BidirectionalWorkerRouter,
- * inside .startWorkers().
+ * Counter-intuitively, this endpoint instantiates its own JSONRPC.Server and JSONRPC.BidirectionalWorkerRouter,
+ * inside .start().
  */
 class MasterEndpoint extends JSONRPC.EndpointBase
 {
@@ -53,9 +60,9 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 
 
 	/**
-	 * @param {JSONRPC.BidirectionalWorkerRouter} bidirectionalWorkerRouter 
+	 * Starts the JSONRPC server over cluster IPC, and forks worker processes.
 	 */
-	startWorkers(bidirectionalWorkerRouter)
+	async start()
 	{
 		if(this._bWorkersStarted)
 		{
@@ -78,12 +85,14 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 			async (worker) => {
 				try
 				{
-					const nConnectionID = await this._bidirectionalWorkerRouter.addWorker(worker, /*strEndpointPath*/ undefined, 120 * 1000 /*Readiness timeout in milliseconds*/);
-
 					this.objWorkerIDToState[worker.id] = {
-						client: this._bidirectionalWorkerRouter.connectionIDToSingletonClient(nConnectionID, this.ReverseCallsClientClass),
+						client: null,
 						ready: false
 					};
+
+					const nConnectionID = await this._bidirectionalWorkerRouter.addWorker(worker, /*strEndpointPath*/ this.path, 120 * 1000 /*Readiness timeout in milliseconds*/);
+
+					this.objWorkerIDToState[worker.id].client = this._bidirectionalWorkerRouter.connectionIDToSingletonClient(nConnectionID, this.ReverseCallsClientClass);
 				}
 				catch(error)
 				{
@@ -173,7 +182,7 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 				/*await*/ this.objWorkerIDToState[nWorkerID].client.gracefulExit()
 				.then(() => { /*gracefulExit should never return.*/ })
 				.catch((error) => {
-					if(!cluster.workers[nWorkerID].isDead())
+					if(cluster.workers.hasOwnProperty(nWorkerID) && !cluster.workers[nWorkerID].isDead())
 					{
 						console.error(error);
 						cluster.workers[nWorkerID].kill();
@@ -203,7 +212,7 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 
 			if(bKeepWaiting)
 			{
-				await sleep(100);
+				await sleep(1000);
 			}
 		}
 		console.log("All workers have exited.");
@@ -211,6 +220,19 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 
 		console.log("[" + process.pid + "] Master process exiting gracefully.");
 		process.exit(0);
+	}
+
+
+	/**
+	 * @param {JSONRPC.IncomingRequest|null} incomingRequest
+	 * @param {string} strReturn
+	 * 
+	 * @returns {string}
+	 */
+	async ping(incomingRequest, strReturn)
+	{
+		console.log("Worker said: " + JSON.stringify(strReturn));
+		return strReturn;
 	}
 };
 

@@ -13,6 +13,16 @@ process.on(
 	}
 );
 
+process.on(
+	"uncaughtException",
+	(error) => {
+		console.log("[" + process.pid + "] Unhandled exception.");
+		console.error(error);
+
+		process.exit(1);
+	}
+);
+
 (
 	async () =>
 	{

@@ -1,15 +1,22 @@
 const cluster = require("cluster");
 
 const JSONRPC = {
-	EndpointBase: require("../EndpointBase")
+	EndpointBase: require("../EndpointBase"),
+	Server: require("../Server"),
+	Client: require("../Client"),
+	BidirectionalWorkerRouter: require("../BidirectionalWorkerRouter"),
+	Plugins: {
+		Server: require("../Plugins/Server"),
+		Client: require("../Plugins/Client")
+	}
 };
 
 
 /**
- * Extend this class to provide extra worker RPC APIs and to signal services' readiness to the master.
+ * Extend this class to export extra worker RPC APIs.
  * 
- * Counter-intuitively, this class instantiates its own JSONRPC.Server and JSONRPC.BidirectionalWorkerRouter,
- * inside .startWorkers().
+ * Counter-intuitively, this endpoint instantiates its own JSONRPC.Server and JSONRPC.BidirectionalWorkerRouter,
+ * inside .start().
  */
 class WorkerEndpoint extends JSONRPC.EndpointBase
 {
@@ -89,8 +96,11 @@ class WorkerEndpoint extends JSONRPC.EndpointBase
 
 	/**
 	 * This mustn't be called through JSONRPC.
+	 * 
+	 * Starts the JSONRPC server over cluster IPC (connected to master), and worker services (this._startServices), 
+	 * then it notifies the master process it is ready to receive calls.
 	 */
-	async startWorker()
+	async start()
 	{
 		if(this._bWorkerStarted)
 		{
@@ -100,6 +110,7 @@ class WorkerEndpoint extends JSONRPC.EndpointBase
 		
 
 		this._jsonrpcServer = new JSONRPC.Server();
+		this._bidirectionalWorkerRouter = new JSONRPC.BidirectionalWorkerRouter(this._jsonrpcServer);
 
 		// By default, JSONRPC.Server rejects all requests as not authenticated and not authorized.
 		this._jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthenticationSkip());

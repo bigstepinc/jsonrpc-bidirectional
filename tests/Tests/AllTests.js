@@ -382,7 +382,6 @@ class AllTests
 			//await clientStandAlone.rpc("rpc.connectToEndpoint", [clientStandAlone.endpointURL]);
 			//console.log(await clientStandAlone.ping(strMessage + " stand-alone client."));
 
-
 			client.killWorker(process.pid);
 		}
 	}

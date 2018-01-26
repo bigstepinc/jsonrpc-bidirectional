@@ -26,6 +26,17 @@ class MasterClient extends JSONRPC.Client
 	{
 		return this.rpc("gracefulExit", []);
 	}
+
+
+	/**
+	 * @param {string} strReturn
+	 * 
+	 * @returns {string}
+	 */
+	async ping(strReturn)
+	{
+		return this.rpc("ping", [strReturn]);
+	}
 };
 
 module.exports = MasterClient;
