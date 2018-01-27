@@ -1,10 +1,10 @@
 # Node cluster RPC base
 
-Useful extendable endpoint classes, with a self-hosted JSONRPC.Server configured with `../Plugins/Client/WorkerTransport.js` and `../BidirectionalWorkerRouter.js`.
+Useful extendable endpoint classes for easily scaling to all CPUs using node workers
 
-Not intended as a reusable works-for-everything wrapper around WorkerTransport and BidirectionalWorkerRouter.
+The endpoints come with self-hosted JSONRPC.Server configured with `../Plugins/Client/WorkerTransport.js` and `../BidirectionalWorkerRouter.js`.
 
-It is a good starting point when clustering, as it also manages the worker lifecycle.
+It is a fast starting point when clustering, as it also manages the worker lifecycle. However, it might not be very flexible.
 
 The master process is also a master RPC service. All RPCs should go to or through it (for example, a worker's API call to another worker would have to be API-proxied through the master).
 
