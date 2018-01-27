@@ -1,6 +1,6 @@
 # Node cluster RPC base
 
-Useful extendable endpoint classes for easily scaling to all CPUs using node workers
+Useful extendable endpoint classes for easily scaling to all CPUs using node workers.
 
 The endpoints come with self-hosted JSONRPC.Server configured with `../Plugins/Client/WorkerTransport.js` and `../BidirectionalWorkerRouter.js`.
 
