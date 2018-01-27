@@ -166,7 +166,7 @@ class BidirectionalWebRTCRouter extends JSONRPC.RouterBase
 			return;
 		}
 
-		const bNotification = !objMessage.hasOwnProperty("id");
+		let bNotification = !objMessage.hasOwnProperty("id");
 
 		try
 		{
@@ -269,6 +269,9 @@ class BidirectionalWebRTCRouter extends JSONRPC.RouterBase
 			}
 			else
 			{
+				// Malformed message, will attempt to send a response.
+				bNotification = false;
+				
 				throw new Error("Unable to qualify the message as a JSONRPC request or response.");
 			}
 		}
