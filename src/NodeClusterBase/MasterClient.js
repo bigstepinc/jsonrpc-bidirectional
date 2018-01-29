@@ -9,7 +9,7 @@ const JSONRPC = {
 class MasterClient extends JSONRPC.Client
 {
 	/**
-	 * Signals a worker's JSONRPC endpoint is ready to receive calls.
+	 * Signals to the master, that this worker's JSONRPC endpoint is ready to receive calls.
 	 * 
 	 * @param {number} nWorkerID
 	 */
