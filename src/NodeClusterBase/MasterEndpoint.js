@@ -131,6 +131,7 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 						ready: false
 					};
 
+					console.log("Adding worker ID " + worker.id + " to BidirectionalWorkerRouter.");
 					const nConnectionID = await this._bidirectionalWorkerRouter.addWorker(worker, /*strEndpointPath*/ this.path, 120 * 1000 /*Readiness timeout in milliseconds*/);
 
 					this.objWorkerIDToState[worker.id].client = this._bidirectionalWorkerRouter.connectionIDToSingletonClient(nConnectionID, this.ReverseCallsClientClass);
