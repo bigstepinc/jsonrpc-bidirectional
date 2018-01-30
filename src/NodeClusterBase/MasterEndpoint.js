@@ -50,6 +50,8 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 
 		this._bWorkersStarted = false;
 		this._bWatchingForUpgrade = false;
+
+		this._nMaxWorkersCount = Number.MAX_SAFE_INTEGER;
 	}
 
 
@@ -110,7 +112,6 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 		}
 		this._bWorkersStarted = true;
 
-
 		this._jsonrpcServer = new JSONRPC.Server();
 
 		// By default, JSONRPC.Server rejects all requests as not authenticated and not authorized.
@@ -155,7 +156,7 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 						return nMillisecondsUnixTime >= new Date().getTime() - (60 * 2 * 1000);
 					});
 			
-					if(this.arrFailureTimestamps.length / Math.max(os.cpus().length, 2) > 4)
+					if(this.arrFailureTimestamps.length / Math.max(os.cpus().length, 1) > 4)
 					{
 						await this.gracefulExit(null);
 					}
@@ -179,7 +180,7 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 
 		await this._startServices();
 
-		for (let i = 0; i < Math.max(os.cpus().length, 2); i++)
+		for (let i = 0; i < Math.min(Math.max(os.cpus().length, 1), this._nMaxWorkersCount); i++)
 		{
 			cluster.fork();
 		}
