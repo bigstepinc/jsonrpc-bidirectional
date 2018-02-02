@@ -247,6 +247,8 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 
 
 	/**
+	 * Override this method to start calling into workers as soon as the first one is ready.
+	 * 
 	 * Signals a worker's JSONRPC endpoint is ready to receive calls.
 	 * 
 	 * @param {JSONRPC.IncomingRequest} incomingRequest
