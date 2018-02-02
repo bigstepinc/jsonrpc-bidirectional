@@ -81,7 +81,7 @@ class WorkerEndpoint extends JSONRPC.EndpointBase
 
 	/**
 	 * This overridable function is called and awaited inside gracefulExit().
-	 * Careful, gracefulExit() will timeout waiting after services to stop after a while.
+	 * Careful, gracefulExit() will timeout after waiting for services to stop after a while.
 	 * 
 	 * This mustn't be called through JSONRPC.
 	 * 

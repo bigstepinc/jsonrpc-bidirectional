@@ -80,7 +80,7 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 			throw new Error("This mustn't be called through JSONRPC.");
 		}
 
-		// this.masterClient is available here.
+		// this.workerClients is empty at this stage.
 	}
 
 
