@@ -261,6 +261,40 @@ class TestEndpoint extends JSONRPC.EndpointBase
 
 
 	/**
+	 * Function returning a simple object containing a timestamp.
+	 * 
+	 * @param {mixed} value
+	 * @returns {{dummyProperty: 5, dateObject: {timestamp: {UnixTimestamp}}}}
+	 */
+	async getCurrentDateTimestamp(value)
+	{
+		return {
+			dummyProperty: 5,
+			dateObject: {
+				timestamp: Date.now()
+			}
+		};
+	}
+
+
+	/**
+	 * Function returning a simple object containing a timestamp.
+	 * 
+	 * @param {mixed} value
+	 * @returns {{dummyProperty: 5, dateObject: {timestamp: {UnixTimestamp}}}}
+	 */
+	async getCurrentDateTimestampToBeCached(value)
+	{
+		return {
+			dummyProperty: 5,
+			dateObject: {
+				timestamp: Date.now()
+			}
+		};
+	}
+
+
+	/**
 	 * @param {JSONRPC.IncomingRequest} incomingRequest
 	 * @param {number} nPID 
 	 */
