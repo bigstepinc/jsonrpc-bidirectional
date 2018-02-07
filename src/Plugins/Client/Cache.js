@@ -5,31 +5,31 @@ module.exports =
 class Cache extends JSONRPC.ClientPluginBase
 {
 	/**
-	 * @param {Object} objFunctionToCacheSeconds . The keys are function names and the values are the number of seconds until the cached result expires. A value of -1 signifies that the cache never expires.
+	 * @param {Object} objFunctionNameToCacheSeconds . The keys are function names and the values are the number of seconds until the cached result expires. The values must be numbers greater than 0.
 	 * @param {boolean} bDeepFreeze . If true, deep freeze the returned value using recursive Object.freeze.
 	 * @param {boolean} bReturnDeepCopy . If true, return a deep copy of the cached value.
-	 * @param {Function} fDeepCopy . The function used to create a deep copy of the response object.
 	 * @param {number} nMaxEntries . The maximum number of entries in the cache. When this limit is reached, clear the cache.
 	 */
-	constructor(objFunctionToCacheSeconds = {}, bDeepFreeze = false, bReturnDeepCopy = false, fDeepCopy = undefined, nMaxEntries = 5000)
+	constructor(objFunctionNameToCacheSeconds, bDeepFreeze = false, bReturnDeepCopy = false, nMaxEntries = 5000)
 	{
 		super();
 
-		if(typeof objFunctionToCacheSeconds !== "object" || Array.isArray(objFunctionToCacheSeconds))
+		if(typeof objFunctionNameToCacheSeconds !== "object" || Array.isArray(objFunctionNameToCacheSeconds))
 		{
-			throw new Error("Invalid objFunctionToCacheSeconds parameter given.");
+			throw new Error("Invalid objFunctionNameToCacheSeconds parameter given.");
 		}
 
-		this._mapFunctionToCacheSeconds = new Map(Object.entries(objFunctionToCacheSeconds));
+		Object.entries(objFunctionNameToCacheSeconds).forEach(([strFunctionName, nCacheDurationSeconds]) => {
+			if(nCacheDurationSeconds <= 0)
+			{
+				throw new Error(`Invalid cache duration ${nCacheDurationSeconds} given for function ${strFunctionName}. It must be a number of seconds greater than 0.`);
+			}
+		});
+
+		this._mapFunctionNameToCacheSeconds = new Map(Object.entries(objFunctionNameToCacheSeconds));
 		this._bDeepFreeze = bDeepFreeze;
 		this._bReturnDeepCopy = bReturnDeepCopy;
-		this._fDeepCopy = fDeepCopy;
 		this._nMaxEntries = nMaxEntries;
-
-		if(this._fDeepCopy === undefined || this._fDeepCopy === null)
-		{
-			this._fDeepCopy = obj => JSON.parse(JSON.stringify(obj));
-		}
 
 		this.mapCache = new Map();
 	}
@@ -54,7 +54,7 @@ class Cache extends JSONRPC.ClientPluginBase
 			return;
 		}
 
-		if(this._mapFunctionToCacheSeconds.has(outgoingRequest.methodName))
+		if(this._mapFunctionNameToCacheSeconds.has(outgoingRequest.methodName))
 		{
 			const strKey = this.constructor._getCacheKey(outgoingRequest);
 
@@ -100,7 +100,7 @@ class Cache extends JSONRPC.ClientPluginBase
 			return;
 		}
 
-		if(outgoingRequest.methodName && this._mapFunctionToCacheSeconds.has(outgoingRequest.methodName))
+		if(outgoingRequest.methodName && this._mapFunctionNameToCacheSeconds.has(outgoingRequest.methodName))
 		{
 			const strKey = this.constructor._getCacheKey(outgoingRequest);
 
@@ -110,7 +110,7 @@ class Cache extends JSONRPC.ClientPluginBase
 
 				if(this._bReturnDeepCopy)
 				{
-					outgoingRequest.responseObject.result = this._fDeepCopy(cachedValue);
+					outgoingRequest.responseObject.result = this.constructor._deepCopy(cachedValue);
 
 					if(this._bDeepFreeze)
 					{
@@ -124,22 +124,22 @@ class Cache extends JSONRPC.ClientPluginBase
 			}
 			else
 			{
-				const nFunctionCacheDurationSeconds = this._mapFunctionToCacheSeconds.get(outgoingRequest.methodName);
-				const timestampExpiresAt = nFunctionCacheDurationSeconds !== -1 ? nFunctionCacheDurationSeconds * 1000 + Date.now() : -1;
+				const nFunctionCacheDurationSeconds = this._mapFunctionNameToCacheSeconds.get(outgoingRequest.methodName);
+				const nExpiresAtUnixTimestampMilliseconds = nFunctionCacheDurationSeconds * 1000 + Date.now();
 
 				if(this._bDeepFreeze && !this._bReturnDeepCopy)
 				{
 					this.constructor._deepFreeze(outgoingRequest.responseObject.result);
 					this.mapCache.set(strKey, {
-						expiresAt: timestampExpiresAt,
+						expiresAt: nExpiresAtUnixTimestampMilliseconds,
 						value: outgoingRequest.responseObject.result
 					});
 				}
 				else
 				{
-					const objectForCache = this._fDeepCopy(outgoingRequest.responseObject.result);
+					const objectForCache = this.constructor._deepCopy(outgoingRequest.responseObject.result);
 					this.mapCache.set(strKey, {
-						expiresAt: timestampExpiresAt,
+						expiresAt: nExpiresAtUnixTimestampMilliseconds,
 						value: objectForCache
 					});
 
@@ -155,9 +155,8 @@ class Cache extends JSONRPC.ClientPluginBase
 
 	/**
 	 * Checks if the cache entry has expired. It doesn't unset the entry if it did though (this is done outside of this function).
-	 * The -1 expiresAt value signifies that the cache entry never expires.
 	 * 
-	 * @param {string} strKey 
+	 * @param {string} strKey
 	 * @returns {boolean}
 	 */
 	_isCacheEntryExpired(strKey)
@@ -167,7 +166,7 @@ class Cache extends JSONRPC.ClientPluginBase
 			return true;
 		}
 
-		return this.mapCache.get(strKey).expiresAt !== -1 && Date.now() > this.mapCache.get(strKey).expiresAt;
+		return Date.now() > this.mapCache.get(strKey).expiresAt;
 	}
 
 
@@ -199,6 +198,16 @@ class Cache extends JSONRPC.ClientPluginBase
 		});
 
 		return Object.freeze(object);
+	}
+
+	
+	/**
+	 * @param {Object} object
+	 * @returns {Object}
+	 */
+	static _deepCopy(object)
+	{
+		return JSON.parse(JSON.stringify(object));
 	}
 
 
