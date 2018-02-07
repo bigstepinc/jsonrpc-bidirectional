@@ -107,10 +107,10 @@ class AllTests
 			objRandomURLPublicConfig.compressionType
 		);
 
-		const objFunctionToCacheSeconds = { getCurrentDateTimestampToBeCached: this.cachePluginExpirationSeconds };
-		this._clientCacheSimple = new JSONRPC.Plugins.Client.Cache(objFunctionToCacheSeconds, false, false, null, this.cachePluginMaxEntries);
-		this._clientCacheDeepCopy = new JSONRPC.Plugins.Client.Cache(objFunctionToCacheSeconds, false, true, null);
-		this._clientCacheFreeze = new JSONRPC.Plugins.Client.Cache(objFunctionToCacheSeconds, true, false, null);
+		const objFunctionNameToCacheSeconds = { getCurrentDateTimestampToBeCached: this.cachePluginExpirationSeconds };
+		this._clientCacheSimple = new JSONRPC.Plugins.Client.Cache(objFunctionNameToCacheSeconds, false, false, this.cachePluginMaxEntries);
+		this._clientCacheDeepCopy = new JSONRPC.Plugins.Client.Cache(objFunctionNameToCacheSeconds, false, true);
+		this._clientCacheFreeze = new JSONRPC.Plugins.Client.Cache(objFunctionNameToCacheSeconds, true, false);
 
 		this._bWebSocketMode = !!bWebSocketMode;
 		this._bPreventHTTPAPIRequests = false;
