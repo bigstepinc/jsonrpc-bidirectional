@@ -107,6 +107,11 @@ class AllTests
 			objRandomURLPublicConfig.compressionType
 		);
 
+		const objFunctionToCacheSeconds = { getCurrentDateTimestampToBeCached: this.cachePluginExpirationSeconds };
+		this._clientCacheSimple = new JSONRPC.Plugins.Client.Cache(objFunctionToCacheSeconds, false, false, null, this.cachePluginMaxEntries);
+		this._clientCacheDeepCopy = new JSONRPC.Plugins.Client.Cache(objFunctionToCacheSeconds, false, true, null);
+		this._clientCacheFreeze = new JSONRPC.Plugins.Client.Cache(objFunctionToCacheSeconds, true, false, null);
+
 		this._bWebSocketMode = !!bWebSocketMode;
 		this._bPreventHTTPAPIRequests = false;
 
@@ -172,6 +177,24 @@ class AllTests
 		}
 
 		return this._objURLPublicConfig;
+	}
+
+
+	/**
+	 * @returns {number}
+	 */
+	get cachePluginExpirationSeconds()
+	{
+		return 2;
+	}
+
+
+	/**
+	 * @returns {number}
+	 */
+	get cachePluginMaxEntries()
+	{
+		return 3;
 	}
 
 
@@ -345,6 +368,12 @@ class AllTests
 		this.addURLPublicPluginSiteA();
 		await this.callURLPublicRPCMethod();
 		await this.callURLPublicWithRedirect();
+
+		// Cache plugin tests
+		await this.testSimpleCache();
+		await this.testDeepCopyCache();
+		await this.testFreezeCache();
+
 
 		await this.manyCallsInParallel();
 
@@ -1663,6 +1692,111 @@ class AllTests
 			console.log("heapTotal: " + Math.round(process.memoryUsage().heapTotal / 1024 / 1024, 2) + " MB");
 			this.disableConsole();
 		}
+	}
+
+
+	async testSimpleCache()
+	{
+		console.log("[" + process.pid + "] testSimpleCache");
+		this._jsonrpcClientSiteB.addPlugin(this._clientCacheSimple);
+		this._clientCacheSimple.clear();
+
+		// Testing uncached function
+		let mxResponse1 = await this._jsonrpcClientSiteB.rpc("getCurrentDateTimestamp", []);
+		let mxResponse2 = await this._jsonrpcClientSiteB.rpc("getCurrentDateTimestamp", []);
+
+		assert(mxResponse1.dateObject.timestamp !== mxResponse2.dateObject.timestamp, "[FAILED] Function that shouldn't have been cached was cached.");
+
+		// Test cached function
+		mxResponse1 = await this._jsonrpcClientSiteB.rpc("getCurrentDateTimestampToBeCached", []);
+		mxResponse2 = await this._jsonrpcClientSiteB.rpc("getCurrentDateTimestampToBeCached", []);
+
+		assert(mxResponse1.dateObject.timestamp === mxResponse2.dateObject.timestamp, "[FAILED] Function result wasn't cached.");
+
+		// Test cache expiration
+		this._clientCacheSimple.clear();
+		mxResponse1 = await this._jsonrpcClientSiteB.rpc("getCurrentDateTimestampToBeCached", []);
+		mxResponse2 = await this._jsonrpcClientSiteB.rpc("getCurrentDateTimestampToBeCached", []);
+		await sleep(this.cachePluginExpirationSeconds * 1000 + 500);
+		let mxResponse3 = await this._jsonrpcClientSiteB.rpc("getCurrentDateTimestampToBeCached", []);
+
+		assert(mxResponse1.dateObject.timestamp === mxResponse2.dateObject.timestamp && mxResponse1.dateObject.timestamp !== mxResponse3.dateObject.timestamp, "[FAILED] Cache expiration doesn't work");
+
+		// Test cache clear
+		this._clientCacheSimple.clear();
+		assert(this._clientCacheSimple.mapCache.size === 0, "[FAILED] Failed to clear cache.");
+
+		// Test that after the number of entries in the cache reaches nMaxEntries, the cache gets flushed
+		assert(this.cachePluginMaxEntries >= 2, "[Failed] The configured value of this.cachePluginMaxEntries must be atleast 2 for this test.");
+		this._clientCacheFreeze.clear();
+
+		mxResponse1 = await this._jsonrpcClientSiteB.rpc("getCurrentDateTimestampToBeCached", [1]);
+		mxResponse2 = await this._jsonrpcClientSiteB.rpc("getCurrentDateTimestampToBeCached", [2]);
+		mxResponse3 = await this._jsonrpcClientSiteB.rpc("getCurrentDateTimestampToBeCached", [1]);
+
+		for(let i = 2; i <= this.cachePluginMaxEntries; i++)
+		{
+			await this._jsonrpcClientSiteB.rpc("getCurrentDateTimestampToBeCached", [i + 1]);
+		}
+
+		const mxResponse4 = await this._jsonrpcClientSiteB.rpc("getCurrentDateTimestampToBeCached", [1]);
+
+		assert(
+			mxResponse1.dateObject.timestamp === mxResponse3.dateObject.timestamp
+			&& mxResponse1.dateObject.timestamp !== mxResponse2.dateObject.timestamp
+			&& mxResponse1.dateObject.timestamp !== mxResponse4.dateObject.timestamp,
+			"[Failed] The cache doesn't get cleared after the maximum number of entries has been reached."
+		);
+
+		this._jsonrpcClientSiteB.removePlugin(this._clientCacheSimple);
+
+		console.log("[" + process.pid + "] [OK] testSimpleCache");
+	}
+
+
+	async testDeepCopyCache()
+	{
+		console.log("[" + process.pid + "] testDeepCopyCache");
+		this._jsonrpcClientSiteB.addPlugin(this._clientCacheDeepCopy);
+		this._clientCacheDeepCopy.clear();
+
+		// Test that a new copy is returned every time, diffrent from the one stored in the cache
+		const mxResponse1 = await this._jsonrpcClientSiteB.rpc("getCurrentDateTimestampToBeCached", []);
+		const mxResponse2 = await this._jsonrpcClientSiteB.rpc("getCurrentDateTimestampToBeCached", []);
+		const mxResponse3 = await this._jsonrpcClientSiteB.rpc("getCurrentDateTimestampToBeCached", []);
+
+		assert(mxResponse1 !== mxResponse2 && mxResponse1 !== mxResponse3 && mxResponse2 !== mxResponse3, "[Failed] Cache with bDeepCopy option enabled doesn't return deep copies of the cached result");
+
+		this._jsonrpcClientSiteB.removePlugin(this._clientCacheDeepCopy);
+
+		console.log("[" + process.pid + "] [OK] testDeepCopyCache");
+	}
+
+
+	async testFreezeCache()
+	{
+		console.log("[" + process.pid + "] testFreezeCache");
+		this._jsonrpcClientSiteB.addPlugin(this._clientCacheFreeze);
+		this._clientCacheFreeze.clear();
+
+		// Test that freeze returns directly from cache if bDeepCopy is not true. ('_clientCacheFreeze' is initialized with bDeepCopy false)
+		let mxResponse1 = await this._jsonrpcClientSiteB.rpc("getCurrentDateTimestampToBeCached", []);
+		let mxResponse2 = await this._jsonrpcClientSiteB.rpc("getCurrentDateTimestampToBeCached", []);
+		let mxResponse3 = await this._jsonrpcClientSiteB.rpc("getCurrentDateTimestampToBeCached", []);
+		
+		assert(mxResponse1 === mxResponse2 && mxResponse1 === mxResponse3, "[Failed] Cache with bDeepFreeze=true and bDeepCopy=false doesn't return the results directly from cache.");
+
+		// Test that a different object is returned after the cache is cleared
+		this._clientCacheFreeze.clear();
+		const mxResponse4 = await this._jsonrpcClientSiteB.rpc("getCurrentDateTimestampToBeCached", []);
+		assert(mxResponse1 !== mxResponse4, "[Failed] Cache with bDeepFreeze=true and bDeepCopy=false doesn't return a different result objet after the cache is cleared.");
+
+		// Test that the returned objects are deep frozen.
+		assert(Object.isFrozen(mxResponse1) && Object.isFrozen(mxResponse1.dateObject), "[Failed] Cache with bDeepFreeze doesn't return deep frozen objects.");
+
+		this._jsonrpcClientSiteB.removePlugin(this._clientCacheFreeze);
+
+		console.log("[" + process.pid + "] [OK] testFreezeCache");
 	}
 
 

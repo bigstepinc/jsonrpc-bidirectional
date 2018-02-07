@@ -47,9 +47,9 @@ class Cache extends JSONRPC.ClientPluginBase
 	 * 
 	 * @param {JSONRPC.OutgoingRequest} outgoingRequest
 	 */
-	async makeRequest(outgoingRequest)
+	async afterJSONEncode(outgoingRequest)
 	{
-		if(outgoingRequest.isMethodCalled || outgoingRequest.isNotification)
+		if(outgoingRequest.isNotification)
 		{
 			return;
 		}
