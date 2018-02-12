@@ -81,7 +81,7 @@ class WorkerEndpoint extends JSONRPC.EndpointBase
 
 	/**
 	 * This overridable function is called and awaited inside gracefulExit().
-	 * Careful, gracefulExit() will timeout waiting after services to stop after a while.
+	 * Careful, gracefulExit() will timeout after waiting for services to stop after a while.
 	 * 
 	 * This mustn't be called through JSONRPC.
 	 * 
@@ -123,13 +123,11 @@ class WorkerEndpoint extends JSONRPC.EndpointBase
 
 		this._jsonrpcServer.registerEndpoint(this);
 
+		// BidirectionalWorkerRouter requires to know when JSONRPC has finished its setup to avoid very likely race conditions.
+		await this._masterClient.rpc("rpc.connectToEndpoint", ["/api-cluster/IPC"]);
 
 		await this._startServices();
 		await this._masterClient.workerServicesReady(cluster.worker.id);
-
-
-		// BidirectionalWorkerRouter requires to know when JSONRPC has finished its setup to avoid very likely race conditions.
-		await this._masterClient.rpc("rpc.connectToEndpoint", ["/api-cluster/IPC"]);
 	}
 
 

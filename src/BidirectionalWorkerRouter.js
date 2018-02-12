@@ -208,6 +208,12 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 		const strEndpointPath = objMessage.params[0];
 		assert(typeof nConnectionID === "number", "nConnectionID must be of type number.");
 
+		if(!this._objSessions.hasOwnProperty(nConnectionID))
+		{
+			console.error(new Error(`[rpc.connectToEndpoint] Worker with connection ID ${nConnectionID} doesn't exist. Maybe it was closed.`));
+			return;
+		}
+
 		try
 		{
 			assert(typeof strEndpointPath === "string", "strEndpointPath must be of type string.");
