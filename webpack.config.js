@@ -13,6 +13,7 @@ module.exports = [
 			"uws": "WebSocket", 
 			"node-fetch": "fetch",
 			"cluster": "",
+			"fs-promise": "",
 			"node-forge": "forge"
 		}, 
 		entry: [
@@ -92,6 +93,7 @@ module.exports = [
 			"uws": "WebSocket",
 			"node-fetch": "fetch",
 			"cluster": "",
+			"fs-promise": "",
 			"node-forge": "forge"
 		}, 
 		entry: [

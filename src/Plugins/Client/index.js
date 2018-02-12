@@ -1,6 +1,7 @@
 // Do not use const here, webpack/babel issues.
 var objExports = {};
 
+objExports.Cache = require("./Cache");
 objExports.DebugLogger = require("./DebugLogger");
 objExports.PrettyBrowserConsoleErrors = require("./PrettyBrowserConsoleErrors");
 objExports.SignatureAdd = require("./SignatureAdd");
