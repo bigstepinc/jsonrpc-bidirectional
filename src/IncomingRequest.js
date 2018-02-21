@@ -394,7 +394,14 @@ class IncomingRequest
 
 
 	/**
-	 * @returns {Object}
+	 * General purpose session context object.
+	 * Does not imply any logic, and applications must manage it's lifecycle.
+	 * 
+	 * It is recommended to set a reference to an object and not recreate it multiple times.
+	 * 
+	 * If multiple plugins needs their own session, set specific and unique keys on this object.
+	 * 
+	 * @returns {Object|null}
 	 */
 	get session() 
 	{
@@ -403,6 +410,13 @@ class IncomingRequest
 
 
 	/**
+	 * General purpose session context object.
+	 * Does not imply any logic, and applications must manage it's lifecycle.
+	 * 
+	 * It is recommended to set a reference to an object and not recreate it multiple times.
+	 * 
+	 * If multiple plugins needs their own session, set specific and unique keys on this object.
+	 * 
 	 * @param {Object} objSession
 	 */
 	set session(objSession)
