@@ -37,6 +37,7 @@ class IncomingRequest
 		this._objHTTPIncomingMessage = null;
 		this._objHTTPServerResponse = null;
 
+		this._objSession = null;
 		//this._webSocket
 		//this._httpRequest
 
@@ -389,6 +390,29 @@ class IncomingRequest
 	set headers(objHeaders)
 	{
 		this._objHeaders = objHeaders;
+	}
+
+
+	/**
+	 * @returns {Object}
+	 */
+	get session() 
+	{
+		return this._objSession;
+	}
+
+
+	/**
+	 * @param {Object} objSession
+	 */
+	set session(objSession)
+	{
+		if(typeof objSession !== "object")
+		{
+			throw new TypeError(`Invalid set value of type "${typeof objSession}" for session. Expected "object"`);
+		}
+
+		this._objSession = objSession;
 	}
 
 
