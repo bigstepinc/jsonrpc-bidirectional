@@ -64,14 +64,16 @@ process.on(
 			allTests = new AllTests(bBenchmarkMode, /*bWebSocketMode*/ true, require("ws"), require("ws").Server, undefined, /*bDisableVeryLargePacket*/ false);
 			await allTests.runTests();
 
-			console.log("[" + process.pid + "] Done!!!");
+			console.log("");
+			console.log("[" + process.pid + "] \x1b[42m\x1b[30mAll tests done. No uncaught errors encountered.\x1b[0m Which means all is good or the tests are incomplete/buggy.");
+			console.log("");
 		}
 		else
 		{
 			allTests = new AllTests(bBenchmarkMode, /*bWebSocketMode*/ false);
 			await allTests.runClusterTests();
 
-			console.log("[" + process.pid + "] Worker done!!!");
+			console.log("[" + process.pid + "] \x1b[32mWorker done!!!\x1b[0m");
 		}
 		
 
