@@ -123,7 +123,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 
 		if(this.webSocket.readyState !== JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN)
 		{
-			throw new Error("WebSocket not connected.");
+			throw new Error("WebSocket not connected. Current WebSocket readyState: " + JSON.stringify(this.webSocket.readyState));
 		}
 
 		outgoingRequest.isMethodCalled = true;
