@@ -37,8 +37,13 @@ class URLPublic extends JSONRPC.ServerPluginBase
 	 */
 	get allowedEncryptionModes()
 	{
-		return [this.constructor.MODE_AES_128/*, this.constructor.MODE_BASE64, this.constructor.MODE_PLAIN*/];
+		return [
+			this.constructor.MODE_AES_128
+			/*, this.constructor.MODE_BASE64, 
+			this.constructor.MODE_PLAIN*/
+		];
 	}
+
 
 	/**
 	 * @returns {string}
@@ -47,6 +52,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 	{
 		return this._strCompressionType;
 	}
+
 
 	/**
 	 * @param {string} strCompressionType
@@ -60,6 +66,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 		);
 		this._strCompressionType = strCompressionType;
 	}
+
 
 	/**
 	 * Generates a request URL.
@@ -88,6 +95,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 
 		return this.JSONRequestToPublicURL(strEndpointURL, JSON.stringify(objRequest), nEncryptionMode);
 	}
+
 
 	/**
 	 * 
@@ -138,6 +146,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 		return strRequestURL;
 	}
 
+
 	/**
 	 * 
 	 * @param {string} strJSONRequest 
@@ -158,6 +167,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 		return objRequestObject;
 	}
 
+
 	/**
 	 * 
 	 * @param {string} strJSONRequest 
@@ -175,6 +185,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 
 		return objRequestObject;
 	}
+
 
 	/**
 	 * 
@@ -201,6 +212,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 
 		return objRequestObject;
 	}
+
 
 	/**
 	 * Called before JSON parsing of the JSONRPC request.
@@ -268,11 +280,16 @@ class URLPublic extends JSONRPC.ServerPluginBase
 		assert(typeof strBase64Data === "string", `Invalid parameter type for strBase64Data in URLParamDecrypt. Expected "string" but got ${typeof strBase64Data}.`);
 		let bufferJSONResult = null;
 		let bUseBrotli = strBase64Data.substr(0, this.constructor.BROTLI_PREFIX.length) === this.constructor.BROTLI_PREFIX;
+		let bNotCompressed = strBase64Data.substr(0, this.constructor.NONE_PREFIX.length) === this.constructor.NONE_PREFIX;
 		let bufferEncryptedData;
 
 		if(bUseBrotli)
 		{
 			bufferEncryptedData = Buffer.from(strBase64Data.substr(this.constructor.BROTLI_PREFIX.length), "base64");
+		}
+		else if(bNotCompressed)
+		{
+			bufferEncryptedData = Buffer.from(strBase64Data.substr(this.constructor.NONE_PREFIX.length), "base64");
 		}
 		else
 		{
@@ -287,7 +304,17 @@ class URLPublic extends JSONRPC.ServerPluginBase
 
 		let bufferDecryptedData = Buffer.from(decipher.output.getBytes(), "binary");
 
-		let strCompressionType = bUseBrotli ? this.constructor.COMPRESSION_TYPE_BROTLI : this.constructor.COMPRESSION_TYPE_ZLIB;
+
+		let strCompressionType = this.constructor.COMPRESSION_TYPE_ZLIB;
+		if(bUseBrotli)
+		{
+			strCompressionType = this.constructor.COMPRESSION_TYPE_BROTLI;
+		}
+		else if(bNotCompressed)
+		{
+			strCompressionType = this.constructor.NONE;
+		}
+
 
 		bufferJSONResult = await this.constructor.decompress(bufferDecryptedData, strCompressionType);
 		assert(bufferJSONResult instanceof Buffer, `Invalid decompress return type for URLParamDecrypt. Expected "buffer" but got ${typeof bufferJSONResult}.`);
@@ -308,19 +335,33 @@ class URLPublic extends JSONRPC.ServerPluginBase
 	{
 		assert(typeof strJSONRequest === "string", `Invalid parameter type for strJSONRequest in URLParamDecode. Expected "string" but got ${typeof strJSONRequest}.`);
 		let bUseBrotli = strJSONRequest.substr(0, this.constructor.BROTLI_PREFIX.length) === this.constructor.BROTLI_PREFIX;
+		let bNotCompressed = strBase64Data.substr(0, this.constructor.NONE_PREFIX.length) === this.constructor.NONE_PREFIX;
 		let bufferCompressedData;
 		let bufferJSONResult = null;
 
-		if(strJSONRequest.substr(0, this.constructor.BROTLI_PREFIX.length) === this.constructor.BROTLI_PREFIX)
+		if(bUseBrotli)
 		{
 			bufferCompressedData = Buffer.from(strJSONRequest.substr(this.constructor.BROTLI_PREFIX.length), "base64");
+		}
+		else if(bNotCompressed)
+		{
+			bufferCompressedData = Buffer.from(strJSONRequest.substr(this.constructor.NONE_PREFIX.length), "base64");
 		}
 		else
 		{
 			bufferCompressedData = Buffer.from(strJSONRequest, "base64");
 		}
 
-		let strCompressionType = bUseBrotli ? this.constructor.COMPRESSION_TYPE_BROTLI : this.constructor.COMPRESSION_TYPE_ZLIB;
+		let strCompressionType = this.constructor.COMPRESSION_TYPE_ZLIB;
+		if(bUseBrotli)
+		{
+			strCompressionType = this.constructor.COMPRESSION_TYPE_BROTLI;
+		}
+		else if(bNotCompressed)
+		{
+			strCompressionType = this.constructor.NONE;
+		}
+
 		bufferJSONResult = await this.constructor.decompress(bufferCompressedData, strCompressionType);
 		assert(bufferJSONResult instanceof Buffer, `Invalid decompress return type for URLParamDecode. Expected "buffer" but got ${typeof bufferJSONResult}.`);
 
@@ -343,7 +384,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 		let bufferEncryptedData;
 
 		let bufferCompressedData = await this.constructor.compress(strJSONRequest, this.compressionType);
-		assert(bufferCompressedData instanceof Buffer, "Failed to compress data before encryption.");
+		assert(bufferCompressedData instanceof Buffer, "Failed to compress data before encryption." + JSON.stringify(bufferCompressedData));
 
 		
 		// throw new Error(JSON.stringify(this._objEncryptionKeys[this._strKeyIndex]));
@@ -405,7 +446,8 @@ class URLPublic extends JSONRPC.ServerPluginBase
 
 					let nEncryptionMode = (this.constructor.URL_PARAM_NAME_MODE in objParams)
 						? parseInt(objParams[this.constructor.URL_PARAM_NAME_MODE], 10)
-						: this.constructor.MODE_DEFAULT;
+						: this.constructor.MODE_DEFAULT
+					;
 
 					if(!this.allowedEncryptionModes.includes(nEncryptionMode))
 					{
@@ -502,12 +544,12 @@ class URLPublic extends JSONRPC.ServerPluginBase
 
 	/**
 	 * 
-	 * @param {Buffer} bufferToBeCompressed 
+	 * @param {string} strRequest 
 	 * @param {string} strCompressionType 
 	 * 
 	 * @returns {Buffer}
 	 */
-	static async compress(bufferToBeCompressed, strCompressionType = URLPublic.COMPRESSION_TYPE_ZLIB)
+	static async compress(strRequest, strCompressionType = URLPublic.COMPRESSION_TYPE_ZLIB)
 	{
 		switch(strCompressionType)
 		{
@@ -515,11 +557,11 @@ class URLPublic extends JSONRPC.ServerPluginBase
 				throw new Error("Brotli compression is not supported yet.");
 			//NOT IMPLEMENTED YET
 			// case this.COMPRESSION_TYPE_BROTLI:
-			// 	let uint8CompressedBuffer = brotli.compress(bufferToBeCompressed);
+			// 	let uint8CompressedBuffer = brotli.compress(strRequest);
 			// 	return Buffer.from(uint8CompressedBuffer);
 			case this.COMPRESSION_TYPE_ZLIB:
 				return new Promise((fnResolve, fnReject) => {
-					zlib.deflate(bufferToBeCompressed, (error, buffer) => {
+					zlib.deflate(strRequest, (error, buffer) => {
 						if(error)
 						{
 							return fnReject(error);
@@ -528,6 +570,8 @@ class URLPublic extends JSONRPC.ServerPluginBase
 						fnResolve(buffer);
 					});
 				});
+			case this.NONE:
+				return Buffer.from(strRequest);
 			default:
 				throw new Error(`Invalid compression type "${strCompressionType}" for compress. Allowed ones are: ${JSON.stringify(this.allowedCompressionTypes)}`);
 		}
@@ -561,6 +605,8 @@ class URLPublic extends JSONRPC.ServerPluginBase
 						fnResolve(buffer);
 					});
 				});
+			case this.NONE:
+				return bufferCompressed;
 			default:
 				throw new Error(`Invalid compression type "${strCompressionType}" for decompress. Allowed ones are: ${JSON.stringify(this.allowedCompressionTypes)}`);
 		}
@@ -578,6 +624,8 @@ class URLPublic extends JSONRPC.ServerPluginBase
 		{
 			case this.COMPRESSION_TYPE_BROTLI:
 				return this.BROTLI_PREFIX;
+			case this.NONE:
+				return this.NONE_PREFIX;
 			default:
 				return "";
 		}
@@ -623,7 +671,8 @@ class URLPublic extends JSONRPC.ServerPluginBase
 	{
 		return [
 			// this.COMPRESSION_TYPE_BROTLI, //NOT IMPLEMENTED YET
-			this.COMPRESSION_TYPE_ZLIB
+			this.COMPRESSION_TYPE_ZLIB,
+			this.NONE
 		];
 	}
 
@@ -643,9 +692,12 @@ class URLPublic extends JSONRPC.ServerPluginBase
 	static get HMAC_ALGORITHM() { return "sha1"; }
 
 	static get BROTLI_PREFIX() { return "br."; }
+	static get NONE_PREFIX() { return "no."; }
 
 	static get COMPRESSION_TYPE_ZLIB() { return "zlib"; }
 	static get COMPRESSION_TYPE_BROTLI() { return "brotli"; }
+
+	static get NONE() { return "none"; }
 
 	/**
 	 * Represents the JSONRPC version of the constructed request object from the request encoded string.
