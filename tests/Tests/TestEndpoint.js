@@ -268,6 +268,8 @@ class TestEndpoint extends JSONRPC.EndpointBase
 	 */
 	async getCurrentDateTimestamp(value)
 	{
+		await sleep(100);
+
 		return {
 			dummyProperty: 5,
 			dateObject: {
@@ -285,6 +287,8 @@ class TestEndpoint extends JSONRPC.EndpointBase
 	 */
 	async getCurrentDateTimestampToBeCached(value)
 	{
+		await sleep(100);
+		
 		return {
 			dummyProperty: 5,
 			dateObject: {

@@ -1705,8 +1705,6 @@ class AllTests
 
 	async testSimpleCache()
 	{
-		return;
-		
 		console.log("[" + process.pid + "] testSimpleCache");
 		this._jsonrpcClientSiteB.addPlugin(this._clientCacheSimple);
 		this._clientCacheSimple.clear();
