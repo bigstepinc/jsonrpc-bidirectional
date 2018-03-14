@@ -689,7 +689,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 	static get MODE_PLAIN() { return 1; }
 	static get MODE_BASE64() { return 2; }
 
-	static get HMAC_ALGORITHM() { return "sha1"; }
+	static get HMAC_ALGORITHM() { return "md5"; }
 
 	static get BROTLI_PREFIX() { return "br."; }
 	static get NONE_PREFIX() { return "no."; }
