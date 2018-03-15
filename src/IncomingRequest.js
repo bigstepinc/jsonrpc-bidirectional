@@ -37,7 +37,7 @@ class IncomingRequest
 		this._objHTTPIncomingMessage = null;
 		this._objHTTPServerResponse = null;
 
-		this._objSession = null;
+		this._objSession = {};
 		//this._webSocket
 		//this._httpRequest
 
