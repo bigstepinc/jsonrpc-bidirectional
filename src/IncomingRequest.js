@@ -399,7 +399,7 @@ class IncomingRequest
 	 * 
 	 * It is recommended to set a reference to an object and not recreate it multiple times.
 	 * 
-	 * If multiple plugins needs their own session, set specific and unique keys on this object.
+	 * If multiple plugins needs their own session, sandbox each plugin's stuff into its own key.
 	 * 
 	 * @returns {Object|null}
 	 */
@@ -415,7 +415,7 @@ class IncomingRequest
 	 * 
 	 * It is recommended to set a reference to an object and not recreate it multiple times.
 	 * 
-	 * If multiple plugins needs their own session, set specific and unique keys on this object.
+	 * If multiple plugins needs their own session, sandbox each plugin's stuff into its own key.
 	 * 
 	 * @param {Object} objSession
 	 */
