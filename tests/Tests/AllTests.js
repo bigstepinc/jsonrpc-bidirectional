@@ -102,8 +102,8 @@ class AllTests
 		let objRandomURLPublicConfig = this.urlPublicConfig;
 		this._serverURLPublicPlugin = new JSONRPC.Plugins.Server.URLPublic(
 			objRandomURLPublicConfig.encryptionKeys,
+			objRandomURLPublicConfig.salts,
 			objRandomURLPublicConfig.activeKeyIndex,
-			objRandomURLPublicConfig.salt,
 			objRandomURLPublicConfig.compressionType
 		);
 
@@ -170,7 +170,9 @@ class AllTests
 				encryptionKeys: {
 					[strActiveKeyIndex]: "hfkaisksua9812u98n191fuo9ofn9of9"
 				},
-				salt: "thisisthesupersecretsaltfortheencryptedrequest",
+				salts: {
+					[strActiveKeyIndex]: "thisisthesupersecretsaltfortheencryptedrequest"
+				},
 				compressionType: JSONRPC.Plugins.Server.URLPublic.COMPRESSION_TYPE_ZLIB
 				// compressionType: JSONRPC.Plugins.Server.URLPublic.COMPRESSION_TYPE_BROTLI
 			};
@@ -602,10 +604,12 @@ class AllTests
 			this.generateRandomString(1000) //Extra long random string
 		];
 
+		let objRandomURLPublicConfig = this.urlPublicConfig;
+
 		for(let strInputString of arrInputs)
 		{
-			let bufferIV1 = this._serverURLPublicPlugin.JSONRequestSignatureAndIV(strInputString);
-			let bufferIV2 = this._serverURLPublicPlugin.JSONRequestSignatureAndIV(strInputString);
+			let bufferIV1 = this._serverURLPublicPlugin.JSONRequestSignatureAndIV(strInputString, objRandomURLPublicConfig.activeKeyIndex);
+			let bufferIV2 = this._serverURLPublicPlugin.JSONRequestSignatureAndIV(strInputString, objRandomURLPublicConfig.activeKeyIndex);
 
 			assert(bufferIV1.equals(bufferIV2), `[FAILED] test_URLPublic_JSONRequestSignatureAndIV: buffers not equal for string input ${strInputString}`);
 		}

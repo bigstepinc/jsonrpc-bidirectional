@@ -9,21 +9,27 @@ const querystring = require("querystring");
 // const brotli = require("brotli");
 const zlib = require("zlib");
 
-module.exports =
 class URLPublic extends JSONRPC.ServerPluginBase
 {
-	constructor(objEncryptionKeys, strKeyIndex, strAPIKey, strCompressionType = URLPublic.COMPRESSION_TYPE_ZLIB)
+	/**
+	 * @param {Object<string,string>} objEncryptionKeys 
+	 * @param {Object<string,string>} objSalts 
+	 * @param {string} strKeyIndex 
+	 * @param {string} strCompressionType 
+	 */
+	constructor(objEncryptionKeys, objSalts, strKeyIndex, strCompressionType = URLPublic.COMPRESSION_TYPE_ZLIB)
 	{
 		super();
 
 		URLPublic.validateEncryptionKeys(objEncryptionKeys);
 
+		assert(typeof objEncryptionKeys === "object", "objEncryptionKeys needs to be of type Object.");
+		assert(typeof objSalts === "object", "objSalts needs to be of type Object.");
 		assert(typeof strKeyIndex === "string" && strKeyIndex.length > 0, `Invalid strKeyIndex set for URLPublic. Expected non-empty string, but got ${typeof strKeyIndex}.`);
-		assert(typeof strAPIKey === "string" && strAPIKey.length > 0, `Invalid strAPIKey set for URLPublic. Expected non-empty string, but got ${typeof strAPIKey}.`);
 
 		this._objEncryptionKeys = objEncryptionKeys;
 		this._strKeyIndex = strKeyIndex;
-		this._strAPIKey = strAPIKey;
+		this._objSalts = objSalts;
 		this._strCompressionType = strCompressionType;
 
 		Object.seal(this);
@@ -155,7 +161,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 	 */
 	async JSONRequestToURLEncryptedParams(strJSONRequest)
 	{
-		let bufferIVAndSignature = this.JSONRequestSignatureAndIV(strJSONRequest);
+		let bufferIVAndSignature = this.JSONRequestSignatureAndIV(strJSONRequest, this._strKeyIndex);
 
 		let strEncryptedParam = await this.URLParamEncrypt(strJSONRequest, bufferIVAndSignature);
 
@@ -176,7 +182,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 	 */
 	async JSONRequestToURLPlainParams(strJSONRequest)
 	{
-		let bufferIVAndSignature = this.JSONRequestSignatureAndIV(strJSONRequest);
+		let bufferIVAndSignature = this.JSONRequestSignatureAndIV(strJSONRequest, this._strKeyIndex);
 
 		let objRequestObject = {
 			[this._strKeyIndex]: strJSONRequest,
@@ -195,7 +201,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 	 */
 	async JSONRequestToURLBase64Params(strJSONRequest)
 	{
-		let bufferIVAndSignature = this.JSONRequestSignatureAndIV(strJSONRequest);
+		let bufferIVAndSignature = this.JSONRequestSignatureAndIV(strJSONRequest, this._strKeyIndex);
 
 		let bufferCompresedData;
 
@@ -335,7 +341,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 	{
 		assert(typeof strJSONRequest === "string", `Invalid parameter type for strJSONRequest in URLParamDecode. Expected "string" but got ${typeof strJSONRequest}.`);
 		let bUseBrotli = strJSONRequest.substr(0, this.constructor.BROTLI_PREFIX.length) === this.constructor.BROTLI_PREFIX;
-		let bNotCompressed = strBase64Data.substr(0, this.constructor.NONE_PREFIX.length) === this.constructor.NONE_PREFIX;
+		let bNotCompressed = strJSONRequest.substr(0, this.constructor.NONE_PREFIX.length) === this.constructor.NONE_PREFIX;
 		let bufferCompressedData;
 		let bufferJSONResult = null;
 
@@ -473,7 +479,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 
 					assert(typeof strJSONRequest === "string", "Invalid strJSONRequest after decoding.");
 
-					let bufferSignatureForComparison = this.JSONRequestSignatureAndIV(strJSONRequest);
+					let bufferSignatureForComparison = this.JSONRequestSignatureAndIV(strJSONRequest, strEncryptionKeyIndex);
 
 					if(!bufferSignatureForComparison.equals(bufferVerify))
 					{
@@ -501,15 +507,19 @@ class URLPublic extends JSONRPC.ServerPluginBase
 	 * https://www.npmjs.com/package/node-forge#message-digests-1
 	 *
 	 * @param {string} strJSONRequest
+	 * @param {string} strActiveKeyIndex
 	 *
 	 * @returns {Buffer}
 	 */
-	JSONRequestSignatureAndIV(strJSONRequest)
+	JSONRequestSignatureAndIV(strJSONRequest, strActiveKeyIndex)
 	{
 		assert(typeof strJSONRequest === "string", `Invalid parameter type for JSONRequestSignatureAndIV. Expecting "string", but got "${typeof strJSONRequest}".`);
+		assert(typeof strActiveKeyIndex === "string", "strActiveKeyIndex needs to be of type string.");
+		assert(typeof this._objSalts[strActiveKeyIndex] === "string", `Index ${JSON.stringify(strActiveKeyIndex)} not found or not a string value in this._objSalts.`);
 
 		let hmac = forge.hmac.create();
-		hmac.start(this.constructor.HMAC_ALGORITHM, this._strAPIKey);
+		
+		hmac.start(this.constructor.HMAC_ALGORITHM, this._objSalts[strActiveKeyIndex]);
 		hmac.update(strJSONRequest);
 
 		return Buffer.from(hmac.digest().getBytes(), "binary");
@@ -709,3 +719,5 @@ class URLPublic extends JSONRPC.ServerPluginBase
 		return "2.0";
 	}
 };
+
+module.exports = URLPublic;
