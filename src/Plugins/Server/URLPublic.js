@@ -654,11 +654,9 @@ class URLPublic extends JSONRPC.ServerPluginBase
 	/**
 	 * Throws and error if the encryption keys object is not valid.
 	 * 
-	 * @param {Object} objKeys 
+	 * @param {{active_index: string, keys:Object<string,{aes_key: string, salt: string, created: string}>}} objKeys
 	 * 
 	 * @returns {undefined}
-	 * 
-	 * @throws {Error|TypeError}
 	 */
 	static validateEncryptionKeys(objKeys)
 	{
