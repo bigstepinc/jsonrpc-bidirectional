@@ -5,31 +5,23 @@ JSONRPC.Exception = require("../../Exception");
 const assert = require("assert");
 var forge = require("node-forge");
 const querystring = require("querystring");
-//It is disabled for now, until a better brotli library is found
+// It is disabled for now, until a better brotli library is found
 // const brotli = require("brotli");
 const zlib = require("zlib");
 
 class URLPublic extends JSONRPC.ServerPluginBase
 {
 	/**
-	 * @param {Object<string,string>} objEncryptionKeys 
-	 * @param {Object<string,string>} objSalts 
-	 * @param {string} strKeyIndex 
-	 * @param {string} strCompressionType 
+	 * @param {{active_index: string, keys:Object<string,{aes_key: string, salt: string, created: string}>}} objKeys
+	 * @param {string} strCompressionType
 	 */
-	constructor(objEncryptionKeys, objSalts, strKeyIndex, strCompressionType = URLPublic.COMPRESSION_TYPE_ZLIB)
+	constructor(objKeys, strCompressionType = URLPublic.COMPRESSION_TYPE_ZLIB)
 	{
 		super();
 
-		URLPublic.validateEncryptionKeys(objEncryptionKeys);
+		URLPublic.validateEncryptionKeys(objKeys);
 
-		assert(typeof objEncryptionKeys === "object", "objEncryptionKeys needs to be of type Object.");
-		assert(typeof objSalts === "object", "objSalts needs to be of type Object.");
-		assert(typeof strKeyIndex === "string" && strKeyIndex.length > 0, `Invalid strKeyIndex set for URLPublic. Expected non-empty string, but got ${typeof strKeyIndex}.`);
-
-		this._objEncryptionKeys = objEncryptionKeys;
-		this._strKeyIndex = strKeyIndex;
-		this._objSalts = objSalts;
+		this._objKeys = objKeys;
 		this._strCompressionType = strCompressionType;
 
 		Object.seal(this);
@@ -57,6 +49,24 @@ class URLPublic extends JSONRPC.ServerPluginBase
 	get compressionType()
 	{
 		return this._strCompressionType;
+	}
+
+
+	/**
+	 * @returns {string}
+	 */
+	get _activeKeyIndex()
+	{
+		return this._objKeys.active_index;
+	}
+
+
+	/**
+	 * @returns {Object}
+	 */
+	get _keys()
+	{
+		return this._objKeys.keys;
 	}
 
 
@@ -161,12 +171,12 @@ class URLPublic extends JSONRPC.ServerPluginBase
 	 */
 	async JSONRequestToURLEncryptedParams(strJSONRequest)
 	{
-		let bufferIVAndSignature = this.JSONRequestSignatureAndIV(strJSONRequest, this._strKeyIndex);
+		let bufferIVAndSignature = this.JSONRequestSignatureAndIV(strJSONRequest, this._activeKeyIndex);
 
 		let strEncryptedParam = await this.URLParamEncrypt(strJSONRequest, bufferIVAndSignature);
 
 		let objRequestObject = {
-			[this._strKeyIndex]: this.constructor.base64URLEscape(strEncryptedParam),
+			[this._activeKeyIndex]: this.constructor.base64URLEscape(strEncryptedParam),
 			[this.constructor.URL_PARAM_NAME_VERIFY]: this.constructor.base64URLEscape(bufferIVAndSignature.toString("base64"))
 		};
 
@@ -182,10 +192,10 @@ class URLPublic extends JSONRPC.ServerPluginBase
 	 */
 	async JSONRequestToURLPlainParams(strJSONRequest)
 	{
-		let bufferIVAndSignature = this.JSONRequestSignatureAndIV(strJSONRequest, this._strKeyIndex);
+		let bufferIVAndSignature = this.JSONRequestSignatureAndIV(strJSONRequest, this._activeKeyIndex);
 
 		let objRequestObject = {
-			[this._strKeyIndex]: strJSONRequest,
+			[this._activeKeyIndex]: strJSONRequest,
 			[this.constructor.URL_PARAM_NAME_VERIFY]: this.constructor.base64URLEscape(bufferIVAndSignature.toString("base64"))
 		};
 
@@ -201,7 +211,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 	 */
 	async JSONRequestToURLBase64Params(strJSONRequest)
 	{
-		let bufferIVAndSignature = this.JSONRequestSignatureAndIV(strJSONRequest, this._strKeyIndex);
+		let bufferIVAndSignature = this.JSONRequestSignatureAndIV(strJSONRequest, this._activeKeyIndex);
 
 		let bufferCompresedData;
 
@@ -212,7 +222,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 		let strBase64 = bufferCompresedData.toString("base64");
 
 		let objRequestObject = {
-			[this._strKeyIndex]: this.constructor.base64URLEscape(strBase64),
+			[this._activeKeyIndex]: this.constructor.base64URLEscape(strBase64),
 			[this.constructor.URL_PARAM_NAME_VERIFY]: this.constructor.base64URLEscape(bufferIVAndSignature.toString("base64"))
 		};
 
@@ -278,11 +288,13 @@ class URLPublic extends JSONRPC.ServerPluginBase
 	 *
 	 * @param {string} strBase64Data
 	 * @param {Buffer} bufferIV
+	 * @param {string} strEncryptionKeyIndex
 	 *
 	 * @returns {string}
 	 */
-	async URLParamDecrypt(strBase64Data, bufferIV)
+	async URLParamDecrypt(strBase64Data, bufferIV, strEncryptionKeyIndex)
 	{
+		assert(typeof strEncryptionKeyIndex === "string", "strEncryptionKeyIndex must be of type string.");
 		assert(typeof strBase64Data === "string", `Invalid parameter type for strBase64Data in URLParamDecrypt. Expected "string" but got ${typeof strBase64Data}.`);
 		let bufferJSONResult = null;
 		let bUseBrotli = strBase64Data.substr(0, this.constructor.BROTLI_PREFIX.length) === this.constructor.BROTLI_PREFIX;
@@ -302,7 +314,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 			bufferEncryptedData = Buffer.from(strBase64Data, "base64");
 		}
 
-		let decipher = forge.cipher.createDecipher("AES-CBC", this._objEncryptionKeys[this._strKeyIndex]);
+		let decipher = forge.cipher.createDecipher("AES-CBC", this._keys[strEncryptionKeyIndex].aes_key);
 
 		decipher.start({iv: forge.util.createBuffer(bufferIV)});
 		decipher.update(forge.util.createBuffer(bufferEncryptedData));
@@ -333,7 +345,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 
 	/**
 	 * 
-	 * @param {string} strJSONRequest 
+	 * @param {string} strJSONRequest
 	 * 
 	 * @returns {string}
 	 */
@@ -393,8 +405,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 		assert(bufferCompressedData instanceof Buffer, "Failed to compress data before encryption." + JSON.stringify(bufferCompressedData));
 
 		
-		// throw new Error(JSON.stringify(this._objEncryptionKeys[this._strKeyIndex]));
-		let decipher = forge.cipher.createCipher("AES-CBC", this._objEncryptionKeys[this._strKeyIndex]);
+		let decipher = forge.cipher.createCipher("AES-CBC", this._keys[this._activeKeyIndex].aes_key);
 
 		decipher.start({iv: forge.util.createBuffer(bufferIV)});
 		decipher.update(forge.util.createBuffer(bufferCompressedData));
@@ -409,7 +420,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 		strBase64Result = this.constructor.getPreffixForCompressionType(this.compressionType) + strBase64Result;
 
 		//Test hash(decrypt(original_data)) == hash(encrypted_result)
-		let strDecryptedData = await this.URLParamDecrypt(strBase64Result, bufferIV);
+		let strDecryptedData = await this.URLParamDecrypt(strBase64Result, bufferIV, this._activeKeyIndex);
 		let mdDecyptedData = forge.md.md5.create();
 		mdDecyptedData.update(strDecryptedData);
 		
@@ -424,6 +435,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 		return strBase64Result;
 	}
 
+
 	/**
 	 * 
 	 * @param {Object} objParams 
@@ -435,12 +447,10 @@ class URLPublic extends JSONRPC.ServerPluginBase
 	{
 		try
 		{
-			for(let strEncryptionKeyIndex in this._objEncryptionKeys)
+			for(let strEncryptionKeyIndex in this._keys)
 			{
 				if(strEncryptionKeyIndex in objParams)
 				{
-					this._strKeyIndex = strEncryptionKeyIndex;
-
 					objParams[strEncryptionKeyIndex] = objParams[strEncryptionKeyIndex].replace(" ", "+");//invalid text transform text mail clients fix
 
 					if(!(this.constructor.URL_PARAM_NAME_VERIFY in objParams))
@@ -465,7 +475,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 					switch(nEncryptionMode)
 					{
 						case this.constructor.MODE_AES_128:
-							strJSONRequest = await this.URLParamDecrypt(this.constructor.base64URLUnescape(objParams[strEncryptionKeyIndex]), bufferVerify);
+							strJSONRequest = await this.URLParamDecrypt(this.constructor.base64URLUnescape(objParams[strEncryptionKeyIndex]), bufferVerify, strEncryptionKeyIndex);
 							break;
 						case this.constructor.MODE_BASE64:
 							strJSONRequest = await this.URLParamDecode(this.constructor.base64URLUnescape(objParams[strEncryptionKeyIndex]));
@@ -515,11 +525,10 @@ class URLPublic extends JSONRPC.ServerPluginBase
 	{
 		assert(typeof strJSONRequest === "string", `Invalid parameter type for JSONRequestSignatureAndIV. Expecting "string", but got "${typeof strJSONRequest}".`);
 		assert(typeof strActiveKeyIndex === "string", "strActiveKeyIndex needs to be of type string.");
-		assert(typeof this._objSalts[strActiveKeyIndex] === "string", `Index ${JSON.stringify(strActiveKeyIndex)} not found or not a string value in this._objSalts.`);
 
 		let hmac = forge.hmac.create();
 		
-		hmac.start(this.constructor.HMAC_ALGORITHM, this._objSalts[strActiveKeyIndex]);
+		hmac.start(this.constructor.HMAC_ALGORITHM, this._keys[strActiveKeyIndex].salt);
 		hmac.update(strJSONRequest);
 
 		return Buffer.from(hmac.digest().getBytes(), "binary");
@@ -641,38 +650,41 @@ class URLPublic extends JSONRPC.ServerPluginBase
 		}
 	}
 
+
 	/**
 	 * Throws and error if the encryption keys object is not valid.
 	 * 
-	 * @param {Object} objEncryptionKeys 
+	 * @param {Object} objKeys 
 	 * 
 	 * @returns {undefined}
 	 * 
 	 * @throws {Error|TypeError}
 	 */
-	static validateEncryptionKeys(objEncryptionKeys)
+	static validateEncryptionKeys(objKeys)
 	{
-		if(
-			typeof objEncryptionKeys !== "object"
-			|| objEncryptionKeys === null
-			|| Object.keys(objEncryptionKeys).length === 0
-		)
-		{
-			throw new TypeError(`Invalid objEncryptionKeys for URLPublic. Expected non-empty object, but got ${ objEncryptionKeys === null ? "null " : ""}${typeof objEncryptionKeys}.`);
-		};
+		assert(typeof objKeys === "object" && objKeys !== null, "objKeys needs to be of type Object.");
+		assert(typeof objKeys.keys === "object" && objKeys.keys !== null, "objKeys.keys needs to be of type Object.");
+		assert(typeof objKeys.active_index === "string", "objKeys.active_index needs to be of type string.");
 
-		// Validate key length
-		// https://www.npmjs.com/package/node-forge#ciphers-1
-		// Note: a key size of 16 bytes will use AES-128, 24 => AES-192, 32 => AES-256
-		// Otherwise a not so explicit error is thrown in the crypto library
-		for(let strEncryptionKeyIndex in objEncryptionKeys)
+		for(let strIndex in objKeys.keys)
 		{
-			if(![16, 24, 32].includes(objEncryptionKeys[strEncryptionKeyIndex].length))
+			assert(typeof objKeys.keys[strIndex] === "object", "objKeys.keys[strIndex] needs to be of type Object.");
+			assert(typeof objKeys.keys[strIndex].aes_key === "string", "objKeys.keys[strIndex].aes_key needs to be of type string.");
+			assert(typeof objKeys.keys[strIndex].salt === "string", "objKeys.keys[strIndex].salt needs to be of type string.");
+			assert(objKeys.keys[strIndex].salt.length >= 30, "objKeys.keys[" + JSON.stringify(strIndex) + "].salt needs to have at least 30 characters.");
+			assert(typeof objKeys.keys[strIndex].created === "string", "objKeys.keys[strIndex].created needs to be of type string.");
+
+			// Validate key length
+			// https://www.npmjs.com/package/node-forge#ciphers-1
+			// Note: a key size of 16 bytes will use AES-128, 24 => AES-192, 32 => AES-256
+			// Otherwise a not so explicit error is thrown in the crypto library
+			if(![16, 24, 32].includes(objKeys.keys[strIndex].aes_key.length))
 			{
-				throw new Error(`Invalid key with index ${JSON.stringify(strEncryptionKeyIndex)} in objEncryptionKeys for URLPublic. Key values must have 16, 24 or 32 characters, but ${objEncryptionKeys[strEncryptionKeyIndex].length} characters found.`);
+				throw new Error(`(JSONRPC.Plugins.Server.URLPublic) Invalid AES key with index ${JSON.stringify(strIndex)}. The AES key must have 16, 24 or 32 hex characters, but found ${objKeys[strIndex].aes_key.length} characters.`);
 			}
 		}
 	}
+	
 
 	/**
 	 * @returns {Array}
