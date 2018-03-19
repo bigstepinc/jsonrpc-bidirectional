@@ -449,6 +449,13 @@ class URLPublic extends JSONRPC.ServerPluginBase
 		{
 			for(let strEncryptionKeyIndex in this._keys)
 			{
+				// Do not decrypt URL public URLs (for likely third party systems) using keys marked as compromised.
+				// These keys still exist to wait for key rotation or other reasons and will be permanently destroyed soon.
+				if(this._keys[strEncryptionKeyIndex].compromised)
+				{
+					continue;
+				}
+
 				if(strEncryptionKeyIndex in objParams)
 				{
 					objParams[strEncryptionKeyIndex] = objParams[strEncryptionKeyIndex].replace(" ", "+");//invalid text transform text mail clients fix
