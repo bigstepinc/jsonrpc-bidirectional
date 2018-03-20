@@ -1122,7 +1122,7 @@ class AllTests
 			console.log(error);
 			assert(error instanceof JSONRPC.Exception);
 			assert.strictEqual(error.code, JSONRPC.Exception.NOT_AUTHENTICATED);
-			assert.strictEqual(error.message, "Not authenticated.");
+			assert(error.message.startsWith("Not authenticated"), "Was expecting error message to start with Not authenticated");
 		}
 	}
 
@@ -1234,7 +1234,7 @@ class AllTests
 
 			assert(error instanceof JSONRPC.Exception);
 			assert.strictEqual(error.code, JSONRPC.Exception.NOT_AUTHORIZED);
-			assert.strictEqual(error.message, "Not authorized.");
+			assert(error.message.startsWith("Not authorized"), "Was expeting error message to start with Not authorized");
 		}
 	}
 

@@ -349,12 +349,12 @@ class Server extends EventEmitter
 
 				if(!incomingRequest.isAuthenticated)
 				{
-					throw new JSONRPC.Exception("Not authenticated.", JSONRPC.Exception.NOT_AUTHENTICATED);
+					throw new JSONRPC.Exception("Not authenticated; calling method name: " + incomingRequest.requestObject.method, JSONRPC.Exception.NOT_AUTHENTICATED);
 				}
 
 				if(!incomingRequest.isAuthorized)
 				{
-					throw new JSONRPC.Exception("Not authorized.", JSONRPC.Exception.NOT_AUTHORIZED);
+					throw new JSONRPC.Exception("Not authorized; calling method name: " + incomingRequest.requestObject.method, JSONRPC.Exception.NOT_AUTHORIZED);
 				}
 
 
