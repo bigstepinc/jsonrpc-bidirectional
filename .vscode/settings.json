@@ -9,5 +9,6 @@
 		"**/.DS_Store": true,
 		"*.min.js": true,
 		"*.js.map": true
-	}
+	},
+	"window.title": "JSONRPC"
 }
