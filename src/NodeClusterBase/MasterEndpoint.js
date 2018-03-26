@@ -21,6 +21,10 @@ const JSONRPC = {
  * 
  * Counter-intuitively, this endpoint instantiates its own JSONRPC.Server and JSONRPC.BidirectionalWorkerRouter,
  * inside .start().
+ * 
+ * The "workerReady" event is issued when a new worker is ready to receive RPC calls. The event is called with the JSORNPC client as first param.
+ * 
+ * @event workerReady
  */
 class MasterEndpoint extends JSONRPC.EndpointBase
 {
@@ -135,6 +139,8 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 					const nConnectionID = await this._bidirectionalWorkerRouter.addWorker(worker, /*strEndpointPath*/ this.path, 120 * 1000 /*Readiness timeout in milliseconds*/);
 
 					this.objWorkerIDToState[worker.id].client = this._bidirectionalWorkerRouter.connectionIDToSingletonClient(nConnectionID, this.ReverseCallsClientClass);
+
+					this.emit("workerReady", this.objWorkerIDToState[worker.id].client);
 				}
 				catch(error)
 				{
