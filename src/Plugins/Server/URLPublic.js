@@ -405,13 +405,13 @@ class URLPublic extends JSONRPC.ServerPluginBase
 		assert(bufferCompressedData instanceof Buffer, "Failed to compress data before encryption." + JSON.stringify(bufferCompressedData));
 
 		
-		let decipher = forge.cipher.createCipher("AES-CBC", this._keys[this._activeKeyIndex].aes_key);
+		let cipher = forge.cipher.createCipher("AES-CBC", this._keys[this._activeKeyIndex].aes_key);
 
-		decipher.start({iv: forge.util.createBuffer(bufferIV)});
-		decipher.update(forge.util.createBuffer(bufferCompressedData));
-		decipher.finish();
+		cipher.start({iv: forge.util.createBuffer(bufferIV)});
+		cipher.update(forge.util.createBuffer(bufferCompressedData));
+		cipher.finish();
 
-		bufferEncryptedData = Buffer.from(decipher.output.getBytes(), "binary");
+		bufferEncryptedData = Buffer.from(cipher.output.getBytes(), "binary");
 		assert(typeof bufferEncryptedData !== "undefined" && bufferEncryptedData !== null && bufferEncryptedData instanceof Buffer, "Failed to encrypt data.");
 
 		let strBase64Result = bufferEncryptedData.toString("base64");
