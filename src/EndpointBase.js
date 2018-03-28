@@ -2,6 +2,8 @@ const url = require("url");
 
 const assert = require("assert");
 
+const EventEmitter = require("events");
+
 /**
  * This class is suposed to be extended by JSONRPC endpoints.
  * Endpoints hold exported RPC functions.
@@ -11,8 +13,7 @@ const assert = require("assert");
  * Methods defined by subclasses, which are to be exported through RPC, 
  * must each return a single Promise object or simply decorated with async so they are awaitable. 
  */
-module.exports =
-class EndpointBase
+class EndpointBase extends EventEmitter
 {
 	/**
 	 * @param {string} strName
@@ -22,6 +23,8 @@ class EndpointBase
 	 */
 	constructor(strName, strPath, objReflection, classReverseCallsClient)
 	{
+		super();
+		
 		assert.strictEqual(typeof strName, "string");
 		assert.strictEqual(typeof strPath, "string");
 		assert.strictEqual(typeof objReflection, "object");
@@ -90,3 +93,5 @@ class EndpointBase
 		return strPath;
 	}
 };
+
+module.exports = EndpointBase;
