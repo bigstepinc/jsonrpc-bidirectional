@@ -62,7 +62,7 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 	/**
 	 * The object has worker IDs as keys and object values like this: {client: JSONRPC.Client, ready: boolean}.
 	 * 
-	 * @returns {Object}
+	 * @returns {Object<workerID:number, {client:JSONRPC.Client, ready:boolean}>}
 	 */
 	get workerClients()
 	{
