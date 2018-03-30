@@ -60,6 +60,14 @@ class Server extends EventEmitter
 					return;
 				}
 
+				if (httpRequest.method === "OPTIONS")
+				{
+					// Needed by CORS preflight request. Other headers will be set by the HTTP server to which this server is attached.
+					httpResponse.status = 204;
+					httpResponse.end();
+					return;
+				}
+
 				if(httpRequest.headers["sec-websocket-version"])
 				{
 					if(bSharedWithWebSocketServer)
