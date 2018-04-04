@@ -12,8 +12,8 @@ module.exports = [
 			"ws": "WebSocket", 
 			"uws": "WebSocket", 
 			"node-fetch": "fetch",
-			"cluster": "",
-			"fs-promise": "",
+			"cluster": "null",
+			"fs-promise": "null",
 			"node-forge": "forge"
 		}, 
 		entry: [
