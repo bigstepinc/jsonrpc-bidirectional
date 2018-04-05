@@ -7,10 +7,10 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Launch Program",
+            "name": "Test",
             "program": "${workspaceRoot}\\tests\\main.js",
-            "args": ["--cli-run"],
-            "runtimeArgs": ["--harmony_async_await"],
+            //"args": ["--cli-run"],
+            //"runtimeArgs": ["--harmony_async_await"],
             "cwd": "${workspaceRoot}"
         },
         {

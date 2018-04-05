@@ -347,7 +347,7 @@ class AllTests
 			}
 
 			this._webSocketServerSiteA = null;
-			global.gc();
+			// global.gc();
 			await sleep(1000);
 		}
 
@@ -368,7 +368,7 @@ class AllTests
 			});
 
 			this._httpServerSiteA = null;
-			global.gc();
+			// global.gc();
 		}
 
 
@@ -1623,6 +1623,7 @@ class AllTests
 				redirect: "manual"
 			}
 		);
+
 
 		assert(fetchResponse.status >= 300 && fetchResponse.status <= 399, `Invalid redirect HTTP status code "${fetchResponse.status}". Expected a number between 300 and 399.`);
 		let strRedirectURLFromResonse = fetchResponse.headers.get("location");
