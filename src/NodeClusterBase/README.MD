@@ -14,13 +14,13 @@ To use, simply instantiate a `MasterEndpoint` subclass in the master process and
 
 Usage:
 ```Javascript
-const WorkersRTC = require("./YourWorkersRTCExtendedClasses");
+const WorkersRPC = require("./YourWorkersRPCSubclasses");
 const cluster = require("cluster");
 
 (async () => {
   if(cluster.isMaster)
   {
-    const masterEndpoint = new WorkersRTC.MasterEndpoint(/*your custom params*/);
+    const masterEndpoint = new WorkersRPC.MasterEndpoint(/*your custom params*/);
     await masterEndpoint.start();
     
     // Optional: 
@@ -28,7 +28,7 @@ const cluster = require("cluster");
   }
   else
   {
-    const workerEndpoint = new WorkersRTC.WorkerEndpoint(/*your custom params*/);
+    const workerEndpoint = new WorkersRPC.WorkerEndpoint(/*your custom params*/);
     await workerEndpoint.start();
   }  
 })();
