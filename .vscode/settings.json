@@ -8,7 +8,8 @@
 		"**/CVS": true,
 		"**/.DS_Store": true,
 		"*.min.js": true,
-		"*.js.map": true
+		"*.js.map": true,
+		"builds/**": true
 	},
 	"window.title": "JSONRPC"
 }

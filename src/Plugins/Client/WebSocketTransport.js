@@ -78,7 +78,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 				typeof objResponse.id !== "number"
 				&& typeof objResponse.id !== "string"
 			)
-			|| this._objWebSocketRequestsPromises[objResponse.id] === null
+			|| !this._objWebSocketRequestsPromises[objResponse.id]
 		)
 		{
 			console.error(objResponse);

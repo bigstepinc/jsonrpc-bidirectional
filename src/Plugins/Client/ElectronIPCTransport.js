@@ -1,3 +1,11 @@
+let electron = require("electron");
+
+// Browser environment
+if(!electron && typeof (window || self).require === "function")
+{
+	electron = (window || self).require("electron");
+}
+
 const JSONRPC = {};
 JSONRPC.ClientPluginBase = require("../../ClientPluginBase");
 JSONRPC.Utils = require("../../Utils");
@@ -6,38 +14,47 @@ const assert = require("assert");
 
 module.exports =
 /**
- *  this.rejectAllPromises(error) has to be called manually in a browser environment when a Worker is terminated or has finished working.
+ *  this.rejectAllPromises(error) has to be called manually in a browser environment when a BrowserWindow is terminated or has finished working.
  */
-class WorkerTransport extends JSONRPC.ClientPluginBase
+class ElectronIPCTransport extends JSONRPC.ClientPluginBase
 {
 	/**
-	 * @param {Worker} worker
-	 * @param {boolean|undefined} bBidirectionalWorkerMode
+     * browserWindow is ignored inside a BrowserWindow instance. Should only be set inside the master process.
+     * 
+	 * @param {boolean|undefined} bBidirectionalMode
+	 * @param {BrowserWindow|null} browserWindow = null
 	 */
-	constructor(worker, bBidirectionalWorkerMode)
+	constructor(bBidirectionalMode, browserWindow)
 	{
 		super();
 		
 
 		// JSONRPC call ID as key, {promise: {Promise}, fnResolve: {Function}, fnReject: {Function}, outgoingRequest: {OutgoingRequest}} as values.
-		this._objWorkerRequestsPromises = {};
+		this._objBrowserWindowRequestsPromises = {};
 
 
-		this._bBidirectionalWorkerMode = !!bBidirectionalWorkerMode;
-		this._worker = worker;
-
+		this._bBidirectionalMode = !!bBidirectionalMode;
+        this._browserWindow = browserWindow;
 		
-		this._setupWorker();
+		this._strChannel = "jsonrpc_winid_" + (browserWindow ? browserWindow.id : electron.remote.getCurrentWindow().id);
+		
+		this._setupIPCTransport();
 	}
 
 
 	/**
-	 * @returns {Worker} 
+	 * @returns {BrowserWindow|null} 
 	 */
-	get worker()
+	get browserWindow()
 	{
-		return this._worker;
-	}
+		return this._browserWindow;
+    }
+    
+
+    get channel()
+    {
+        return this._strChannel;
+    }
 
 
 	/**
@@ -62,32 +79,23 @@ class WorkerTransport extends JSONRPC.ClientPluginBase
 				typeof objResponse.id !== "number"
 				&& typeof objResponse.id !== "string"
 			)
-			|| !this._objWorkerRequestsPromises[objResponse.id]
+			|| !this._objBrowserWindowRequestsPromises[objResponse.id]
 		)
 		{
 			console.error(new Error("Couldn't find JSONRPC response call ID in this._objWorkerRequestsPromises. RAW response: " + JSON.stringify(objResponse)));
 			console.error(new Error("RAW remote message: " + JSON.stringify(objResponse)));
-			console.log("[" + process.pid + "] Unclean state. Unable to match Worker message to an existing Promise or qualify it as a request.");
+			console.error("[" + process.pid + "] Unclean state. Unable to match message to an existing Promise or qualify it as a request.");
 			
-			if(this.worker.terminate)
-			{
-				this.worker.terminate();
-			}
-			else if(this.worker !== process)
-			{
-				this.worker.kill();
-			}
-
 			return;
 		}
 
-		this._objWorkerRequestsPromises[objResponse.id].outgoingRequest.responseBody = objResponse;
-		this._objWorkerRequestsPromises[objResponse.id].outgoingRequest.responseObject = objResponse;
+		this._objBrowserWindowRequestsPromises[objResponse.id].outgoingRequest.responseBody = objResponse;
+		this._objBrowserWindowRequestsPromises[objResponse.id].outgoingRequest.responseObject = objResponse;
 
-		this._objWorkerRequestsPromises[objResponse.id].fnResolve(null);
+		this._objBrowserWindowRequestsPromises[objResponse.id].fnResolve(null);
 		// Sorrounding code will parse the result and throw if necessary. fnReject is not going to be used in this function.
 
-		delete this._objWorkerRequestsPromises[objResponse.id];
+		delete this._objBrowserWindowRequestsPromises[objResponse.id];
 	}
 
 
@@ -103,11 +111,6 @@ class WorkerTransport extends JSONRPC.ClientPluginBase
 		if(outgoingRequest.isMethodCalled)
 		{
 			return;
-		}
-
-		if(this.worker.isDead && this.worker.isDead())
-		{
-			throw new Error("Worker not connected.");
 		}
 
 		outgoingRequest.isMethodCalled = true;
@@ -139,26 +142,26 @@ class WorkerTransport extends JSONRPC.ClientPluginBase
 				"outgoingRequest.requestObject.id must be of type number or string."
 			);
 			
-			this._objWorkerRequestsPromises[outgoingRequest.requestObject.id] = {
+			this._objBrowserWindowRequestsPromises[outgoingRequest.requestObject.id] = {
 				// unixtimeMilliseconds: (new Date()).getTime(),
 				outgoingRequest: outgoingRequest,
 				promise: null
 			};
 
-			this._objWorkerRequestsPromises[outgoingRequest.requestObject.id].promise = new Promise((fnResolve, fnReject) => {
-				this._objWorkerRequestsPromises[outgoingRequest.requestObject.id].fnResolve = fnResolve;
-				this._objWorkerRequestsPromises[outgoingRequest.requestObject.id].fnReject = fnReject;
+			this._objBrowserWindowRequestsPromises[outgoingRequest.requestObject.id].promise = new Promise((fnResolve, fnReject) => {
+				this._objBrowserWindowRequestsPromises[outgoingRequest.requestObject.id].fnResolve = fnResolve;
+				this._objBrowserWindowRequestsPromises[outgoingRequest.requestObject.id].fnReject = fnReject;
 			});
 		}
 
 
-		if(this.worker.postMessage)
+		if(this.browserWindow)
 		{
-			this.worker.postMessage(outgoingRequest.requestObject);
+			this.browserWindow.webContents.send(this.channel, outgoingRequest.requestObject);
 		}
 		else
 		{
-			this.worker.send(outgoingRequest.requestObject);
+            electron.ipcRenderer.send(this.channel, outgoingRequest.requestObject);
 		}
 
 
@@ -168,7 +171,7 @@ class WorkerTransport extends JSONRPC.ClientPluginBase
 		}
 		else
 		{
-			return this._objWorkerRequestsPromises[outgoingRequest.requestObject.id].promise;
+			return this._objBrowserWindowRequestsPromises[outgoingRequest.requestObject.id].promise;
 		}
 	}
 
@@ -187,21 +190,21 @@ class WorkerTransport extends JSONRPC.ClientPluginBase
 	rejectAllPromises(error)
 	{
 		//console.error(error);
-		console.log("[" + process.pid + "] Rejecting all Promise instances in WorkerTransport.");
+		console.log("[" + process.pid + "] Rejecting all Promise instances in ElectronIPCTransport.");
 
 		let nCount = 0;
 
-		for(let nCallID in this._objWorkerRequestsPromises)
+		for(let nCallID in this._objBrowserWindowRequestsPromises)
 		{
-			this._objWorkerRequestsPromises[nCallID].fnReject(error);
-			delete this._objWorkerRequestsPromises[nCallID];
+			this._objBrowserWindowRequestsPromises[nCallID].fnReject(error);
+			delete this._objBrowserWindowRequestsPromises[nCallID];
 
 			nCount++;
 		}
 
 		if(nCount)
 		{
-			console.error("[" + process.pid + "] Rejected " + nCount + " Promise instances in WorkerTransport.");
+			console.error("[" + process.pid + "] Rejected " + nCount + " Promise instances in ElectronIPCTransport.");
 		}
 	}
 
@@ -209,54 +212,37 @@ class WorkerTransport extends JSONRPC.ClientPluginBase
 	/**
 	 * @protected
 	 */
-	_setupWorker()
+	_setupIPCTransport()
 	{
-		if(this._worker.addEventListener)
+		if(!this.browserWindow)
 		{
-			// There's no close/exit event in browser environments.
-			// Call this manually when appropriate: this.rejectAllPromises(new Error("Worker closed"));
-
-			this._worker.addEventListener(
-				"error",
-				(error) => {
-					this.rejectAllPromises(error);
-				}
-			);
-
-			if(!this._bBidirectionalWorkerMode)
+			if(!this._bBidirectionalMode)
 			{
-				this._worker.addEventListener(
-					"message",
-					async (messageEvent) => {
-						await this.processResponse(messageEvent.data);
-					}
-				);
+                electron.ipcRenderer.on(
+                    strChannel, 
+                    async (event, objJSONRPCRequest) => {
+                        await this.processResponse(objJSONRPCRequest);
+                    }
+                )
 			}
 		}
 		else
 		{
-			this._worker.on(
-				"exit",
-				(nCode, nSignal) => {
-					this.rejectAllPromises(new Error("Worker closed. Code: " + JSON.stringify(nCode) + ". Signal: " + JSON.stringify(nSignal)));
+			this._browserWindow.on(
+				"closed",
+				() => {
+					this.rejectAllPromises(new Error(`BrowserWindow ${this.browserWindow.id} closed`));
 				}
 			);
 			
-			this._worker.on(
-				"error",
-				(error) => {
-					this.rejectAllPromises(error);
-				}
-			);
-
-			if(!this._bBidirectionalWorkerMode)
+			if(!this._bBidirectionalMode)
 			{
-				this._worker.on(
-					"message",
-					async (objMessage) => {
-						await this.processResponse(objMessage);
-					}
-				);
+                electron.ipcMain.on(
+                    this.channel, 
+                    async (event, objJSONRPCRequest) => {
+						await this.processResponse(objJSONRPCRequest);
+                    }
+                );
 			}
 		}
 	}

@@ -72,7 +72,7 @@ class WebRTCTransport extends JSONRPC.ClientPluginBase
 				typeof objResponse.id !== "number"
 				&& typeof objResponse.id !== "string"
 			)
-			|| this._objRTCDataChannelRequestsPromises[objResponse.id] === null
+			|| !this._objRTCDataChannelRequestsPromises[objResponse.id]
 		)
 		{
 			console.error(new Error("Couldn't find JSONRPC response call ID in this._objRTCDataChannelRequestsPromises. RAW response: " + strResponse));

@@ -23,7 +23,8 @@ These transports are already implemented, and they all offer promise-based async
 | WebSocket | bidirectional, single connection | [WebSocket](https://developer.mozilla.org/en/docs/Web/API/WebSocket) | [ws](https://github.com/websockets/ws) | JSON |
 | Worker | bidirectional, IPC, single connection | [Worker](https://developer.mozilla.org/en-US/docs/Web/API/Worker) | [Worker](https://nodejs.org/api/cluster.html#cluster_class_worker) | [Structured cloning](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm) |
 | ProcessStdIO | one-way, new child process per call | | [Process](https://nodejs.org/api/process.html#process_process) | JSON |
-| WebRTC | bidirectional, RTCDataChannel, single connection | [RTCDataChannel](https://developer.mozilla.org/en/docs/Web/API/RTCDataChannel) |  | JSON
+| WebRTC | bidirectional, RTCDataChannel, single connection | [RTCDataChannel](https://developer.mozilla.org/en/docs/Web/API/RTCDataChannel) |  | JSON |
+| ElectronIPC | bidirectional, IPC, single connection | [ipcRenderer](https://electronjs.org/docs/api/ipc-renderer) | [ipcMain](https://electronjs.org/docs/api/ipc-main) | JSON (internally in IPC)
  
 #### WebSocket
 

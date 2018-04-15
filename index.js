@@ -11,6 +11,7 @@ var objExports = {
 	BidirectionalWebsocketRouter: require("./src/BidirectionalWebsocketRouter"),
 	BidirectionalWorkerRouter: require("./src/BidirectionalWorkerRouter"),
 	BidirectionalWebRTCRouter: require("./src/BidirectionalWebRTCRouter"),
+	BidirectionalElectronIPC: require("./src/BidirectionalElectronIPC"),
 	RouterBase: require("./src/RouterBase"),
 	
 	Exception: require("./src/Exception"), 

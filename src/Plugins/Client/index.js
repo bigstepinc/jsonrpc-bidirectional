@@ -9,5 +9,6 @@ objExports.WebSocketTransport = require("./WebSocketTransport");
 objExports.WorkerTransport = require("./WorkerTransport");
 objExports.ProcessStdIOTransport = require("./ProcessStdIOTransport");
 objExports.WebRTCTransport = require("./WebRTCTransport");
+objExports.ElectronIPCTransport = require("./ElectronIPCTransport");
 
 module.exports = objExports;
