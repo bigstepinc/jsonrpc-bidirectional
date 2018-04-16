@@ -1,11 +1,18 @@
 const assert = require("assert");
 
-let electron = require("electron");
+let electron = null;
 
-// Browser environment
-if(!electron && typeof (window || self).require === "function")
+if(process && process.versions["electron"])
 {
-	electron = (window || self).require("electron");
+	/* eslint-disable*/ 
+	electron = require("electron");
+
+	// Browser environment
+	if((window || self) && !electron && typeof (window || self).require === "function")
+	{
+		electron = (window || self).require("electron");
+	}
+	/* eslint-enable*/ 
 }
 
 const JSONRPC = {};
@@ -305,7 +312,7 @@ class BidirectionalElectronIPCRouter extends JSONRPC.RouterBase
 					}
 					else
 					{
-						electron.ipcRenderer.send(strChannel, incomingRequest.callResultToBeSerialized)
+						electron.ipcRenderer.send(strChannel, incomingRequest.callResultToBeSerialized);
 					}
 				}
 			}

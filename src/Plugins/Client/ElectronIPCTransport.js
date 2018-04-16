@@ -1,9 +1,16 @@
-let electron = require("electron");
+let electron = null;
 
-// Browser environment
-if(!electron && typeof (window || self).require === "function")
+if(process && process.versions["electron"])
 {
-	electron = (window || self).require("electron");
+	/* eslint-disable*/ 
+	electron = require("electron");
+
+	// Browser environment
+	if((window || self) && !electron && typeof (window || self).require === "function")
+	{
+		electron = (window || self).require("electron");
+	}
+	/* eslint-enable*/ 
 }
 
 const JSONRPC = {};
@@ -19,8 +26,8 @@ module.exports =
 class ElectronIPCTransport extends JSONRPC.ClientPluginBase
 {
 	/**
-     * browserWindow is ignored inside a BrowserWindow instance. Should only be set inside the master process.
-     * 
+	 * browserWindow is ignored inside a BrowserWindow instance. Should only be set inside the master process.
+	 * 
 	 * @param {boolean|undefined} bBidirectionalMode
 	 * @param {BrowserWindow|null} browserWindow = null
 	 */
@@ -34,7 +41,7 @@ class ElectronIPCTransport extends JSONRPC.ClientPluginBase
 
 
 		this._bBidirectionalMode = !!bBidirectionalMode;
-        this._browserWindow = browserWindow;
+		this._browserWindow = browserWindow;
 		
 		this._strChannel = "jsonrpc_winid_" + (browserWindow ? browserWindow.id : electron.remote.getCurrentWindow().id);
 		
@@ -48,13 +55,13 @@ class ElectronIPCTransport extends JSONRPC.ClientPluginBase
 	get browserWindow()
 	{
 		return this._browserWindow;
-    }
-    
+	}
+	
 
-    get channel()
-    {
-        return this._strChannel;
-    }
+	get channel()
+	{
+		return this._strChannel;
+	}
 
 
 	/**
@@ -161,7 +168,7 @@ class ElectronIPCTransport extends JSONRPC.ClientPluginBase
 		}
 		else
 		{
-            electron.ipcRenderer.send(this.channel, outgoingRequest.requestObject);
+			electron.ipcRenderer.send(this.channel, outgoingRequest.requestObject);
 		}
 
 
@@ -218,12 +225,12 @@ class ElectronIPCTransport extends JSONRPC.ClientPluginBase
 		{
 			if(!this._bBidirectionalMode)
 			{
-                electron.ipcRenderer.on(
-                    strChannel, 
-                    async (event, objJSONRPCRequest) => {
-                        await this.processResponse(objJSONRPCRequest);
-                    }
-                )
+				electron.ipcRenderer.on(
+					this._strChannel, 
+					async (event, objJSONRPCRequest) => {
+						await this.processResponse(objJSONRPCRequest);
+					}
+				);
 			}
 		}
 		else
@@ -237,12 +244,12 @@ class ElectronIPCTransport extends JSONRPC.ClientPluginBase
 			
 			if(!this._bBidirectionalMode)
 			{
-                electron.ipcMain.on(
-                    this.channel, 
-                    async (event, objJSONRPCRequest) => {
+				electron.ipcMain.on(
+					this.channel, 
+					async (event, objJSONRPCRequest) => {
 						await this.processResponse(objJSONRPCRequest);
-                    }
-                );
+					}
+				);
 			}
 		}
 	}
