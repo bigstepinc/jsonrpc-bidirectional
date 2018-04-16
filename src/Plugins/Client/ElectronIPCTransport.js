@@ -6,7 +6,7 @@ if(process && process.versions["electron"])
 	electron = require("electron");
 
 	// Browser environment
-	if((window || self) && !electron && typeof (window || self).require === "function")
+	if(!electron && (window || self) && typeof (window || self).require === "function")
 	{
 		electron = (window || self).require("electron");
 	}
@@ -43,7 +43,7 @@ class ElectronIPCTransport extends JSONRPC.ClientPluginBase
 		this._bBidirectionalMode = !!bBidirectionalMode;
 		this._browserWindow = browserWindow;
 		
-		this._strChannel = "jsonrpc_winid_" + (browserWindow ? browserWindow.id : electron.remote.getCurrentWindow().id);
+		this._strChannel = "jsonrpc_winid_" + (browserWindow ? browserWindow.id : (window || self).require("electron").remote.getCurrentWindow().id);
 		
 		this._setupIPCTransport();
 	}
@@ -168,7 +168,7 @@ class ElectronIPCTransport extends JSONRPC.ClientPluginBase
 		}
 		else
 		{
-			electron.ipcRenderer.send(this.channel, outgoingRequest.requestObject);
+			(window || self).require("electron").ipcRenderer.send(this.channel, outgoingRequest.requestObject);
 		}
 
 
@@ -225,7 +225,7 @@ class ElectronIPCTransport extends JSONRPC.ClientPluginBase
 		{
 			if(!this._bBidirectionalMode)
 			{
-				electron.ipcRenderer.on(
+				(window || self).require("electron").ipcRenderer.on(
 					this._strChannel, 
 					async (event, objJSONRPCRequest) => {
 						await this.processResponse(objJSONRPCRequest);

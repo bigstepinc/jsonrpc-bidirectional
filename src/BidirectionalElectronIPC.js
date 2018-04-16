@@ -8,7 +8,7 @@ if(process && process.versions["electron"])
 	electron = require("electron");
 
 	// Browser environment
-	if((window || self) && !electron && typeof (window || self).require === "function")
+	if(!electron && (window || self) && typeof (window || self).require === "function")
 	{
 		electron = (window || self).require("electron");
 	}
@@ -145,7 +145,7 @@ class BidirectionalElectronIPCRouter extends JSONRPC.RouterBase
 
 		const nConnectionID = ++this._nConnectionIDCounter;
 
-		const strChannel = "jsonrpc_winid_" + electron.remote.getCurrentWindow().id;
+		const strChannel = "jsonrpc_winid_" + (window || self).require("electron").remote.getCurrentWindow().id;
 
 		const objSession = {
 			browserWindow: null,
@@ -158,7 +158,7 @@ class BidirectionalElectronIPCRouter extends JSONRPC.RouterBase
 
 		this._objSessions[nConnectionID] = objSession;
 
-		electron.ipcRenderer.on(
+		(window || self).require("electron").ipcRenderer.on(
 			strChannel, 
 			async (event, objJSONRPCRequest) => {
 				await this._routeMessage(objJSONRPCRequest, objSession, strChannel);
@@ -312,7 +312,7 @@ class BidirectionalElectronIPCRouter extends JSONRPC.RouterBase
 					}
 					else
 					{
-						electron.ipcRenderer.send(strChannel, incomingRequest.callResultToBeSerialized);
+						(window || self).require("electron").ipcRenderer.send(strChannel, incomingRequest.callResultToBeSerialized);
 					}
 				}
 			}
