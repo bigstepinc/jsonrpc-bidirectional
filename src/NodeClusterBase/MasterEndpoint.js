@@ -55,7 +55,7 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 		this._bWorkersStarted = false;
 		this._bWatchingForUpgrade = false;
 
-		this.nMaxWorkersCount = Number.MAX_SAFE_INTEGER;
+		this._nMaxWorkersCount = Number.MAX_SAFE_INTEGER;
 	}
 
 
@@ -73,7 +73,7 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 	/**
 	 * @param {number} nWorkersCount
 	 */
-	set nMaxWorkersCount(nWorkersCount)
+	set maxWorkersCount(nWorkersCount)
 	{
 		assert(typeof nWorkersCount === "number", `Invalid property type for nWorkersCount in MasterEndpoint. Expected "number", but got ${typeof nWorkersCount}.`);
 
@@ -84,7 +84,7 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 	/**
 	 * @returns {number}
 	 */
-	get nMaxWorkersCount()
+	get maxWorkersCount()
 	{
 		return this._nMaxWorkersCount;
 	}
@@ -207,7 +207,7 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 
 		await this._startServices();
 
-		for (let i = 0; i < Math.min(Math.max(os.cpus().length, 1), this.nMaxWorkersCount); i++)
+		for (let i = 0; i < Math.min(Math.max(os.cpus().length, 1), this.maxWorkersCount); i++)
 		{
 			cluster.fork();
 		}
