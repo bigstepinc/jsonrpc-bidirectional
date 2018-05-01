@@ -64,7 +64,7 @@
     "uglify-js": "^2.8.22",
     "uws": "^0.14.5",
     "webpack": "^2.4.1",
-    "ws": "^4.0.0"
+    "ws": "^5.1.1"
   },
   "files": [
     "builds/browser/es5/jsonrpc.min.js",
