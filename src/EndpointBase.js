@@ -79,7 +79,8 @@ class EndpointBase extends EventEmitter
 	 */
 	static normalizePath(strURL)
 	{
-		let strPath = url.parse(strURL).pathname.trim();
+		const objURLParsed = url.parse(strURL);
+		let strPath = objURLParsed.pathname ? objURLParsed.pathname.trim() : "/";
 		if(!strPath.length || strPath.substr(-1) !== "/")
 		{
 			strPath += "/";
