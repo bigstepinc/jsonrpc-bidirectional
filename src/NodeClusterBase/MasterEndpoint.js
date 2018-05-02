@@ -412,14 +412,12 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 			{
 				if(bFreshlyCachedWorkerProxyMode)
 				{
-					console.log("Round robinned " + nCounter);
 					objRoundRobinState.promiseRPCResult = /*await*/ objWorkerState.client.rpc(strMethodName, arrParams);
 					return objRoundRobinState.promiseRPCResult;
 				}
 				else
 				{
-					console.log("Round robinned NOT CACHED " + nCounter);
-					return /*await*/ objWorkerState.client.rpc(strMethodName, arrParams);
+					return await objWorkerState.client.rpc(strMethodName, arrParams);
 				}
 			}
 		}
