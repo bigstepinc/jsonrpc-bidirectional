@@ -41,6 +41,9 @@ class IncomingRequest
 		//this._webSocket
 		//this._httpRequest
 
+		// Only change this to true if it is safe to export stack traces to the RPC called.
+		this._bStackInErrorMessage = false;
+
 		Object.seal(this);
 	}
 
@@ -318,6 +321,27 @@ class IncomingRequest
 
 
 	/**
+	 * Consulted when serializing the response.
+	 * Determines if the stack trace will be appended to the error message, in case of returning an error.
+	 * 
+	 * @returns {boolean}
+	 */
+	get stackInErrorMessage()
+	{
+		return this._bStackInErrorMessage;
+	}
+
+
+	/**
+	 * @param {boolean} bAllow
+	 */
+	set stackInErrorMessage(bAllow)
+	{
+		this._bStackInErrorMessage = bAllow;
+	}
+
+
+	/**
 	 * @param {string|Buffer|Object} mxResultSerialized
 	 */
 	set callResultSerialized(mxResultSerialized)
@@ -576,7 +600,7 @@ class IncomingRequest
 		if(this.callResult instanceof Error)
 		{
 			objResponse.error = {
-				message: this.callResult.message,
+				message: this.callResult.message + (this.stackInErrorMessage ? " " + this.callResult.stack : ""),
 				code: (this.callResult instanceof JSONRPC.Exception) ? this.callResult.code : 0,
 				data: this.callResult.stack.split(/[\r\n]+/mg)
 			};

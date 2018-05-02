@@ -145,7 +145,7 @@ class BidirectionalElectronIPCRouter extends JSONRPC.RouterBase
 
 		const nConnectionID = ++this._nConnectionIDCounter;
 
-		const strChannel = "jsonrpc_winid_" + (window || self).require("electron").remote.getCurrentWindow().id;
+		const strChannel = "jsonrpc_winid_" + (window || self).require("electron").remote.getCurrentWindow().id; // eslint-disable-line
 
 		const objSession = {
 			browserWindow: null,
@@ -158,7 +158,7 @@ class BidirectionalElectronIPCRouter extends JSONRPC.RouterBase
 
 		this._objSessions[nConnectionID] = objSession;
 
-		(window || self).require("electron").ipcRenderer.on(
+		(window || self).require("electron").ipcRenderer.on( // eslint-disable-line
 			strChannel, 
 			async (event, objJSONRPCRequest) => {
 				await this._routeMessage(objJSONRPCRequest, objSession, strChannel);
@@ -279,7 +279,8 @@ class BidirectionalElectronIPCRouter extends JSONRPC.RouterBase
 
 				incomingRequest.connectionID = nConnectionID;
 				incomingRequest.router = this;
-
+				
+				incomingRequest.stackInErrorMessage = true;
 				
 				try
 				{
@@ -312,7 +313,7 @@ class BidirectionalElectronIPCRouter extends JSONRPC.RouterBase
 					}
 					else
 					{
-						(window || self).require("electron").ipcRenderer.send(strChannel, incomingRequest.callResultToBeSerialized);
+						(window || self).require("electron").ipcRenderer.send(strChannel, incomingRequest.callResultToBeSerialized); // eslint-disable-line
 					}
 				}
 			}

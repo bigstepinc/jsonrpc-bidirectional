@@ -4,8 +4,8 @@ let cluster = require("cluster");
 if(!cluster)
 {
 	cluster = {
-		isMaster: !(self && self.document === undefined),
-		isWorker: !!(self && self.document === undefined)
+		isMaster: !(self && self.document === undefined), // eslint-disable-line
+		isWorker: !!(self && self.document === undefined) // eslint-disable-line
 	};
 }
 
@@ -81,7 +81,7 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 			strEndpointPath = JSONRPC.EndpointBase.normalizePath(strEndpointPath);
 		}
 
-		assert(cluster.isMaster || process === worker || self === worker, "Unknown worker type.");
+		assert(cluster.isMaster || process === worker || self === worker, "Unknown worker type."); // eslint-disable-line
 
 
 		const nConnectionID = ++this._nConnectionIDCounter;
@@ -318,6 +318,7 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 				incomingRequest.connectionID = nConnectionID;
 				incomingRequest.router = this;
 
+				incomingRequest.stackInErrorMessage = true;
 				
 				try
 				{
