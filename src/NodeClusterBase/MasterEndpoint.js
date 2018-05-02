@@ -56,6 +56,13 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 		this._bWatchingForUpgrade = false;
 
 		this._nMaxWorkersCount = Number.MAX_SAFE_INTEGER;
+
+
+		this._objRPCToWorkersRoundRobinStates = {};
+		
+		// Used if the call is proxied from another worker (which is then round robined to the executor worker), 
+		// and the result is allowed to be from a recently cached value.
+		this._objWorkerToMethodNameLastFreshness = {};
 	}
 
 
@@ -283,6 +290,141 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 	async workerServicesReady(incomingRequest, nWorkerID)
 	{
 		this.objWorkerIDToState[nWorkerID].ready = true;
+	}
+
+
+	/**
+	 * Helps distribute calls to workers to even out workload, 
+	 * and optionally reuse identical function calls' results based on a freshness counter when acting as a proxy between workers.
+	 * 
+	 * If bFreshlyCachedWorkerProxyMode is true, the call must come from another worker. 
+	 * It is guaranteed that the calling worker will always get a new promise, 
+	 * that is the same promise from the cache will never be returned more than once to the same calling worker.
+	 * 
+	 * bFreshlyCachedWorkerProxyMode does not allow any params, the arrParams array must be empty.
+	 * 
+	 * bFreshlyCachedWorkerProxyMode *is not* and *does not resemble* a time based expiration cache. 
+	 * If you need a time based expiration cache, add JSONRPC.Plugins.Client.Cache to your client to your JSONRPC.Client subclass client (if you have one), 
+	 * or use any other similar caching mechanism however you need it implemented.
+	 * 
+	 * @param {JSONRPC.IncomingRequest|null} incomingRequest
+	 * @param {string} strMethodName 
+	 * @param {Array} arrParams
+	 * @param {boolean} bFreshlyCachedWorkerProxyMode = false
+	 * 
+	 * @returns {Promise<any>}
+	 */
+	async rpcToRoundRobinWorker(incomingRequest, strMethodName, arrParams, bFreshlyCachedWorkerProxyMode = false)
+	{
+		// Warning to future developers: from this point up until saving the promise from the actual .rpc call, 
+		// the code must be 100% synchronous (no awaits).
+
+		let nMinimumRequestedFreshness = 0;
+
+		if(bFreshlyCachedWorkerProxyMode)
+		{
+			// assert(incomingRequest.reverseCallsClient instanceof JSONRPC.Plugins.Client.WorkerTransport);
+			if(
+				!incomingRequest
+				|| !incomingRequest.reverseCallsClient
+			)
+			{
+				throw new Error("bFreshlyCachedWorkerProxyMode needs incomingRequest.reverseCallsClient to be initialized (bidirectional JSONRPC");
+			}
+
+			const workerTransportPlugin = incomingRequest.reverseCallsClient.plugins.filter(plugin => plugin.worker && plugin.worker.id && plugin.worker.on)[0];
+
+			if(!workerTransportPlugin)
+			{
+				throw new Error("bFreshlyCachedWorkerProxyMode needs to know the cluster worker ID of the calling worker from incomingRequest.reverseCallsClient.plugins[?].worker.id (and it must be of type number.");
+			}
+
+			const nWorkerID = workerTransportPlugin.worker.id;
+
+			if(arrParams.length)
+			{
+				throw new Error("bFreshlyCachedWorkerProxyMode does not allow any params, the arrParams array must be empty.");
+			}
+
+			if(!this._objWorkerToMethodNameLastFreshness[nWorkerID])
+			{
+				this._objWorkerToMethodNameLastFreshness[nWorkerID] = {};
+
+				workerTransportPlugin.worker.on(
+					"exit",
+					(nCode, nSignal) => {
+						delete this._objWorkerToMethodNameLastFreshness[nWorkerID];
+					}
+				);
+			}
+
+			if(!this._objWorkerToMethodNameLastFreshness[nWorkerID][strMethodName])
+			{
+				this._objWorkerToMethodNameLastFreshness[nWorkerID][strMethodName] = 0;
+			}
+
+			nMinimumRequestedFreshness = ++this._objWorkerToMethodNameLastFreshness[nWorkerID][strMethodName];
+		}
+
+		if(!this._objRPCToWorkersRoundRobinStates[strMethodName])
+		{
+			this._objRPCToWorkersRoundRobinStates[strMethodName] = {
+				counter: 0, 
+				promiseRPCResult: null
+			};
+		}
+
+		const objRoundRobinState = this._objRPCToWorkersRoundRobinStates[strMethodName];
+
+		let nCounter = objRoundRobinState.counter;
+
+		const arrWorkerStates = Object.values(this.objWorkerIDToState);
+		
+		if(bFreshlyCachedWorkerProxyMode && nMinimumRequestedFreshness <= nCounter && objRoundRobinState.promiseRPCResult)
+		{
+			return objRoundRobinState.promiseRPCResult;
+		}
+
+		objRoundRobinState.promiseRPCResult = null;
+		nCounter = ++objRoundRobinState.counter;
+
+		if(arrWorkerStates.length)
+		{
+			let i, objWorkerState;
+
+			for(i = nCounter % arrWorkerStates.length; !objWorkerState && i < arrWorkerStates.length; i++)
+			{
+				if(arrWorkerStates[i].ready)
+				{
+					objWorkerState = arrWorkerStates[i];
+				}
+			}
+
+			for(i = 0; !objWorkerState && i < nCounter % arrWorkerStates.length; i++)
+			{
+				if(arrWorkerStates[i].ready)
+				{
+					objWorkerState = arrWorkerStates[i];
+				}
+			}
+
+			if(objWorkerState)
+			{
+				if(bFreshlyCachedWorkerProxyMode)
+				{
+					console.log("Round robinned " + nCounter);
+					objRoundRobinState.promiseRPCResult = /*await*/ objWorkerState.client.rpc(strMethodName, arrParams);
+					return objRoundRobinState.promiseRPCResult;
+				}
+				else
+				{
+					console.log("Round robinned NOT CACHED " + nCounter);
+					return /*await*/ objWorkerState.client.rpc(strMethodName, arrParams);
+				}
+			}
+		}
+
+		throw new JSONRPC.Exception("No ready for RPC cluster workers were found.", JSONRPC.Exception.INTERNAL_ERROR);
 	}
 
 
