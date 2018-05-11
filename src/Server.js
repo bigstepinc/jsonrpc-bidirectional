@@ -341,7 +341,7 @@ class Server extends EventEmitter
 				
 				if(!incomingRequest.requestObject || typeof incomingRequest.requestObject !== "object")
 				{
-					throw new JSONRPC.Exception("Missing JSONRPC 2.0 request object, and no plugins have provided on in the beforeJSONDecode or afterJSONDecode methods.", JSONRPC.Exception.PARSE_ERROR);
+					throw new JSONRPC.Exception("Missing JSONRPC 2.0 request object, and no plugins have provided one in the beforeJSONDecode or afterJSONDecode methods.", JSONRPC.Exception.PARSE_ERROR);
 				}
 
 
