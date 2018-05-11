@@ -65,12 +65,18 @@ class ProcessStdIOTransport extends JSONRPC.ClientPluginBase
 				}
 			);
 
-			child.on(
-				"error", 
-				(error) => {
-					fnReject(error);
-				}
-			);
+			function errorHandler(error)
+			{
+				// Stream errors sometimes don't have a proper stacktrace or enough information to know where they are coming from.
+				console.error(outgoingRequest);
+				console.error(error);
+				
+				fnReject(error);
+			}
+			
+			child.on("error", errorHandler);
+			child.stdin.on("error", errorHandler);
+			child.stdout.on("error", errorHandler);
 
 			child.stdin.setEncoding("utf-8");
 			child.stdin.write(outgoingRequest.requestBody);
