@@ -1,4 +1,5 @@
 const cluster = require("cluster");
+const assert = require("assert");
 
 const JSONRPC = {
 	EndpointBase: require("../EndpointBase"),
@@ -161,6 +162,88 @@ class WorkerEndpoint extends JSONRPC.EndpointBase
 
 		console.log("[" + process.pid + "] Worker exiting gracefuly.");
 		process.exit(0);
+	}
+
+
+	/**
+	 * @protected
+	 * 
+	 * This works as an internal router to a JSONRPC.Server's endpoints, used as libraries.
+	 * 
+	 * Proxies RPC requests into the a JSONRPC.Server's registered endpoints (potentially internet facing exported functions).
+	 * 
+	 * **************** SKIPS ANY AUTHENTICATION OR AUTHORIZATION LAYERS***********************
+	 * ****************     as well as any other JSONRPC plugins    ***************************
+	 * 
+	 * strEndpointPath is an endpoint path such as "/api-something/ipc/some-app".
+	 * 
+	 * @param {JSONRPC.IncomingRequest} incomingRequest
+	 * @param {JSONRPC.Server} jsonrpcServer
+	 * @param {string} strEndpointPath
+	 * @param {string} strFunctionName
+	 * @param {Array} arrParams
+	 * @param {boolean} bNotification = false
+	 * 
+	 * @returns {*}
+	 */
+	async _rpcToInternalEndpointAsLibrary(incomingRequest, jsonrpcServer, strEndpointPath, strFunctionName, arrParams, bNotification = false)
+	{
+		assert(Array.isArray(arrParams), "arrParams must be of type Array.");
+
+		strEndpointPath = JSONRPC.EndpointBase.normalizePath(strEndpointPath);
+		if(!jsonrpcServer.endpoints[strEndpointPath])
+		{
+			console.error("Existing registered endpoint paths: " + Object.keys(jsonrpcServer.endpoints));
+			throw new JSONRPC.Exception(`Endpoint path ${JSON.stringify(strEndpointPath)} not found.`);
+		}
+
+		const endpoint = jsonrpcServer.endpoints[strEndpointPath];
+
+		if(!endpoint[strFunctionName])
+		{
+			throw new JSONRPC.Exception(`Endpoint path ${JSON.stringify(strEndpointPath)} does not have a method called ${JSON.stringify(strFunctionName)}.`, JSONRPC.Exception.METHOD_NOT_FOUND);
+		}
+
+		if(bNotification)
+		{
+			endpoint[strFunctionName].apply(endpoint, [incomingRequest].concat(arrParams)).catch(console.error);
+			return null;
+		}
+
+		return await endpoint[strFunctionName].apply(endpoint, [incomingRequest].concat(arrParams));
+	}
+
+
+	/**
+	 * @abstract
+	 * 
+	 * This works as an internal router to a JSONRPC.Server's endpoints, used as libraries.
+	 * 
+	 * Proxies RPC requests directly into potentially an internet facing JSONRPC.Server's registered endpoints.
+	 * 
+	 * strEndpointPath is an endpoint path such as "/api-something/ipc/some-app".
+	 * 
+	 * **************** SKIPS ANY AUTHENTICATION OR AUTHORIZATION LAYERS***********************
+	 * ****************     as well as any other JSONRPC plugins    ***************************
+	 * 
+	 * @param {JSONRPC.IncomingRequest} incomingRequest
+	 * @param {string} strEndpointPath
+	 * @param {string} strFunctionName
+	 * @param {Array} arrParams
+	 * @param {boolean} bNotification = false
+	 */
+	async rpcToInternalEndpointAsLibrary(incomingRequest, strEndpointPath, strFunctionName, arrParams, bNotification = false)
+	{
+		//return this._rpcToInternalEndpointAsLibrary(
+		//	incomingRequest, 
+		//	/*jsonrpcServer*/ PROVIDE_JSONRPC_SERVER_CLASS_INSTANCE_HERE, 
+		//	strEndpointPath, 
+		//	strFunctionName, 
+		//	arrParams, 
+		//	bNotification
+		//);
+
+		throw new Error("Not implemented.");
 	}
 };
 

@@ -505,6 +505,31 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 		console.log("Worker said: " + JSON.stringify(strReturn));
 		return strReturn;
 	}
+
+
+	/**
+	 * @param {JSONRPC.IncomingRequest} incomingRequest
+	 * @param {number} nWorkerID
+	 * @param {string} strFunctionName
+	 * @param {Array} arrParams
+	 * @param {boolean} bNotification = false
+	 * 
+	 * @returns {*}
+	 */
+	async rpcWorker(incomingRequest, nWorkerID, strFunctionName, arrParams, bNotification = false)
+	{
+		if(!this.workerClients[nWorkerID])
+		{
+			throw new JSONRPC.Exception(`Cluster worker.id ${nWorkerID} is not alive.`);
+		}
+
+		if(!this.workerClients[nWorkerID].ready)
+		{
+			throw new JSONRPC.Exception(`Cluster worker.id ${nWorkerID} RPC client has not signaled it is ready for cluster IPC RPC, yet.`);
+		}
+
+		return await this.workerClients[nWorkerID].client.rpc(strFunctionName, arrParams, bNotification);
+	}
 };
 
 module.exports = MasterEndpoint;
