@@ -444,6 +444,8 @@ class Server extends EventEmitter
 		}
 
 
+		// @TODO: This is a hack to allow multiple serialization methods on the same JSONRPC server.
+		// Move the serialization deserialization (readers / writers) into Transports plugins.
 		if(incomingRequest.callResultSerialized === null)
 		{
 			incomingRequest.callResultSerialized = JSON.stringify(incomingRequest.callResultToBeSerialized, undefined, "\t");
