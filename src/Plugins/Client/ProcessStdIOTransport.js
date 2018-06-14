@@ -17,6 +17,8 @@ class ProcessStdIOTransport extends JSONRPC.ClientPluginBase
 		
 		this._strEndpointCommand = strEndpointCommand;
 		this._strWorkingDirectoryPath = strWorkingDirectoryPath;
+
+		this._arrSpawnedChildren = [];
 	}
 
 
@@ -46,12 +48,14 @@ class ProcessStdIOTransport extends JSONRPC.ClientPluginBase
 		const strArguments = this._strEndpointCommand.substr(strExePath.length).trim();
 		
 		const child = ChildProcess.spawn(strExePath, [strArguments], objExecOptions);
+		this._arrSpawnedChildren.push(child);
 
 		return new Promise((fnResolve, fnReject) => {
 			child.on(
 				"close", 
 				(code) => {
 					child.stdin.end();
+					this._removeChild(child);
 
 					fnResolve(null);
 				}
@@ -70,6 +74,8 @@ class ProcessStdIOTransport extends JSONRPC.ClientPluginBase
 				// Stream errors sometimes don't have a proper stacktrace or enough information to know where they are coming from.
 				console.error(outgoingRequest);
 				console.error(error);
+
+				this._removeChild(child);
 				
 				fnReject(error);
 			}
@@ -81,6 +87,38 @@ class ProcessStdIOTransport extends JSONRPC.ClientPluginBase
 			child.stdin.setEncoding("utf-8");
 			child.stdin.write(outgoingRequest.requestBody);
 		});
+	}
+
+	/**
+	 * Removes a child handler.
+	 * 
+	 * @param {ChildProcess} child
+	 */
+	_removeChild(child)
+	{
+		if(!this._arrSpawnedChildren.includes(child))
+		{
+			return;
+		}
+
+		this._arrSpawnedChildren.splice(
+			this._arrSpawnedChildren.findIndex(
+				(itemChild) => 
+				{
+					return child === itemChild;
+				}
+			), 
+			1
+		);
+	}
+
+	/**
+	 * List with all spawned child processes
+	 * 
+	 */
+	get spawnedChildren()
+	{
+		return this._arrSpawnedChildren;
 	}
 };
 
