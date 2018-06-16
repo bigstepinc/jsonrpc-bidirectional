@@ -62,6 +62,7 @@ class BidirectionalWebsocketRouter extends JSONRPC.RouterBase
 
 		const objSession = {
 			webSocket: webSocket,
+			upgradeRequest: webSocket.upgradeReq ? /*ws 2.4*/ webSocket.upgradeReq : /*ws >= 4.x*/ upgradeRequest,
 			nConnectionID: nConnectionID,
 			clientReverseCalls: null,
 			clientWebSocketTransportPlugin: null,
