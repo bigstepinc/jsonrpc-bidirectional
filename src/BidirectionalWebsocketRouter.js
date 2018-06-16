@@ -243,13 +243,13 @@ class BidirectionalWebsocketRouter extends JSONRPC.RouterBase
 				incomingRequest.router = this;
 
 
-				if(webSocket.upgradeReq)
+				if(objSession.upgradeRequest)
 				{
 					// upgradeReq is a http.IncomingMessage
-					incomingRequest.headers = webSocket.upgradeReq.headers;
+					incomingRequest.headers = objSession.upgradeRequest.headers;
 
-					incomingRequest.remoteAddress = webSocket.upgradeReq.socket.remoteAddress;
-					incomingRequest.localAddress = webSocket.upgradeReq.socket.localAddress;
+					incomingRequest.remoteAddress = objSession.upgradeRequest.socket.remoteAddress;
+					incomingRequest.localAddress = objSession.upgradeRequest.socket.localAddress;
 				}
 
 
