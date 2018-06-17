@@ -1,3 +1,5 @@
+const assert = require("assert");
+
 const ExtendableError = require("extendable-error-class");
 
 
@@ -19,7 +21,10 @@ class Exception extends ExtendableError
 		super(strMessage);
 
 		this.strMessage = strMessage;
-		this.nCode = nCode;
+		this.code = (nCode === undefined || nCode === null) ? 0 : nCode;
+		
+		// Do not use the setter as it only allows an Object (validates), 
+		// while the JSONRPC 2.0 specification only requires a "structured" data type.
 		this.objData = objData;
 	}
 
@@ -34,11 +39,31 @@ class Exception extends ExtendableError
 
 
 	/**
+	 * @param {number} nCode
+	 */
+	set code(nCode)
+	{
+		assert(typeof nCode === "number" || String(parseInt(nCode)) === nCode, "The JSONRPC.Exception error code must be of type number.");
+		this.nCode = parseInt(nCode);
+	}
+
+
+	/**
 	 * @returns {Object}
 	 */
 	get data()
 	{
 		return this.objData;
+	}
+
+
+	/**
+	 * @param {Object} objData
+	 */
+	set data(objData)
+	{
+		assert(typeof objData === "object" && objData !== null, "The JSONRPC.Exception data property must be an Object.");
+		this.objData = objData;
 	}
 
 
