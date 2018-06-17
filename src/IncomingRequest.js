@@ -599,10 +599,33 @@ class IncomingRequest
 
 		if(this.callResult instanceof Error)
 		{
+			let objData;
+			if(!this.callResult.hasOwnProperty("data") || this.callResult.data === null)
+			{
+				objData = {};
+			}
+			else if(this.callResult instanceof JSONRPC.Exception || typeof this.callResult.data === "object")
+			{
+				objData = this.callResult.data;
+				
+				if(!objData.stack)
+				{
+					if(Object.isSealed(this.callResult.data))
+					{
+						objData = JSON.parse(JSON.stringify(this.callResult.data));
+					}
+				}
+			}
+
+			if(!objData.stack)
+			{
+				objData.stack = this.callResult.stack.split(/[\r\n]+/mg);
+			}
+
 			objResponse.error = {
 				message: this.callResult.message + (this.stackInErrorMessage ? " " + this.callResult.stack : ""),
 				code: (this.callResult instanceof JSONRPC.Exception) ? this.callResult.code : 0,
-				data: this.callResult.stack.split(/[\r\n]+/mg)
+				data: objData
 			};
 		}
 		else

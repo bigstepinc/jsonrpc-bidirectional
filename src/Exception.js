@@ -12,13 +12,15 @@ class Exception extends ExtendableError
 	/**
 	 * @param {string} strMessage
 	 * @param {number} nCode
+	 * @param {Object} objData
 	 */
-	constructor(strMessage, nCode)
+	constructor(strMessage, nCode, objData = {})
 	{
 		super(strMessage);
 
 		this.strMessage = strMessage;
 		this.nCode = nCode;
+		this.objData = objData;
 	}
 
 
@@ -28,6 +30,15 @@ class Exception extends ExtendableError
 	get code()
 	{
 		return this.nCode;
+	}
+
+
+	/**
+	 * @returns {Object}
+	 */
+	get data()
+	{
+		return this.objData;
 	}
 
 
