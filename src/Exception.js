@@ -16,7 +16,7 @@ class Exception extends ExtendableError
 	 * @param {number} nCode
 	 * @param {Object} objData
 	 */
-	constructor(strMessage, nCode, objData = {})
+	constructor(strMessage, nCode = 0, objData = {})
 	{
 		super(strMessage);
 
