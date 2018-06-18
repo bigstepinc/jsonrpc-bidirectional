@@ -206,28 +206,31 @@ class WebRTCTransport extends JSONRPC.ClientPluginBase
 	 */
 	_setupRTCDataChannel()
 	{
-		this._dataChannel.addEventListener(
-			"close", 
-			(closeEvent) => {
-				this.rejectAllPromises(new Error("RTCDataChannel closed."));
+		const fnOnError = (error) => {
+			this.rejectAllPromises(error);
+		};
+		const fnOnMessage = async (messageEvent) => {
+			await this.processResponse(messageEvent.data);
+		};
+		const fnOnClose = (closeEvent) => {
+			this.rejectAllPromises(new Error("RTCDataChannel closed."));
+
+			this._dataChannel.removeEventListener("close", fnOnClose);
+			this._dataChannel.removeEventListener("error", fnOnError);
+	
+			if(!this._bBidirectionalWebRTCMode)
+			{
+				this._dataChannel.removeEventListener("message", fnOnMessage);
 			}
-		);
+		};
+
 		
-		this._dataChannel.addEventListener(
-			"error",
-			(error) => {
-				this.rejectAllPromises(error);
-			}
-		);
+		this._dataChannel.addEventListener("close", fnOnClose);
+		this._dataChannel.addEventListener("error", fnOnError);
 
 		if(!this._bBidirectionalWebRTCMode)
 		{
-			this._dataChannel.addEventListener(
-				"message",
-				async (messageEvent) => {
-					await this.processResponse(messageEvent.data);
-				}
-			);
+			this._dataChannel.addEventListener("message", fnOnMessage);
 		}
 	}
 };

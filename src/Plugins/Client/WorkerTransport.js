@@ -216,47 +216,48 @@ class WorkerTransport extends JSONRPC.ClientPluginBase
 			// There's no close/exit event in browser environments.
 			// Call this manually when appropriate: this.rejectAllPromises(new Error("Worker closed"));
 
-			this._worker.addEventListener(
-				"error",
-				(error) => {
-					this.rejectAllPromises(error);
-				}
-			);
+			// TODO: create API to be called to remove event listeners.
+
+			const fnOnError = (error) => {
+				this.rejectAllPromises(error);
+			};
+			const fnOnMessage = async (messageEvent) => {
+				await this.processResponse(messageEvent.data);
+			};
+
+			this._worker.addEventListener("error", fnOnError);
 
 			if(!this._bBidirectionalWorkerMode)
 			{
-				this._worker.addEventListener(
-					"message",
-					async (messageEvent) => {
-						await this.processResponse(messageEvent.data);
-					}
-				);
+				this._worker.addEventListener("message", fnOnMessage);
 			}
 		}
 		else
 		{
-			this._worker.on(
-				"exit",
-				(nCode, nSignal) => {
-					this.rejectAllPromises(new Error("Worker closed. Code: " + JSON.stringify(nCode) + ". Signal: " + JSON.stringify(nSignal)));
+			const fnOnError = (error) => {
+				this.rejectAllPromises(error);
+			};
+			const fnOnMessage = async (objMessage) => {
+				await this.processResponse(objMessage);
+			};
+			const fnOnExit = (nCode, nSignal) => {
+				this.rejectAllPromises(new Error("Worker closed. Code: " + JSON.stringify(nCode) + ". Signal: " + JSON.stringify(nSignal)));
+
+				this._worker.removeListener("exit", fnOnExit);
+				this._worker.removeListener("error", fnOnError);
+	
+				if(!this._bBidirectionalWorkerMode)
+				{
+					this._worker.removeListener("message", fnOnMessage);
 				}
-			);
-			
-			this._worker.on(
-				"error",
-				(error) => {
-					this.rejectAllPromises(error);
-				}
-			);
+			};
+
+			this._worker.on("exit", fnOnExit);
+			this._worker.on("error", fnOnError);
 
 			if(!this._bBidirectionalWorkerMode)
 			{
-				this._worker.on(
-					"message",
-					async (objMessage) => {
-						await this.processResponse(objMessage);
-					}
-				);
+				this._worker.on("message", fnOnMessage);
 			}
 		}
 	}

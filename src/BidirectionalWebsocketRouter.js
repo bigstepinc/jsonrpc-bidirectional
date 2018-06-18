@@ -87,42 +87,39 @@ class BidirectionalWebsocketRouter extends JSONRPC.RouterBase
 
 		if(webSocket.on)
 		{
-			webSocket.on(
-				"message", 
-				(strData, objFlags) => {
-					this._routeMessage(strData, objSession);
-				}
-			);
+			const fnOnMessage = (strData, objFlags) => {
+				this._routeMessage(strData, objSession);
+			};
+			const fnOnClose = (nCode, strReason) => {
+				this.onConnectionEnded(nConnectionID);
 
-			webSocket.on(
-				"close",
-				(nCode, strReason) => {
-					this.onConnectionEnded(nConnectionID);
-				}
-			);
-
+				webSocket.removeListener("message", fnOnMessage);
+				webSocket.removeListener("close", fnOnClose);
+				webSocket.removeListener("error", fnOnError);
+			};
+			webSocket.on("message", fnOnMessage);
+			webSocket.on("close", fnOnClose);
 			webSocket.on("error", fnOnError);
 		}
 		else if(webSocket.addEventListener)
 		{
-			webSocket.addEventListener(
-				"message", 
-				(messageEvent) => {
-					this._routeMessage(messageEvent.data, objSession);
-				}
-			);
+			const fnOnMessage = (messageEvent) => {
+				this._routeMessage(messageEvent.data, objSession);
+			};
+			const fnOnClose = (closeEvent) => {
+				//closeEvent.code;
+				//closeEvent.reason;
+				//closeEvent.wasClean;
 
-			webSocket.addEventListener(
-				"close",
-				(closeEvent) => {
-					//closeEvent.code;
-					//closeEvent.reason;
-					//closeEvent.wasClean;
+				this.onConnectionEnded(nConnectionID);
 
-					this.onConnectionEnded(nConnectionID);
-				}
-			);
+				webSocket.removeEventListener("message", fnOnMessage);
+				webSocket.removeEventListener("close", fnOnClose);
+				webSocket.removeEventListener("error", fnOnError);
+			};
 
+			webSocket.addEventListener("message", fnOnMessage);
+			webSocket.addEventListener("close", fnOnClose);
 			webSocket.addEventListener("error", fnOnError);
 		}
 		else
