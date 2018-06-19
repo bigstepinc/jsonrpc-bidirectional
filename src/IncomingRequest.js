@@ -600,7 +600,7 @@ class IncomingRequest
 		if(this.callResult instanceof Error)
 		{
 			let objData;
-			if(!this.callResult.hasOwnProperty("data") || this.callResult.data === null)
+			if(!this.callResult.data)
 			{
 				objData = {};
 			}

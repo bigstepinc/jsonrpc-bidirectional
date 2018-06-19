@@ -130,54 +130,57 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 
 		if(worker.addEventListener)
 		{
-			worker.addEventListener(
-				"message", 
-				async (messageEvent) => {
-					if(
-						cluster.isMaster
-						&& typeof messageEvent.data === "object"
-						&& messageEvent.data.jsonrpc
-						&& messageEvent.data.method === "rpc.connectToEndpoint"
-					)
-					{
-						return this._onRPCConnectToEndpoint(messageEvent.data, nConnectionID);
-					}
-
-					await this._routeMessage(messageEvent.data, objSession);
+			const fnOnMessage = async (messageEvent) => {
+				if(
+					cluster.isMaster
+					&& typeof messageEvent.data === "object"
+					&& messageEvent.data.jsonrpc
+					&& messageEvent.data.method === "rpc.connectToEndpoint"
+				)
+				{
+					return this._onRPCConnectToEndpoint(messageEvent.data, nConnectionID);
 				}
-			);
+
+				await this._routeMessage(messageEvent.data, objSession);
+			};
+
+			worker.addEventListener("message", fnOnMessage);
 
 			// No event for a terminated worker.
 			// this.onConnectionEnded(nConnectionID) must be called from outside this class.
 
 			worker.addEventListener("error", fnOnError);
+
+			// @TODO teach onConnectionEnded to cleanup event listeners on worker.
 		}
 		else
 		{
-			worker.on(
-				"message", 
-				async (objMessage, handle) => {
-					if(
-						cluster.isMaster
-						&& typeof objMessage === "object"
-						&& objMessage.jsonrpc
-						&& objMessage.method === "rpc.connectToEndpoint"
-					)
-					{
-						return this._onRPCConnectToEndpoint(objMessage, nConnectionID);
-					}
-
-					await this._routeMessage(objMessage, objSession);
+			const fnOnMessage = async (objMessage, handle) => {
+				if(
+					cluster.isMaster
+					&& typeof objMessage === "object"
+					&& objMessage.jsonrpc
+					&& objMessage.method === "rpc.connectToEndpoint"
+				)
+				{
+					return this._onRPCConnectToEndpoint(objMessage, nConnectionID);
 				}
-			);
 
-			worker.on(
-				"exit",
-				(nCode, nSignal) => {
-					this.onConnectionEnded(nConnectionID);
-				}
-			);
+				await this._routeMessage(objMessage, objSession);
+			};
 
+			const fnOnExit = (nCode, nSignal) => {
+				console.log(`Worker ID ${worker.id} exited with code ${nCode}.`);
+
+				this.onConnectionEnded(nConnectionID);
+
+				worker.removeListener("message", fnOnMessage);
+				worker.removeListener("exit", fnOnExit);
+				worker.removeListener("error", fnOnError);
+			};
+
+			worker.on("message", fnOnMessage);
+			worker.on("exit", fnOnExit);
 			worker.on("error", fnOnError);
 		}
 

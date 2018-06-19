@@ -66,7 +66,7 @@ setInterval(() => {}, 10000);
 
 			assert(await endpoint.masterClient.ping("Test") === "Test", "Calling MasterEndpoint.ping() returned the wrong thing.");
 			
-			console.log("Will call masterClient.gracefulExit().");
+			console.log("Will call masterClient.gracefulExit() after sleeping for 40 seconds.");
 			await sleep(40000);
 			// This will call all worker's gracefulExit() methods.
 			await endpoint.masterClient.gracefulExit();

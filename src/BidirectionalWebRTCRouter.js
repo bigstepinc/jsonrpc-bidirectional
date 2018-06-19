@@ -58,34 +58,30 @@ class BidirectionalWebRTCRouter extends JSONRPC.RouterBase
 
 		this._objSessions[nConnectionID] = objSession;
 		
+		const fnOnMessage = async (messageEvent) => {
+			await this._routeMessage(messageEvent.data, objSession);
+		};
+		const fnOnError = (error) => {
+			console.error(error);
 
-		dataChannel.addEventListener(
-			"message", 
-			async (messageEvent) => {
-				await this._routeMessage(messageEvent.data, objSession);
+			this.onConnectionEnded(nConnectionID);
+
+			if(dataChannel.readyState === "open")
+			{
+				dataChannel.close();
 			}
-		);
+		};
+		const fnOnClose = (closeEvent) => {
+			this.onConnectionEnded(nConnectionID);
 
-		dataChannel.addEventListener(
-			"close",
-			(closeEvent) => {
-				this.onConnectionEnded(nConnectionID);
-			}
-		);
+			dataChannel.removeEventListener("message", fnOnMessage);
+			dataChannel.removeEventListener("close", fnOnClose);
+			dataChannel.removeEventListener("error", fnOnError);
+		};
 
-		dataChannel.addEventListener(
-			"error", 
-			(error) => {
-				console.error(error);
-
-				this.onConnectionEnded(nConnectionID);
-
-				if(dataChannel.readyState === "open")
-				{
-					dataChannel.close();
-				}
-			}
-		);
+		dataChannel.addEventListener("message", fnOnMessage);
+		dataChannel.addEventListener("close", fnOnClose);
+		dataChannel.addEventListener("error", fnOnError);
 
 		return nConnectionID;
 	}
