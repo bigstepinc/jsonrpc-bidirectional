@@ -17,8 +17,6 @@ class ProcessStdIOTransport extends JSONRPC.ClientPluginBase
 		
 		this._strEndpointCommand = strEndpointCommand;
 		this._strWorkingDirectoryPath = strWorkingDirectoryPath;
-
-		this.constructor._objSpawnedChildren = {};
 	}
 
 
@@ -48,6 +46,12 @@ class ProcessStdIOTransport extends JSONRPC.ClientPluginBase
 		const strArguments = this._strEndpointCommand.substr(strExePath.length).trim();
 		
 		const child = ChildProcess.spawn(strExePath, [strArguments], objExecOptions);
+
+		if(!this.constructor._objSpawnedChildren)
+		{
+			this.constructor._objSpawnedChildren = {};
+		}
+
 		this.constructor._objSpawnedChildren[child.pid] = child;
 
 		return new Promise((fnResolve, fnReject) => {
@@ -96,7 +100,7 @@ class ProcessStdIOTransport extends JSONRPC.ClientPluginBase
 	 */
 	static get SpawnedChildren()
 	{
-		return this.constructor._objSpawnedChildren;
+		return this._objSpawnedChildren;
 	}
 };
 
