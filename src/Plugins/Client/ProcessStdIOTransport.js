@@ -98,7 +98,7 @@ class ProcessStdIOTransport extends JSONRPC.ClientPluginBase
 	 * 
 	 * @returns {Object} _objSpawnedChildren
 	 */
-	static get SpawnedChildren()
+	static get spawnedChildren()
 	{
 		return this._objSpawnedChildren;
 	}
