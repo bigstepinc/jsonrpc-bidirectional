@@ -41,6 +41,12 @@ class Cache extends JSONRPC.ClientPluginBase
 	}
 
 
+	deleteKeys(arrKeys = [])
+	{
+		this.arrKeys.forEach(strCacheKey => this.mapCache.detele(strCacheKey));
+	}
+
+
 	/**
 	 * If the function result is already cached and the cache hasn't yet expired, skip the HTTP request and use a JSONRPC response object with null result.
 	 * It will be populated from the cache during the afterJSONDecode step.
@@ -56,7 +62,7 @@ class Cache extends JSONRPC.ClientPluginBase
 
 		if(this._mapFunctionNameToCacheSeconds.has(outgoingRequest.methodName))
 		{
-			const strKey = this.constructor._getCacheKey(outgoingRequest);
+			const strKey = this.constructor.getCacheKey(outgoingRequest.methodName, outgoingRequest.params);
 
 			if(
 				(this.mapCache.has(strKey) && this.mapCache.size > this._nMaxEntries)
@@ -102,7 +108,7 @@ class Cache extends JSONRPC.ClientPluginBase
 
 		if(outgoingRequest.methodName && this._mapFunctionNameToCacheSeconds.has(outgoingRequest.methodName))
 		{
-			const strKey = this.constructor._getCacheKey(outgoingRequest);
+			const strKey = this.constructor.getCacheKey(outgoingRequest.methodName, outgoingRequest.params);
 
 			if(this.mapCache.has(strKey))
 			{
@@ -171,12 +177,14 @@ class Cache extends JSONRPC.ClientPluginBase
 
 
 	/**
-	 * @param {JSONRPC.OutgoingRequest} outgoingRequest
+	 * @param {string} strMethodName
+	 * @param {Object} objParams
+	 * 
 	 * @returns {string}
 	 */
-	static _getCacheKey(outgoingRequest)
+	static getCacheKey(strMethodName, objParams)
 	{
-		return `${outgoingRequest.methodName}__${JSON.stringify(outgoingRequest.params)}`;
+		return `${strMethodName}__${JSON.stringify(objParams)}`;
 	}
 
 	
