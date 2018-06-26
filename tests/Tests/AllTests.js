@@ -1750,6 +1750,23 @@ class AllTests
 		this._clientCacheSimple.clear();
 		assert(this._clientCacheSimple.mapCache.size === 0, "[FAILED] Failed to clear cache.");
 
+		// Test cache clear specific keys
+		this._clientCacheSimple.clear();
+		mxResponse1 = await this._jsonrpcClientSiteB.rpc("getCurrentDateTimestampToBeCached", [1]);
+		mxResponse2 = await this._jsonrpcClientSiteB.rpc("getCurrentDateTimestampToBeCached", [2]);
+
+		const strCacheKey1 = this._clientCacheSimple.constructor.getCacheKey("getCurrentDateTimestampToBeCached", [1]);
+		this._clientCacheSimple.deleteKeys([strCacheKey1]);
+
+		mxResponse3 = await this._jsonrpcClientSiteB.rpc("getCurrentDateTimestampToBeCached", [1]);
+		let mxResponse4 = await this._jsonrpcClientSiteB.rpc("getCurrentDateTimestampToBeCached", [2]);
+
+		assert(
+			mxResponse1.dateObject.timestamp !== mxResponse3.dateObject.timestamp
+			&& mxResponse2.dateObject.timestamp === mxResponse4.dateObject.timestamp,
+			"[Failed] Clearing specific cache keys doesn't work properly."
+		);
+
 		// Test that after the number of entries in the cache reaches nMaxEntries, the cache gets flushed
 		assert(this.cachePluginMaxEntries >= 2, "[Failed] The configured value of this.cachePluginMaxEntries must be atleast 2 for this test.");
 		this._clientCacheFreeze.clear();
@@ -1763,7 +1780,7 @@ class AllTests
 			await this._jsonrpcClientSiteB.rpc("getCurrentDateTimestampToBeCached", [i + 1]);
 		}
 
-		const mxResponse4 = await this._jsonrpcClientSiteB.rpc("getCurrentDateTimestampToBeCached", [1]);
+		mxResponse4 = await this._jsonrpcClientSiteB.rpc("getCurrentDateTimestampToBeCached", [1]);
 
 		assert(
 			mxResponse1.dateObject.timestamp === mxResponse3.dateObject.timestamp

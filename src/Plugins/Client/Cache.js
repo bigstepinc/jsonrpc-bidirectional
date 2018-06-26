@@ -43,7 +43,7 @@ class Cache extends JSONRPC.ClientPluginBase
 
 	deleteKeys(arrKeys = [])
 	{
-		this.arrKeys.forEach(strCacheKey => this.mapCache.detele(strCacheKey));
+		arrKeys.forEach(strCacheKey => this.mapCache.delete(strCacheKey));
 	}
 
 
