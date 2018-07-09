@@ -431,6 +431,7 @@ __Site B (ES5 browser). WebSocket client (connects to the above WebSocket TCP se
 		Open the developer tools console (F12 for most browsers, CTRL+SHIFT+I in Electron) to see errors or manually make calls.
 	</body>
 </html>
+```
 
 ## MIT license
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fbigstepinc%2Fjsonrpc-bidirectional.svg?type=large)]
