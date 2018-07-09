@@ -431,5 +431,5 @@ __Site B (ES5 browser). WebSocket client (connects to the above WebSocket TCP se
 </html>
 ```
 
-
+## MIT license
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fbigstepinc%2Fjsonrpc-bidirectional.svg?type=large)]
