@@ -1,7 +1,7 @@
 {
   "name": "jsonrpc-bidirectional",
   "description": "Bidirectional JSONRPC over web sockets or HTTP with extensive plugin support.",
-  "version": "7.1.0",
+  "version": "7.1.1",
   "scripts": {
     "build": "node build.js",
     "test": "node --expose-gc --max-old-space-size=1024 tests/main.js",
@@ -37,7 +37,6 @@
   },
   "dependencies": {
     "extendable-error-class": "^0.1.1",
-    "fs-promise": "^2.0.3",
     "fs-extra": "^7.0.0",
     "node-fetch": "^1.6.3",
     "sleep-promise": "^2.0.0"

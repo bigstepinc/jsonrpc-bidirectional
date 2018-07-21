@@ -631,6 +631,18 @@ class IncomingRequest
 		else
 		{
 			objResponse.result = this.callResult === undefined ? null : this.callResult;
+
+			if(typeof objResponse.result === "function")
+			{
+				delete objResponse.result;
+				objResponse.error = {
+					message: "Disallowed attempt to return a function definition through JSONRPC as a return value for this request: " + this._mxRequestBody + ". The original function succeeded, however this error is returned.",
+					code: JSONRPC.Exception.INTERNAL_ERROR,
+					data: {
+						stack: new Error().stack.split(/[\r\n]+/mg)
+					}
+				};
+			}
 		}
 
 		if(
