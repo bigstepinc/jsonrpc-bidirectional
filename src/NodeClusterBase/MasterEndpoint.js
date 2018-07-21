@@ -1,7 +1,7 @@
 const cluster = require("cluster");
 const os = require("os");
 const assert = require("assert");
-const fs = require("fs-promise");
+const fs = require("fs-extra");
 
 const sleep = require("sleep-promise");
 const JSONRPC = {
