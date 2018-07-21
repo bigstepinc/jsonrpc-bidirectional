@@ -15,6 +15,7 @@ module.exports = [
 			"node-fetch": "fetch",
 			"cluster": "null",
 			"fs-promise": "null",
+			"fs-extra": "null",
 			"node-forge": "forge"
 		}, 
 		entry: [
@@ -96,6 +97,7 @@ module.exports = [
 			"node-fetch": "fetch",
 			"cluster": "",
 			"fs-promise": "",
+			"fs-extra": "",
 			"node-forge": "forge"
 		}, 
 		entry: [
