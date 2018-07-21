@@ -38,6 +38,7 @@
   "dependencies": {
     "extendable-error-class": "^0.1.1",
     "fs-promise": "^2.0.3",
+    "fs-extra": "^7.0.0",
     "node-fetch": "^1.6.3",
     "sleep-promise": "^2.0.0"
   },
