@@ -266,7 +266,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 		delete objRequest[this.constructor.REQUEST_PARAM_NAME_METHOD];
 		delete objRequest[this.constructor.REQUEST_PARAM_NAME_PARAMS];
 
-		if(objRequest.hasOwnProperty[this.constructor.REQUEST_PARAM_NAME_EXPIRE])
+		if(objRequest.hasOwnProperty(this.constructor.REQUEST_PARAM_NAME_EXPIRE))
 		{
 			objRequest.expires = objRequest[this.constructor.REQUEST_PARAM_NAME_EXPIRE];
 			delete objRequest[this.constructor.REQUEST_PARAM_NAME_EXPIRE];

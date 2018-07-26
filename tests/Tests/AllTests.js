@@ -101,7 +101,7 @@ class AllTests
 
 		let objRandomURLPublicConfig = this.urlPublicConfig;
 		this._serverURLPublicPlugin = new JSONRPC.Plugins.Server.URLPublic(
-			objRandomURLPublicConfig, 
+			objRandomURLPublicConfig,
 			objRandomURLPublicConfig.compressionType
 		);
 
@@ -248,7 +248,6 @@ class AllTests
 			await this._jsonrpcClientSiteDisconnecter.rpc("ImHereForTheParty", ["Murdock", "Murdock does the harlem shake", /*bDoNotAuthorizeMe*/ false]);
 		}
 
-
 		await this.callRPCMethodFromWebPage();
 
 
@@ -277,6 +276,8 @@ class AllTests
 		await this.urlPublicRequestGenerate();
 
 		this.addURLPublicPluginSiteA();
+
+		await this.callURLPublicRPCMethodExpired();
 		await this.callURLPublicRPCMethod();
 		await this.callURLPublicWithRedirect();
 		this._serverURLPublicPlugin.compressionType = JSONRPC.Plugins.Server.URLPublic.NONE;
@@ -1025,7 +1026,8 @@ class AllTests
 				// nodejs specific error.
 				assert(
 					error.message.includes("ECONNREFUSED") // ws
-					|| error.message.includes("uWs client connection error") // uws
+					|| error.message.includes("uWs client connection error"), // uws
+					"Invalid error of \"triggerConnectionRefused\" function."
 				);
 			}
 		}
@@ -1575,6 +1577,32 @@ class AllTests
 		this._jsonrpcServerSiteA.addPlugin(this._serverURLPublicPlugin);
 	}
 
+	/**
+	 * Generates a public URL and makes a HTTP GET request to it after it expires.
+	 * Expects an error to be returned with error code JSONRPC.Exception.REQUEST_EXPIRED.
+	 */
+	async callURLPublicRPCMethodExpired()
+	{
+		const strEndpointURL = `http://${this._strBindIPAddress}:${this._nHTTPPort}/api/`;
+		const strFunctionName = "ping";
+		const strReturnValue = "return_ping_value";
+		const arrParams = [strReturnValue, /*bRandomSleep*/ false, /*strATeamCharacterName*/ null];
+		const nExpireSeconds = 2;
+		const nEncryptionMode = JSONRPC.Plugins.Server.URLPublic.MODE_DEFAULT;
+
+		let strRequestPublicURL = await this._serverURLPublicPlugin.URLRequestGenerate(strEndpointURL, strFunctionName, arrParams, nExpireSeconds, nEncryptionMode);
+
+		await sleep(3 * 1000);
+
+		let fetchResponse = await fetch(strRequestPublicURL);
+		let objJSONResponse = await fetchResponse.json();
+
+		assert(typeof objJSONResponse === "object", `Invalid response from URLPublic calling method ${strFunctionName}. Expected "object", but got ${JSON.stringify(objJSONResponse)}`);
+		assert(typeof objJSONResponse.error === "object", `Invalid response result from URLPublic calling expired method ${strFunctionName}. Expected an "error" property to be set on the response.`);
+		assert(objJSONResponse.error.code === JSONRPC.Exception.REQUEST_EXPIRED, `Invalid error from URLPublic calling expired method ${strFunctionName}. Expected error code ${JSONRPC.Exception.REQUEST_EXPIRED} but got ${objJSONResponse.error.code}.`);
+
+		console.log(`[${process.pid}] \x1b[42m\x1b[30m[OK]\x1b[0m Calling method through generated expired public URL worked! Response: ${JSON.stringify(objJSONResponse, null, 2)}`);
+	}
 
 	/**
 	 * Generates a public URL and makes a HTTP GET request to it.
@@ -1582,9 +1610,6 @@ class AllTests
 	 */
 	async callURLPublicRPCMethod()
 	{
-		// @TODO: this is buggy. The test itself or URLPublic error handling is buggy, randomly returns undefined (the called endpoint function).
-		return;
-
 		const strEndpointURL = `http://${this._strBindIPAddress}:${this._nHTTPPort}/api/`;
 		const strFunctionName = "ping";
 		const strReturnValue = "return_ping_value";
@@ -1824,7 +1849,7 @@ class AllTests
 		let mxResponse1 = await this._jsonrpcClientSiteB.rpc("getCurrentDateTimestampToBeCached", []);
 		let mxResponse2 = await this._jsonrpcClientSiteB.rpc("getCurrentDateTimestampToBeCached", []);
 		let mxResponse3 = await this._jsonrpcClientSiteB.rpc("getCurrentDateTimestampToBeCached", []);
-		
+
 		assert(mxResponse1 === mxResponse2 && mxResponse1 === mxResponse3, "[Failed] Cache with bDeepFreeze=true and bDeepCopy=false doesn't return the results directly from cache.");
 
 		// Test that a different object is returned after the cache is cleared
