@@ -6,6 +6,7 @@ const fs = require("fs-extra");
 const sleep = require("sleep-promise");
 const JSONRPC = {
 	EndpointBase: require("../EndpointBase"),
+	Exception: require("../Exception"),
 	Server: require("../Server"),
 	Client: require("../Client"),
 	BidirectionalWorkerRouter: require("../BidirectionalWorkerRouter"),
