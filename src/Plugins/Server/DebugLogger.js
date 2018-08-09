@@ -17,7 +17,7 @@ class DebugLogger extends JSONRPC.ServerPluginBase
 		}
 		else
 		{
-			console.log("[" + process.pid + "] [" + (new Date()).toISOString() + "] Received JSONRPC request at endpoint path " + incomingRequest.endpoint.path + ": " + incomingRequest.requestBody + "\n");
+			console.log("[" + process.pid + "] [" + (new Date()).toISOString() + "] Received JSONRPC request at endpoint path " + incomingRequest.endpoint.path + ": " + (typeof incomingRequest.requestBody === "string" ? incomingRequest.requestBody : JSON.stringify(incomingRequest.requestBody)) + "\n");
 		}
 	}
 
@@ -36,7 +36,7 @@ class DebugLogger extends JSONRPC.ServerPluginBase
 		}
 		else
 		{
-			console.log("[" + process.pid + "] [" + (new Date()).toISOString() + "] Sending JSONRPC response: " + incomingRequest.callResultSerialized + "\n");
+			console.log("[" + process.pid + "] [" + (new Date()).toISOString() + "] Sending JSONRPC response: " + (typeof incomingRequest.callResultSerialized === "string" ? incomingRequest.callResultSerialized : JSON.stringify(incomingRequest.callResultSerialized)) + "\n");
 		}
 	}
 };
