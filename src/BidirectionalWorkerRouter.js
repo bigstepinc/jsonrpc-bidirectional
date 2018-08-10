@@ -23,6 +23,9 @@ JSONRPC.Utils = require("./Utils");
 
 
 /**
+ * @TODO: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers#Passing_data_by_transferring_ownership_(transferable_objects)
+ * @TODO: SharedWorker (note: it looks like a ServiceWorker)
+ * 
  * @event madeReverseCallsClient
  * The "madeReverseCallsClient" event offers automatically instantiated API clients (API clients are instantiated for each connection, lazily).
  * 
