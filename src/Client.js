@@ -227,7 +227,7 @@ class Client extends EventEmitter
 				}
 				else
 				{
-					outgoingRequest.callResult = new JSONRPC.Exception(outgoingRequest.responseObject.error.message, outgoingRequest.responseObject.error.code);
+					outgoingRequest.callResult = new JSONRPC.Exception(outgoingRequest.responseObject.error.message, outgoingRequest.responseObject.error.code, outgoingRequest.responseObject.error.data ? outgoingRequest.responseObject.error.data : {});
 				}
 			}
 			else if(outgoingRequest.responseObject.hasOwnProperty("result"))
