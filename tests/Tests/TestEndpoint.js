@@ -148,6 +148,18 @@ class TestEndpoint extends JSONRPC.EndpointBase
 	 * Hello world?
 	 * 
 	 * @param {JSONRPC.IncomingRequest} incomingRequest
+	 */
+	async _protectedMethod(incomingRequest)
+	{
+		console.error("Security error. A call passed through to _protectedMethod().");
+		process.exit(1);
+	}
+
+
+	/**
+	 * Hello world?
+	 * 
+	 * @param {JSONRPC.IncomingRequest} incomingRequest
 	 * 
 	 * @returns {string}
 	 */

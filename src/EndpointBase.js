@@ -37,6 +37,105 @@ class EndpointBase extends EventEmitter
 
 
 	/**
+	 * Brings methods of some class instance into this class (mixins, traits).
+	 * 
+	 * The mixin functions will be executed in the context of this class instance, 
+	 * so the source class shouldn't have any member properties, or the member properties' code would need to be duplicated in this class.
+	 * 
+	 * The source class instance is considered a trait.
+	 * 
+	 * @param {*} classInstance
+	 */
+	_mixTraitIntoThis(classInstance)
+	{
+		for(const strFunctionName of Object.getOwnPropertyNames(classInstance.constructor.prototype))
+		{
+			if(typeof classInstance.constructor.prototype[strFunctionName] === "function" && strFunctionName !== "constructor")
+			{
+				this.constructor.prototype[strFunctionName] = classInstance[strFunctionName];
+			}
+		}
+	};
+
+
+	/**
+	 * Utility function to be used in a build process.
+	 * 
+	 * Example usage: await this._buildAPIClientSourceCode([this]);
+	 * 
+	 * @param {Array<*>} arrAPITraits 
+	 */
+	async _buildAPIClientSourceCode(arrAPITraits)
+	{
+		const TypescriptParser = require("typescript-parser");
+
+		let strServerAPIClientMethods = "";
+		for(const classInstance of arrAPITraits)
+		{
+			const objParsedJavaScript = await (new TypescriptParser()).parseSource(classInstance.constructor.toString());
+			
+			for(const objMethod of objParsedJavaScript.declarations[0].methods)
+			{
+				if(!objMethod.name.startsWith("_") && objMethod !== "constructor")
+				{
+					const arrParameterNames = [];
+	
+					if(objMethod.parameters[0].name !== "incomingRequest")
+					{
+						console.error(`Error. First parameter of ${classInstance.constructor.name}.${objMethod.name}() is not incomingRequest. That param is mandatory for API exported functions.`);
+						process.exit(1);
+					}
+					
+					objMethod.parameters.splice(0, 1);
+	
+					for(const objParameter of objMethod.parameters)
+					{
+						if(objParameter.startCharacter === "{")
+						{
+							arrParameterNames.push("objDestructuringParam_" + objParameter.name.replace(/[^A-Za-z0-9_]+/g, "__") + "={}");
+						}
+						else
+						{
+							arrParameterNames.push(objParameter.name);
+						}
+					}
+					strServerAPIClientMethods += `
+						async ${objMethod.name}(${arrParameterNames.join(", ")})
+						{
+							return this.rpc("${objMethod.name}", [...arguments]);
+						}
+					`.replace(/^\t{5}/gm, "");
+				}
+			}
+					
+			/*for(const strFunctionName of Object.getOwnPropertyNames(classInstance.constructor.prototype))
+			{
+				if(typeof classInstance.constructor.prototype[strFunctionName] === "function" && !strFunctionName.startsWith("_") && strFunctionName !== "constructor")
+				{
+					strServerAPIClientMethods += `
+						async ${strFunctionName}()
+						{
+							return this.rpc("${strFunctionName}", [...arguments]);
+						}
+					`;
+				}
+			}*/
+		}
+		
+		let strAPIClient = `
+			const JSONRPC = require("jsonrpc-bidirectional");
+			class ${this._strName} extends JSONRPC.Client
+			{
+				_INSERT_METHODS_HERE_
+			};
+			module.exports = ${this._strName};
+		`.replace(/^\t{3}/gm, "").replace("_INSERT_METHODS_HERE_", strServerAPIClientMethods);
+		
+		return strAPIClient;
+	}
+
+
+	/**
 	 * @returns {string}
 	 */
 	get path()

@@ -250,6 +250,13 @@ class AllTests
 
 		await this.callRPCMethodFromWebPage();
 
+		try
+		{
+			await this._jsonrpcClientSiteB.rpc("_protectedMethod", []);
+		}
+		catch(ignoredError)
+		{
+		}
 
 		await this.callRPCMethodSiteB(/*bDoNotSleep*/ true);
 		await this.callRPCMethodSiteB(/*bDoNotSleep*/ true, /*bNotification*/ true);

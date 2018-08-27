@@ -382,6 +382,12 @@ class Server extends EventEmitter
 				}
 
 
+				if(incomingRequest.requestObject.method.startsWith("_"))
+				{
+					throw new JSONRPC.Exception("Method " + JSON.stringify(incomingRequest.requestObject.method) + " not found on endpoint " + JSON.stringify(incomingRequest.endpoint.path) + ".", JSONRPC.Exception.METHOD_NOT_FOUND);
+				}
+
+
 				if(!incomingRequest.isMethodCalled)
 				{
 					this.emit("callFunction", incomingRequest);
