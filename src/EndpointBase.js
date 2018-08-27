@@ -4,6 +4,9 @@ const assert = require("assert");
 
 const EventEmitter = require("events");
 
+const {TypescriptParser} = require("typescript-parser");
+
+
 /**
  * This class is suposed to be extended by JSONRPC endpoints.
  * Endpoints hold exported RPC functions.
@@ -69,8 +72,6 @@ class EndpointBase extends EventEmitter
 	static async _buildAPIClientSourceCode(arrAPITraits, strClassName)
 	{
 		assert(typeof strClassName === "string", "strClassName was suposed to be of type string.");
-
-		const TypescriptParser = require("typescript-parser");
 
 		let strServerAPIClientMethods = "";
 		for(const classInstance of arrAPITraits)
