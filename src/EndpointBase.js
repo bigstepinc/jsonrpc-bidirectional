@@ -64,9 +64,12 @@ class EndpointBase extends EventEmitter
 	 * Example usage: await this._buildAPIClientSourceCode([this]);
 	 * 
 	 * @param {Array<*>} arrAPITraits 
+	 * @param {string} strClassName
 	 */
-	async _buildAPIClientSourceCode(arrAPITraits)
+	static async _buildAPIClientSourceCode(arrAPITraits, strClassName)
 	{
+		assert(typeof strClassName === "string", "strClassName was suposed to be of type string.");
+
 		const TypescriptParser = require("typescript-parser");
 
 		let strServerAPIClientMethods = "";
@@ -124,11 +127,11 @@ class EndpointBase extends EventEmitter
 		
 		let strAPIClient = `
 			const JSONRPC = require("jsonrpc-bidirectional");
-			class ${this._strName} extends JSONRPC.Client
+			class ${strClassName} extends JSONRPC.Client
 			{
 				_INSERT_METHODS_HERE_
 			};
-			module.exports = ${this._strName};
+			module.exports = ${strClassName};
 		`.replace(/^\t{3}/gm, "").replace("_INSERT_METHODS_HERE_", strServerAPIClientMethods);
 		
 		return strAPIClient;
