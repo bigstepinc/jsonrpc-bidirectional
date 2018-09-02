@@ -189,7 +189,11 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 	rejectAllPromises(error)
 	{
 		//console.error(error);
-		console.log("[" + process.pid + "] Rejecting all Promise instances in WebSocketTransport.");
+
+		if(Object.values(this._objWebSocketRequestsPromises).length)
+		{
+			console.log("[" + process.pid + "] Rejecting all Promise instances in WebSocketTransport.");
+		}
 
 		let nCount = 0;
 
