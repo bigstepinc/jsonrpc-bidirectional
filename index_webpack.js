@@ -6,4 +6,7 @@ var objExport = {
 objExport.JSONRPC.NodeClusterBase = null;
 delete objExport.JSONRPC.NodeClusterBase;
 
+objExport.JSONRPC.BidirectionalWorkerThreadRouter = null;
+delete objExport.JSONRPC.BidirectionalWorkerThreadRouter;
+
 module.exports = objExport;

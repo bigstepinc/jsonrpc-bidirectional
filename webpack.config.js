@@ -17,7 +17,8 @@ module.exports = [
 			"fs-promise": "null",
 			"fs-extra": "null",
 			"node-forge": "forge",
-			"typescript-parser": "null"
+			"typescript-parser": "null",
+			"worker_threads": "null"
 		}, 
 		entry: [
 			// "babel-polyfill",
@@ -100,7 +101,8 @@ module.exports = [
 			"fs-promise": "",
 			"fs-extra": "",
 			"node-forge": "forge",
-			"typescript-parser": "null"
+			"typescript-parser": "null",
+			"worker_threads": "null"
 		}, 
 		entry: [
 			"./index_webpack"

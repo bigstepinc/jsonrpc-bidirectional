@@ -2,6 +2,8 @@ const JSONRPC = require("..");
 const AllTests = require("./Tests/AllTests");
 const os = require("os");
 const cluster = require("cluster");
+const threads = require("worker_threads");
+
 
 process.on(
 	"unhandledRejection", 
@@ -32,41 +34,47 @@ process.on(
 		if(cluster.isMaster)
 		{
 			allTests = new AllTests(bBenchmarkMode, /*bWebSocketMode*/ false);
-			await allTests.runClusterTests();
+			await allTests.runThreadsTests();
 
-			allTests = new AllTests(bBenchmarkMode, /*bWebSocketMode*/ false);
-			await allTests.runTests();
-
-			// uws "Segmentation fault" on .close() in Travis (CentOS 7).
-			// https://github.com/uWebSockets/uWebSockets/issues/583
-			if(os.platform() === "win32")
+			if(threads.isMainThread)
 			{
-				let bUwsLoaded = false;
-				try
+				allTests = new AllTests(bBenchmarkMode, /*bWebSocketMode*/ false);
+				await allTests.runClusterTests();
+	
+				allTests = new AllTests(bBenchmarkMode, /*bWebSocketMode*/ false);
+				await allTests.runTests();
+	
+				// uws "Segmentation fault" on .close() in Travis (CentOS 7).
+				// https://github.com/uWebSockets/uWebSockets/issues/583
+				if(os.platform() === "win32")
 				{
-					// Requires a compilation toolset to be installed if precompiled binaries are not available.
-					require("uws");
-					bUwsLoaded = true;
+					let bUwsLoaded = false;
+					try
+					{
+						// Requires a compilation toolset to be installed if precompiled binaries are not available.
+						require("uws");
+						bUwsLoaded = true;
+					}
+					catch(error)
+					{
+						console.error(error);
+					}
+					
+					if(bUwsLoaded)
+					{
+						allTests = new AllTests(bBenchmarkMode, /*bWebSocketMode*/ true, require("uws"), require("uws").Server, JSONRPC.WebSocketAdapters.uws.WebSocketWrapper, /*bDisableVeryLargePacket*/ true);
+						allTests.websocketServerPort = allTests.httpServerPort + 1;
+						await allTests.runTests();
+					}
 				}
-				catch(error)
-				{
-					console.error(error);
-				}
-				
-				if(bUwsLoaded)
-				{
-					allTests = new AllTests(bBenchmarkMode, /*bWebSocketMode*/ true, require("uws"), require("uws").Server, JSONRPC.WebSocketAdapters.uws.WebSocketWrapper, /*bDisableVeryLargePacket*/ true);
-					allTests.websocketServerPort = allTests.httpServerPort + 1;
-					await allTests.runTests();
-				}
+	
+				allTests = new AllTests(bBenchmarkMode, /*bWebSocketMode*/ true, require("ws"), require("ws").Server, undefined, /*bDisableVeryLargePacket*/ false);
+				await allTests.runTests();
+	
+				console.log("");
+				console.log("[" + process.pid + "] \x1b[42m\x1b[30mAll tests done. No uncaught errors encountered.\x1b[0m Which means all is good or the tests are incomplete/buggy.");
+				console.log("");
 			}
-
-			allTests = new AllTests(bBenchmarkMode, /*bWebSocketMode*/ true, require("ws"), require("ws").Server, undefined, /*bDisableVeryLargePacket*/ false);
-			await allTests.runTests();
-
-			console.log("");
-			console.log("[" + process.pid + "] \x1b[42m\x1b[30mAll tests done. No uncaught errors encountered.\x1b[0m Which means all is good or the tests are incomplete/buggy.");
-			console.log("");
 		}
 		else
 		{

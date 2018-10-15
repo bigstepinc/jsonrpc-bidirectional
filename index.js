@@ -33,4 +33,9 @@ var objExports = {
 	NodeClusterBase: require("./src/NodeClusterBase")
 };
 
+if(process && parseInt(process.version.replace("v", "").split(".", 2)[0]) >= 10)
+{
+	objExports.BidirectionalWorkerThreadRouter = require("./src/BidirectionalWorkerThreadRouter");
+}
+
 module.exports = objExports;

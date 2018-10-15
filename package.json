@@ -1,14 +1,14 @@
 {
   "name": "jsonrpc-bidirectional",
   "description": "Bidirectional JSONRPC over web sockets or HTTP with extensive plugin support.",
-  "version": "7.3.1",
+  "version": "8.0.0",
   "scripts": {
     "build": "node build.js",
-    "test": "node --expose-gc --max-old-space-size=1024 tests/main.js",
-    "test_rtc": "node --expose-gc --max-old-space-size=1024 tests/BrowserWebRTC/main_server.js",
-    "test_cluster": "node --expose-gc --max-old-space-size=1024 tests/main_NodeClusterBase.js",
-    "benchmark": "node --expose-gc --max-old-space-size=1024 tests/benchmark.js",
-    "benchmark_endless_new_websockets": "node --expose-gc --max-old-space-size=1024 tests/benchmark_endless_new_websockets.js",
+    "test": "node --expose-gc --max-old-space-size=1024 --experimental-worker tests/main.js",
+    "test_rtc": "node --expose-gc --max-old-space-size=1024 --experimental-worker tests/BrowserWebRTC/main_server.js",
+    "test_cluster": "node --expose-gc --max-old-space-size=1024 --experimental-worker tests/main_NodeClusterBase.js",
+    "benchmark": "node --expose-gc --max-old-space-size=1024 --experimental-worker tests/benchmark.js",
+    "benchmark_endless_new_websockets": "node --expose-gc --max-old-space-size=1024 --experimental-worker tests/benchmark_endless_new_websockets.js",
     "lint": "eslint src tests --quiet"
   },
   "repository": {
@@ -30,7 +30,7 @@
   ],
   "preferGlobal": false,
   "engines": {
-    "node": ">=7.80"
+    "node": ">=10.12.0"
   },
   "browser": {
     "child_process": false
@@ -38,7 +38,7 @@
   "dependencies": {
     "extendable-error-class": "^0.1.1",
     "fs-extra": "^7.0.0",
-    "node-fetch": "^1.6.3",
+    "node-fetch": "^2.2.0",
     "sleep-promise": "^2.0.0"
   },
   "optionalDependencies": {

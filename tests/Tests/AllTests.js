@@ -13,6 +13,7 @@ const sleep = require("sleep-promise");
 const Phantom = require("phantom");
 
 const cluster = require("cluster");
+const threads = require("worker_threads");
 
 const querystring = require("querystring");
 const fetch = require("node-fetch");
@@ -466,6 +467,88 @@ class AllTests
 			//console.log(await clientStandAlone.ping(strMessage + " stand-alone client."));
 
 			client.killWorker(process.pid);
+		}
+	}
+
+
+	/**
+	 * @returns {undefined}
+	 */
+	async runThreadsTests()
+	{
+		const jsonrpcServer = new JSONRPC.Server();
+		jsonrpcServer.registerEndpoint(new TestEndpoint()); // See "Define an endpoint" section above.
+
+		// By default, JSONRPC.Server rejects all requests as not authenticated and not authorized.
+		jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthenticationSkip());
+		jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthorizeAll());
+
+		const workerJSONRPCRouter = new JSONRPC.BidirectionalWorkerThreadRouter(jsonrpcServer);
+
+		workerJSONRPCRouter.on("madeReverseCallsClient", (clientReverseCalls) => {
+			clientReverseCalls.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
+			clientReverseCalls.addPlugin(new Tests.Plugins.Client.DebugMarker((threads.isMainThread ? "MainThread" : "WorkerThread") + "; reverse calls;"));
+		});
+
+		if(threads.isMainThread)
+		{
+			// Unless the worker is immediately added to the router, and the add operation awaited,
+			// deadlocks may occur because of the awaits on addThreadWorker which may miss the ready call from the worker.
+			// Use await Promise.all or add them one by one as below.
+			const workerA = new threads.Worker(path.join(path.dirname(__dirname), "main.js"));
+			const nConnectionIDA = await workerJSONRPCRouter.addThreadWorker(workerA);
+
+			const workerB = new threads.Worker(path.join(path.dirname(__dirname), "main.js"));
+			const nConnectionIDB = await workerJSONRPCRouter.addThreadWorker(workerB);
+
+			const clientA = workerJSONRPCRouter.connectionIDToSingletonClient(nConnectionIDA, TestClient);
+			const clientB = workerJSONRPCRouter.connectionIDToSingletonClient(nConnectionIDB, TestClient);
+
+			const strMessageA = "Main thread => Worker A ";
+			assert(strMessageA === await clientA.ping(strMessageA));
+
+			const strMessageB = "Main thread => Worker B ";
+			assert(strMessageB === await clientB.ping(strMessageB));
+
+			/*while(true)
+			{
+				await sleep(10);
+			}*/
+			await sleep(10 * 1000);
+		}
+		else
+		{
+			assert(!threads.isMainThread);
+
+			const nConnectionID = await workerJSONRPCRouter.addThreadWorker(process, "/api");
+			const client = workerJSONRPCRouter.connectionIDToSingletonClient(nConnectionID, TestClient);
+
+			// This is a mandatory call to signal to the master, that the worker is ready to receive JSONRPC requests on a chosen endpoint.
+			// This can be hidden in an JSONRPC.Client extending class, inside an overriden .rpc() method.
+			// And awaited once.
+			await client.rpc("rpc.connectToEndpoint", ["/api"]);
+
+			const strMessage = "Thread Worker " + threads.threadId + " => Main Thread";
+			assert(strMessage === await client.ping(strMessage));
+
+			const arrPromises = [];
+			for(let i = 0; i < 100; i++)
+			{
+				arrPromises.push(client.ping(i + " " + strMessage, /*bRandomSleep*/ true));
+			}
+
+			await Promise.all(arrPromises);
+
+
+			// const clientStandAlone = new TestClient("/api");
+			// clientStandAlone.addPlugin(new JSONRPC.Plugins.Client.WorkerThreadTransport(process));
+
+			// This can be hidden in an JSONRPC.Client extending class, inside an overriden .rpc() method.
+			// And awaited once.
+			//await clientStandAlone.rpc("rpc.connectToEndpoint", [clientStandAlone.endpointURL]);
+			//console.log(await clientStandAlone.ping(strMessage + " stand-alone client."));
+
+			// client.killThread(process.pid);
 		}
 	}
 

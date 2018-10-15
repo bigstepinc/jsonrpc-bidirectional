@@ -11,4 +11,9 @@ objExports.ProcessStdIOTransport = require("./ProcessStdIOTransport");
 objExports.WebRTCTransport = require("./WebRTCTransport");
 objExports.ElectronIPCTransport = require("./ElectronIPCTransport");
 
+if(process && parseInt(process.version.replace("v", "").split(".", 2)[0]) >= 10)
+{
+	objExports.WorkerThreadTransport = require("./WorkerThreadTransport");
+}
+
 module.exports = objExports;

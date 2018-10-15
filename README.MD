@@ -22,11 +22,12 @@ These transports are already implemented, and they all offer promise-based async
 | Transport | Type | Browser | Node.js | Serialization |
 |-----------|----------------------------------|:-----:|:-----:|-------|
 | HTTP | one-way, new connection per call | [fetch](https://developer.mozilla.org/en/docs/Web/API/Fetch_API) | [node-fetch](https://github.com/bitinn/node-fetch) | JSON |
-| WebSocket | bidirectional, single connection | [WebSocket](https://developer.mozilla.org/en/docs/Web/API/WebSocket) | [ws](https://github.com/websockets/ws) | JSON |
-| Worker | bidirectional, IPC, single connection | [Worker](https://developer.mozilla.org/en-US/docs/Web/API/Worker) | [Worker](https://nodejs.org/api/cluster.html#cluster_class_worker) | [Structured cloning](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm) |
+| WebSocket | bidirectional over a single connection | [WebSocket](https://developer.mozilla.org/en/docs/Web/API/WebSocket) | [ws](https://github.com/websockets/ws) | JSON |
+| Worker | bidirectional over a single connection | [Worker](https://developer.mozilla.org/en-US/docs/Web/API/Worker) | [Worker](https://nodejs.org/api/cluster.html#cluster_class_worker) | [Structured cloning](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm) |
+| Worker Threads | bidirectional over a single connection |  | [Worker Thread](https://nodejs.org/api/worker_threads.html#worker_threads_class_worker) | [Structured cloning](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm) + [SharedArrayBuffer support](https://nodejs.org/api/worker_threads.html#worker_threads_worker_postmessage_value_transferlist) |
 | ProcessStdIO | one-way, new child process per call | | [Process](https://nodejs.org/api/process.html#process_process) | JSON |
-| WebRTC | bidirectional, RTCDataChannel, single connection | [RTCDataChannel](https://developer.mozilla.org/en/docs/Web/API/RTCDataChannel) |  | JSON |
-| ElectronIPC | bidirectional, IPC, single connection | [ipcRenderer](https://electronjs.org/docs/api/ipc-renderer) | [ipcMain](https://electronjs.org/docs/api/ipc-main) | JSON (internally in IPC)
+| WebRTC | bidirectional over a single connection | [RTCDataChannel](https://developer.mozilla.org/en/docs/Web/API/RTCDataChannel) |  | JSON |
+| ElectronIPC | bidirectional over a single connection | [ipcRenderer](https://electronjs.org/docs/api/ipc-renderer) | [ipcMain](https://electronjs.org/docs/api/ipc-main) | JSON (internally in IPC)
  
 #### WebSocket
 
@@ -46,6 +47,11 @@ There is a wrapper for [uWebSockets](https://github.com/uWebSockets/uWebSockets)
 For Worker client support in Node.js and browsers, `JSONRPC.Plugins.Client.WorkerTransport` and `JSONRPC.BidirectionalWorkerRouter` accept Node.js [cluster.Worker](https://nodejs.org/api/cluster.html#cluster_class_worker) or standard browser [Worker](https://developer.mozilla.org/en-US/docs/Web/API/Worker) class instances. 
 
 See `tests/Tests/AllTests.runClusterTests()` and `tests/Browser/index.html` for an example of how to setup servers and clients for master-worker asynchronous communication.
+
+#### Worker Threads
+For Worker Threads support in Node.js, `JSONRPC.Plugins.Client.WorkerThreadTransport` and `JSONRPC.BidirectionalWorkerThreadRouter` accept Node.js [worker_threads.Worker](https://nodejs.org/api/worker_threads.html#worker_threads_class_worker) class instances. 
+
+See `tests/Tests/AllTests.runThreadsTests()` for an example of how to setup servers and clients for inter-thread asynchronous communication.
 
 #### WebRTC
 Browser to browser asynchronous RPC.

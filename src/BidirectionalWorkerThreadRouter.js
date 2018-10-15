@@ -1,13 +1,5 @@
 const assert = require("assert");
 
-let cluster = require("cluster");
-if(!cluster)
-{
-	cluster = {
-		isMaster: !(self && self.document === undefined), // eslint-disable-line
-		isWorker: !!(self && self.document === undefined) // eslint-disable-line
-	};
-}
 
 const JSONRPC = {};
 JSONRPC.Exception = require("./Exception");
@@ -23,14 +15,17 @@ JSONRPC.Utils = require("./Utils");
 
 
 /**
+ * This works only in NodeJS.
+ * There is no equivalent in browsers for worker threads, other than keeping stuff centralised inside a SharedWorker (which is quite different).
+ * For browsers standard worker support use BidirectionalWorkerRouter.
+ * 
+ * Worker threads (used by this class) are superior to cluster workers (see BidirectionalWorkerRouter) mainly because they support SharedArrayBuffer reference passing.
+ * 
  * @event madeReverseCallsClient
  * The "madeReverseCallsClient" event offers automatically instantiated API clients (API clients are instantiated for each connection, lazily).
- * 
- * In a browser environment, when a worker is killed or has ended execution,
- * onConnectionEnded(nConnectionID) must be called "manually" from outside this class.
  */
 module.exports =
-class BidirectionalWorkerRouter extends JSONRPC.RouterBase
+class BidirectionalWorkerThreadRouter extends JSONRPC.RouterBase
 {
 	/**
 	 * @override
@@ -59,19 +54,19 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 	 * 
 	 * Already closed Worker instances are ignored by this function.
 	 * 
-	 * @param {Worker} worker
+	 * @param {worker_threads.Worker} threadWorker
 	 * @param {string|undefined} strEndpointPath
 	 * @param {number} nWorkerReadyTimeoutMilliseconds = 60000
 	 * 
 	 * @returns {number}
 	 */
-	async addWorker(worker, strEndpointPath, nWorkerReadyTimeoutMilliseconds = 60000)
+	async addThreadWorker(threadWorker, strEndpointPath, nWorkerReadyTimeoutMilliseconds = 60000)
 	{
 		if(!strEndpointPath)
 		{
-			if(cluster.isWorker)
+			if(threadWorker.parentPort)
 			{
-				throw new Error("The strEndpointPath param is mandatory inside workers.");
+				throw new Error("The strEndpointPath param is mandatory inside thread workers.");
 			}
 
 			strEndpointPath = null;
@@ -81,13 +76,13 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 			strEndpointPath = JSONRPC.EndpointBase.normalizePath(strEndpointPath);
 		}
 
-		assert(cluster.isMaster || process === worker || self === worker, "Unknown worker type."); // eslint-disable-line
+		assert(!threadWorker.parentPort, "addThreadWorker(): Cannot add the main thread."); // eslint-disable-line
 
 
 		const nConnectionID = ++this._nConnectionIDCounter;
 
 		let promiseWaitForWorkerReady;
-		if(cluster.isMaster)
+		if(/*if in the main thread*/ !threadWorker.parentPort)
 		{
 			this._objWaitForWorkerReadyPromises[nConnectionID] = {
 				fnResolve: null, 
@@ -102,94 +97,63 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 
 
 		const objSession = {
-			worker: worker,
+			threadWorker: threadWorker,
 			nConnectionID: nConnectionID,
 			clientReverseCalls: null,
-			clientWorkerTransportPlugin: null,
+			clientThreadTransportPlugin: null,
 			strEndpointPath: strEndpointPath
 		};
 
 		this._objSessions[nConnectionID] = objSession;
 
 
-		const fnOnError = (/*error*/) => {
-			// console.error(error);
+		const fnOnError = (error) => {
+			console.error(error);
 
 			this.onConnectionEnded(nConnectionID);
 
-			if(worker.terminate)
+			if(threadWorker.parentPort)
 			{
-				worker.terminate();
-			}
-			else if(worker !== process && !worker.isDead())
-			{
-				worker.kill();
+				threadWorker.terminate();
 			}
 		};
 		
 
-		if(worker.addEventListener)
-		{
-			const fnOnMessage = async (messageEvent) => {
-				if(
-					cluster.isMaster
-					&& typeof messageEvent.data === "object"
-					&& messageEvent.data.jsonrpc
-					&& messageEvent.data.method === "rpc.connectToEndpoint"
-				)
-				{
-					return this._onRPCConnectToEndpoint(messageEvent.data, nConnectionID);
-				}
+		const fnOnMessage = async (objMessage, transferList) => {
+			if(
+				!threadWorker.parentPort
+				&& typeof objMessage === "object"
+				&& objMessage.jsonrpc
+				&& objMessage.method === "rpc.connectToEndpoint"
+			)
+			{
+				return this._onRPCConnectToEndpoint(objMessage, nConnectionID);
+			}
 
-				await this._routeMessage(messageEvent.data, objSession);
-			};
-
-			worker.addEventListener("message", fnOnMessage);
-
-			// No event for a terminated worker.
-			// this.onConnectionEnded(nConnectionID) must be called from outside this class.
-
-			worker.addEventListener("error", fnOnError);
-
-			// @TODO teach onConnectionEnded to cleanup event listeners on worker.
-		}
-		else
-		{
-			const fnOnMessage = async (objMessage, handle) => {
-				if(
-					cluster.isMaster
-					&& typeof objMessage === "object"
-					&& objMessage.jsonrpc
-					&& objMessage.method === "rpc.connectToEndpoint"
-				)
-				{
-					return this._onRPCConnectToEndpoint(objMessage, nConnectionID);
-				}
-
-				await this._routeMessage(objMessage, objSession);
-			};
-
-			const fnOnExit = (nCode, nSignal) => {
-				console.log(`Worker ID ${worker.id} exited with code ${nCode}.`);
-
-				this.onConnectionEnded(nConnectionID);
-
-				worker.removeListener("message", fnOnMessage);
-				worker.removeListener("exit", fnOnExit);
-				worker.removeListener("error", fnOnError);
-			};
-
-			worker.on("message", fnOnMessage);
-			worker.on("exit", fnOnExit);
-			worker.on("error", fnOnError);
-		}
+			await this._routeMessage(objMessage, objSession);
+		};
 
 
-		if(cluster.isMaster)
+		const fnOnExit = (nCode) => {
+			console.log(`Thread worker ID ${threadWorker.threadId} exited with code ${nCode}.`);
+
+			this.onConnectionEnded(nConnectionID);
+
+			threadWorker.removeListener("message", fnOnMessage);
+			threadWorker.removeListener("exit", fnOnExit);
+			threadWorker.removeListener("error", fnOnError);
+		};
+
+		threadWorker.on("message", fnOnMessage);
+		threadWorker.on("exit", fnOnExit);
+		threadWorker.on("error", fnOnError);
+
+
+		if(!threadWorker.parentPort)
 		{
 			const nTimeoutWaitForWorkerReady = setTimeout(
 				(event) => {
-					this._objWaitForWorkerReadyPromises[nConnectionID].fnReject(new Error("Timed out waiting for worker to be ready for JSONRPC."));
+					this._objWaitForWorkerReadyPromises[nConnectionID].fnReject(new Error("Timed out waiting for thread worker to be ready for JSONRPC."));
 				},
 				nWorkerReadyTimeoutMilliseconds
 			);
@@ -213,7 +177,7 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 
 		if(!this._objSessions.hasOwnProperty(nConnectionID))
 		{
-			console.error(new Error(`[rpc.connectToEndpoint] Worker with connection ID ${nConnectionID} doesn't exist. Maybe it was closed.`));
+			console.error(new Error(`[rpc.connectToEndpoint] Thread worker with connection ID ${nConnectionID} doesn't exist. Maybe it was closed.`));
 			return;
 		}
 
@@ -223,7 +187,7 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 
 			this._objSessions[nConnectionID].strEndpointPath = JSONRPC.EndpointBase.normalizePath(strEndpointPath);
 			this._objWaitForWorkerReadyPromises[nConnectionID].fnResolve(this._objSessions[nConnectionID].strEndpointPath);
-			const worker = this._objSessions[nConnectionID].worker;
+			const threadWorker = this._objSessions[nConnectionID].threadWorker;
 			
 			const objResponse = {
 				id: objMessage.id,
@@ -231,18 +195,11 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 				jsonrpc: "2.0"
 			};
 
-			if(worker.postMessage)
-			{
-				worker.postMessage(objResponse);
-			}
-			else
-			{
-				worker.send(objResponse);
-			}
+			threadWorker.postMessage(objResponse);
 		}
 		catch(error)
 		{
-			const worker = this._objSessions[nConnectionID].worker;
+			const threadWorker = this._objSessions[nConnectionID].threadWorker;
 
 			const objResponse = {
 				id: objMessage.id,
@@ -252,14 +209,8 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 				},
 				jsonrpc: "2.0"
 			};
-			if(worker.postMessage)
-			{
-				worker.postMessage(objResponse);
-			}
-			else
-			{
-				worker.send(objResponse);
-			}
+			
+			threadWorker.postMessage(objResponse);
 
 			this._objWaitForWorkerReadyPromises[nConnectionID].fnReject(error);
 		}
@@ -278,8 +229,8 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 	{
 		const clientReverseCalls = new ClientClass(objSession.strEndpointPath);
 		
-		objSession.clientWorkerTransportPlugin = new JSONRPC.Plugins.Client.WorkerTransport(objSession.worker, /*bBidirectionalWorkerMode*/ true);
-		clientReverseCalls.addPlugin(objSession.clientWorkerTransportPlugin);
+		objSession.clientThreadTransportPlugin = new JSONRPC.Plugins.Client.WorkerThreadTransport(objSession.threadWorker, /*bBidirectionalWorkerMode*/ true);
+		clientReverseCalls.addPlugin(objSession.clientThreadTransportPlugin);
 
 		this.emit("madeReverseCallsClient", clientReverseCalls);
 
@@ -295,12 +246,12 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 	 */
 	async _routeMessage(objMessage, objSession)
 	{
-		const worker = objSession.worker;
+		const threadWorker = objSession.threadWorker;
 		const nConnectionID = objSession.nConnectionID;
 
 		if(typeof objMessage !== "object")
 		{
-			console.error("[" + process.pid + "] WorkerBidirectionalRouter: Received " + (typeof objMessage) + " instead of object. Ignoring. RAW message: " + JSON.stringify(objMessage));
+			console.error(`BidirectionalWorkerThreadRouter [thread ID ${threadWorker.threadId}]: Received ${typeof objMessage} instead of object. Ignoring. RAW message: ${JSON.stringify(objMessage)}`);
 			return;
 		}
 
@@ -348,30 +299,19 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 
 				if(!bNotification)
 				{
-					if(worker.postMessage)
-					{
-						worker.postMessage(incomingRequest.callResultSerialized);
-					}
-					else
-					{
-						worker.send(incomingRequest.callResultSerialized);
-					}
+					threadWorker.postMessage(incomingRequest.callResultSerialized);
 				}
 			}
 			else if(objMessage.hasOwnProperty("result") || objMessage.hasOwnProperty("error"))
 			{
 				if(
 					this._objSessions.hasOwnProperty(nConnectionID)
-					&& this._objSessions[nConnectionID].clientWorkerTransportPlugin === null
+					&& this._objSessions[nConnectionID].clientThreadTransportPlugin === null
 				)
 				{
-					if(worker.terminate)
+					if(threadWorker.parentPort)
 					{
-						worker.terminate();
-					}
-					else if(worker !== process)
-					{
-						worker.kill();
+						threadWorker.terminate();
 					}
 
 					throw new Error("How can the client be not initialized, and yet getting responses from phantom requests?");
@@ -379,7 +319,7 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 				
 				if(this._objSessions.hasOwnProperty(nConnectionID))
 				{
-					await this._objSessions[nConnectionID].clientWorkerTransportPlugin.processResponse(objMessage);
+					await this._objSessions[nConnectionID].clientThreadTransportPlugin.processResponse(objMessage);
 				}
 				else
 				{
@@ -399,16 +339,12 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 			console.error(error);
 			console.error("Uncaught error. RAW remote message: " + JSON.stringify(objMessage));
 
-			console.log("[" + process.pid + "] Unclean state. Closing worker.");
+			console.log(`Unclean state. Closing thread worker ${threadWorker.threadId}.`);
 			
 			this.onConnectionEnded(nConnectionID);
-			if(worker.terminate)
+			if(threadWorker.parentPort)
 			{
-				worker.terminate();
-			}
-			else if(worker !== process)
-			{
-				worker.kill();
+				threadWorker.terminate();
 			}
 		}
 	}
