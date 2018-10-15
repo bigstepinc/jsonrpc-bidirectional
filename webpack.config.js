@@ -10,6 +10,7 @@ module.exports = [
 		target: "web", 
 		externals: {
 			"electron": "null",
+			"fs": "null",
 			"ws": "WebSocket", 
 			"uws": "WebSocket", 
 			"node-fetch": "fetch",
@@ -94,6 +95,7 @@ module.exports = [
 		target: "web", 
 		externals: {
 			"electron": "null",
+			"fs": "null",
 			"ws": "WebSocket",
 			"uws": "WebSocket",
 			"node-fetch": "fetch",
