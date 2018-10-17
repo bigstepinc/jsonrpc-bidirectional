@@ -1,25 +1,40 @@
+const sleep = require("sleep-promise");
+
 const JSONRPC = require("..");
 const AllTests = require("./Tests/AllTests");
+
 const os = require("os");
 const cluster = require("cluster");
-const threads = require("worker_threads");
+const Threads = require("worker_threads");
 
 
 process.on(
 	"unhandledRejection", 
-	(reason, promise) => 
+	async(reason, promise) => 
 	{
 		console.log("[" + process.pid + "] Unhandled Rejection at: Promise", promise, "reason", reason);
 		
+		if(!Threads.isMainThread)
+		{
+			// Give time for thread to flush to stdout.
+			await sleep(2000);
+		}
+
 		process.exit(1);
 	}
 );
 
 process.on(
 	"uncaughtException",
-	(error) => {
+	async(error) => {
 		console.log("[" + process.pid + "] Unhandled exception.");
 		console.error(error);
+		
+		if(!Threads.isMainThread)
+		{
+			// Give time for thread to flush to stdout.
+			await sleep(2000);
+		}
 
 		process.exit(1);
 	}
@@ -36,7 +51,7 @@ process.on(
 			allTests = new AllTests(bBenchmarkMode, /*bWebSocketMode*/ false);
 			await allTests.runThreadsTests();
 
-			if(threads.isMainThread)
+			if(Threads.isMainThread)
 			{
 				allTests = new AllTests(bBenchmarkMode, /*bWebSocketMode*/ false);
 				await allTests.runClusterTests();

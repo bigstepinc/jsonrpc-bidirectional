@@ -1,6 +1,6 @@
 const JSONRPC = require("../..");
 
-const exec = require("child_process").exec;
+const ChildProcess = require("child_process");
 
 const http = require("http");
 const url = require("url");
@@ -13,7 +13,7 @@ const sleep = require("sleep-promise");
 const Phantom = require("phantom");
 
 const cluster = require("cluster");
-const threads = require("worker_threads");
+const Threads = require("worker_threads");
 
 const querystring = require("querystring");
 const fetch = require("node-fetch");
@@ -487,18 +487,20 @@ class AllTests
 
 		workerJSONRPCRouter.on("madeReverseCallsClient", (clientReverseCalls) => {
 			clientReverseCalls.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
-			clientReverseCalls.addPlugin(new Tests.Plugins.Client.DebugMarker((threads.isMainThread ? "MainThread" : "WorkerThread") + "; reverse calls;"));
+			clientReverseCalls.addPlugin(new Tests.Plugins.Client.DebugMarker((Threads.isMainThread ? "MainThread" : "WorkerThread") + "; reverse calls;"));
 		});
 
-		if(threads.isMainThread)
+		if(Threads.isMainThread)
 		{
+			console.log(`Main thread ${Threads.threadId} initializing JSONRPC.`);
+
 			// Unless the worker is immediately added to the router, and the add operation awaited,
 			// deadlocks may occur because of the awaits on addThreadWorker which may miss the ready call from the worker.
 			// Use await Promise.all or add them one by one as below.
-			const workerA = new threads.Worker(path.join(path.dirname(__dirname), "main.js"));
+			const workerA = new Threads.Worker(path.join(path.dirname(__dirname), "main.js"));
 			const nConnectionIDA = await workerJSONRPCRouter.addThreadWorker(workerA);
 
-			const workerB = new threads.Worker(path.join(path.dirname(__dirname), "main.js"));
+			const workerB = new Threads.Worker(path.join(path.dirname(__dirname), "main.js"));
 			const nConnectionIDB = await workerJSONRPCRouter.addThreadWorker(workerB);
 
 			const clientA = workerJSONRPCRouter.connectionIDToSingletonClient(nConnectionIDA, TestClient);
@@ -518,9 +520,11 @@ class AllTests
 		}
 		else
 		{
-			assert(!threads.isMainThread);
+			assert(!Threads.isMainThread);
+			
+			console.log(`Worker thread ${Threads.threadId} initializing JSONRPC.`);
 
-			const nConnectionID = await workerJSONRPCRouter.addThreadWorker(process, "/api");
+			const nConnectionID = await workerJSONRPCRouter.addThreadWorker(Threads, "/api");
 			const client = workerJSONRPCRouter.connectionIDToSingletonClient(nConnectionID, TestClient);
 
 			// This is a mandatory call to signal to the master, that the worker is ready to receive JSONRPC requests on a chosen endpoint.
@@ -528,7 +532,7 @@ class AllTests
 			// And awaited once.
 			await client.rpc("rpc.connectToEndpoint", ["/api"]);
 
-			const strMessage = "Thread Worker " + threads.threadId + " => Main Thread";
+			const strMessage = "Thread Worker " + Threads.threadId + " => Main Thread";
 			assert(strMessage === await client.ping(strMessage));
 
 			const arrPromises = [];
@@ -541,14 +545,14 @@ class AllTests
 
 
 			// const clientStandAlone = new TestClient("/api");
-			// clientStandAlone.addPlugin(new JSONRPC.Plugins.Client.WorkerThreadTransport(process));
+			// clientStandAlone.addPlugin(new JSONRPC.Plugins.Client.WorkerThreadTransport(threads));
 
 			// This can be hidden in an JSONRPC.Client extending class, inside an overriden .rpc() method.
 			// And awaited once.
 			//await clientStandAlone.rpc("rpc.connectToEndpoint", [clientStandAlone.endpointURL]);
 			//console.log(await clientStandAlone.ping(strMessage + " stand-alone client."));
 
-			// client.killThread(process.pid);
+			// client.killThread(threads.pid);
 		}
 	}
 
@@ -1562,11 +1566,12 @@ class AllTests
 				// https://github.com/amir20/phantomjs-node/issues/649
 				console.error("phantomjs may have reported an error in the phantom library.");
 				console.error("If missing phantomjs dependencies: yum install libXext  libXrender  fontconfig  libfontconfig.so.1");
-
-				const processCommand = exec("../node_modules/phantomjs-prebuilt/lib/phantom/bin/phantomjs --help");
-				processCommand.stdout.pipe(process.stdout);
-				processCommand.stderr.pipe(process.stderr);
-				await new Promise(async (fnResolve, fnReject) => {
+				
+				
+				const processCommand = ChildProcess.spawn("../node_modules/phantomjs-prebuilt/lib/phantom/bin/phantomjs --help", [], {stdio: "inherit"});
+				//processCommand.stdout.pipe(process.stdout);
+				//processCommand.stderr.pipe(process.stderr);
+				await new Promise(async(fnResolve, fnReject) => {
 					processCommand.on("error", fnReject);
 					processCommand.on("exit", (nCode) => {
 						if(nCode === 0)
@@ -1575,7 +1580,7 @@ class AllTests
 						}
 						else
 						{
-							fnReject(new Error("Failed with error code " + nCode));
+							fnReject(new Error(`Exec process exited with error code ${nCode}`));
 						}
 					});
 				});
@@ -1729,34 +1734,34 @@ class AllTests
 	async callURLPublicWithRedirect()
 	{
 		// @TODO: this is buggy. The test itself is buggy, random 500 HTTP errors.
-		return;
 
-		const strEndpointURL = `http://${this._strBindIPAddress}:${this._nHTTPPort}/api/`;
-		const strFunctionName = "processAndRedirect";
-		const strRedirectURL = `${strEndpointURL}redirect/here/`;
-		const arrParams = [strRedirectURL];
-		const nExpireSeconds = 100;
-		const nEncryptionMode = JSONRPC.Plugins.Server.URLPublic.MODE_DEFAULT;
+		
+		// const strEndpointURL = `http://${this._strBindIPAddress}:${this._nHTTPPort}/api/`;
+		// const strFunctionName = "processAndRedirect";
+		// const strRedirectURL = `${strEndpointURL}redirect/here/`;
+		// const arrParams = [strRedirectURL];
+		// const nExpireSeconds = 100;
+		// const nEncryptionMode = JSONRPC.Plugins.Server.URLPublic.MODE_DEFAULT;
 
-		let strRequestPublicURL = await this._serverURLPublicPlugin.URLRequestGenerate(strEndpointURL, strFunctionName, arrParams, nExpireSeconds, nEncryptionMode);
+		// let strRequestPublicURL = await this._serverURLPublicPlugin.URLRequestGenerate(strEndpointURL, strFunctionName, arrParams, nExpireSeconds, nEncryptionMode);
 
-		// The server not ready yet? Some random HTTP 500 errors sometimes.
-		await sleep(3000);
+		// // The server not ready yet? Some random HTTP 500 errors sometimes.
+		// await sleep(3000);
 
-		let fetchResponse = await fetch(
-			strRequestPublicURL,
-			{
-				method: "GET",
-				redirect: "manual"
-			}
-		);
+		// let fetchResponse = await fetch(
+		// 	strRequestPublicURL,
+		// 	{
+		// 		method: "GET",
+		// 		redirect: "manual"
+		// 	}
+		// );
 
 
-		assert(fetchResponse.status >= 300 && fetchResponse.status <= 399, `Invalid redirect HTTP status code "${fetchResponse.status}". Expected a number between 300 and 399.`);
-		let strRedirectURLFromResonse = fetchResponse.headers.get("location");
-		assert(typeof strRedirectURLFromResonse === "string" && strRedirectURLFromResonse === strRedirectURL, `Invalid redirect "location" header in response. Expected "${strRedirectURL}", but got ${JSON.stringify(strRedirectURLFromResonse)}.`);
+		// assert(fetchResponse.status >= 300 && fetchResponse.status <= 399, `Invalid redirect HTTP status code "${fetchResponse.status}". Expected a number between 300 and 399.`);
+		// let strRedirectURLFromResonse = fetchResponse.headers.get("location");
+		// assert(typeof strRedirectURLFromResonse === "string" && strRedirectURLFromResonse === strRedirectURL, `Invalid redirect "location" header in response. Expected "${strRedirectURL}", but got ${JSON.stringify(strRedirectURLFromResonse)}.`);
 
-		console.log(`[${process.pid}] [OK] Calling method through generated public URL and REDIRECT after worked! Response status code: ${fetchResponse.status} with location header: ${JSON.stringify(strRedirectURLFromResonse)}`);
+		// console.log(`[${process.pid}] [OK] Calling method through generated public URL and REDIRECT after worked! Response status code: ${fetchResponse.status} with location header: ${JSON.stringify(strRedirectURLFromResonse)}`);
 	}
 
 	/**

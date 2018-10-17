@@ -4,15 +4,20 @@ JSONRPC.Utils = require("../../Utils");
 
 const assert = require("assert");
 
+const Threads = require("worker_threads");
+
 class WorkerThreadTransport extends JSONRPC.ClientPluginBase
 {
 	/**
-	 * @param {worker_threads.Worker} threadWorker
+	 * @param {worker_threads.Worker|Threads} threadWorker
 	 * @param {boolean|undefined} bBidirectionalMode
 	 */
 	constructor(threadWorker, bBidirectionalMode)
 	{
 		super();
+
+
+		assert(threadWorker instanceof Threads.Worker || threadWorker === Threads);
 		
 
 		// JSONRPC call ID as key, {promise: {Promise}, fnResolve: {Function}, fnReject: {Function}, outgoingRequest: {OutgoingRequest}} as values.
@@ -28,7 +33,7 @@ class WorkerThreadTransport extends JSONRPC.ClientPluginBase
 
 
 	/**
-	 * @returns {Worker} 
+	 * @returns {worker_threads.Worker|process}
 	 */
 	get threadWorker()
 	{
@@ -61,13 +66,17 @@ class WorkerThreadTransport extends JSONRPC.ClientPluginBase
 			|| !this._objWorkerRequestsPromises[objResponse.id]
 		)
 		{
-			console.error(new Error("Couldn't find JSONRPC response call ID in this._objWorkerRequestsPromises. RAW response: " + JSON.stringify(objResponse)));
-			console.error(new Error("RAW remote message: " + JSON.stringify(objResponse)));
-			console.log(`Unclean state in WorkerThreadTransport. Unable to match Thread Worker thread ID ${this.threadWorker.threadId} message to an existing Promise or qualify it as a request.`);
+			console.error(new Error(`Couldn't find JSONRPC response call ID in this._objWorkerRequestsPromises from thread ID ${this.threadWorker.threadId}. RAW response: ${JSON.stringify(objResponse)}`));
+			console.error(new Error(`RAW remote message from thread ID ${this.threadWorker.threadId}: ` + JSON.stringify(objResponse)));
+			console.log(`Unclean state in WorkerThreadTransport. Unable to match message from thread Worker thread ID ${this.threadWorker.threadId} to an existing Promise or qualify it as a request.`);
 			
-			if(this.threadWorker.parentPort)
+			if(Threads.isMainThread)
 			{
 				this.threadWorker.terminate();
+			}
+			else
+			{
+				process.exit(1);
 			}
 
 			return;
@@ -138,8 +147,14 @@ class WorkerThreadTransport extends JSONRPC.ClientPluginBase
 			});
 		}
 
-
-		this.threadWorker.postMessage(outgoingRequest.requestObject);
+		if(Threads.isMainThread)
+		{
+			this.threadWorker.postMessage(outgoingRequest.requestObject);
+		}
+		else
+		{
+			Threads.parentPort.postMessage(outgoingRequest.requestObject);
+		}
 
 
 		if(outgoingRequest.isNotification)
@@ -167,7 +182,7 @@ class WorkerThreadTransport extends JSONRPC.ClientPluginBase
 	rejectAllPromises(error)
 	{
 		//console.error(error);
-		console.log(`Rejecting all Promise instances in WorkerThreadTransport thread Id ${this.threadWorker.threadId}.`);
+		console.log(`Rejecting all Promise instances for WorkerThreadTransport thread Id ${this.threadWorker.threadId}.`);
 
 		let nCount = 0;
 
@@ -181,7 +196,7 @@ class WorkerThreadTransport extends JSONRPC.ClientPluginBase
 
 		if(nCount)
 		{
-			console.error(`Rejected ${nCount} Promise instances in WorkerThreadTransport thread Id ${this.threadWorker.threadId}`);
+			console.error(`Rejected ${nCount} Promise instances for WorkerThreadTransport thread Id ${this.threadWorker.threadId}`);
 		}
 	}
 
@@ -194,27 +209,54 @@ class WorkerThreadTransport extends JSONRPC.ClientPluginBase
 		const fnOnError = (error) => {
 			this.rejectAllPromises(error);
 		};
+		const fnOnClose = () => {
+			this.rejectAllPromises(new Error("Thread MessagePort closed."));
+		};
 		const fnOnMessage = async (objMessage) => {
 			await this.processResponse(objMessage);
 		};
 		const fnOnExit = (nCode) => {
 			this.rejectAllPromises(new Error(`Thread Worker with thread ID ${this.threadWorker.threadId} closed. Code: ${JSON.stringify(nCode)}`));
 
-			this._threadWorker.removeListener("exit", fnOnExit);
-			this._threadWorker.removeListener("error", fnOnError);
-
-			if(!this._bBidirectionalMode)
+			if(Threads.isMainThread)
 			{
-				this._threadWorker.removeListener("message", fnOnMessage);
+				this._threadWorker.removeListener("exit", fnOnExit);
+				this._threadWorker.removeListener("error", fnOnError);
+
+				if(!this._bBidirectionalMode)
+				{
+					this._threadWorker.removeListener("message", fnOnMessage);
+				}
+			}
+			else
+			{
+				Threads.parentPort.removeListener("close", fnOnClose);
+
+				if(!this._bBidirectionalMode)
+				{
+					Threads.parentPort.removeListener("message", fnOnMessage);
+				}
 			}
 		};
 
-		this._threadWorker.on("exit", fnOnExit);
-		this._threadWorker.on("error", fnOnError);
-
-		if(!this._bBidirectionalMode)
+		if(Threads.isMainThread)
 		{
-			this._threadWorker.on("message", fnOnMessage);
+			this._threadWorker.on("exit", fnOnExit);
+			this._threadWorker.on("error", fnOnError);
+
+			if(!this._bBidirectionalMode)
+			{
+				this._threadWorker.on("message", fnOnMessage);
+			}
+		}
+		else
+		{
+			Threads.parentPort.on("close", fnOnClose);
+
+			if(!this._bBidirectionalMode)
+			{
+				Threads.parentPort.on("message", fnOnMessage);
+			}
 		}
 	}
 };

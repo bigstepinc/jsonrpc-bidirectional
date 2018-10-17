@@ -1,5 +1,6 @@
 const assert = require("assert");
 
+const Threads = require("worker_threads");
 
 const JSONRPC = {};
 JSONRPC.Exception = require("./Exception");
@@ -54,7 +55,7 @@ class BidirectionalWorkerThreadRouter extends JSONRPC.RouterBase
 	 * 
 	 * Already closed Worker instances are ignored by this function.
 	 * 
-	 * @param {worker_threads.Worker} threadWorker
+	 * @param {worker_threads.Worker|Threads} threadWorker
 	 * @param {string|undefined} strEndpointPath
 	 * @param {number} nWorkerReadyTimeoutMilliseconds = 60000
 	 * 
@@ -62,9 +63,11 @@ class BidirectionalWorkerThreadRouter extends JSONRPC.RouterBase
 	 */
 	async addThreadWorker(threadWorker, strEndpointPath, nWorkerReadyTimeoutMilliseconds = 60000)
 	{
+		assert(threadWorker instanceof Threads.Worker || threadWorker === Threads);
+
 		if(!strEndpointPath)
 		{
-			if(threadWorker.parentPort)
+			if(!Threads.isMainThread)
 			{
 				throw new Error("The strEndpointPath param is mandatory inside thread workers.");
 			}
@@ -75,14 +78,12 @@ class BidirectionalWorkerThreadRouter extends JSONRPC.RouterBase
 		{
 			strEndpointPath = JSONRPC.EndpointBase.normalizePath(strEndpointPath);
 		}
-
-		assert(!threadWorker.parentPort, "addThreadWorker(): Cannot add the main thread."); // eslint-disable-line
-
+		
 
 		const nConnectionID = ++this._nConnectionIDCounter;
 
 		let promiseWaitForWorkerReady;
-		if(/*if in the main thread*/ !threadWorker.parentPort)
+		if(Threads.isMainThread)
 		{
 			this._objWaitForWorkerReadyPromises[nConnectionID] = {
 				fnResolve: null, 
@@ -112,16 +113,32 @@ class BidirectionalWorkerThreadRouter extends JSONRPC.RouterBase
 
 			this.onConnectionEnded(nConnectionID);
 
-			if(threadWorker.parentPort)
+			if(Threads.isMainThread)
 			{
 				threadWorker.terminate();
+			}
+			else
+			{
+				process.exit(1);
+			}
+		};
+		const fnOnClose = () => {
+			this.onConnectionEnded(nConnectionID);
+
+			if(Threads.isMainThread)
+			{
+				threadWorker.terminate();
+			}
+			else
+			{
+				process.exit(0);
 			}
 		};
 		
 
 		const fnOnMessage = async (objMessage, transferList) => {
 			if(
-				!threadWorker.parentPort
+				Threads.isMainThread
 				&& typeof objMessage === "object"
 				&& objMessage.jsonrpc
 				&& objMessage.method === "rpc.connectToEndpoint"
@@ -139,17 +156,33 @@ class BidirectionalWorkerThreadRouter extends JSONRPC.RouterBase
 
 			this.onConnectionEnded(nConnectionID);
 
-			threadWorker.removeListener("message", fnOnMessage);
-			threadWorker.removeListener("exit", fnOnExit);
-			threadWorker.removeListener("error", fnOnError);
+			if(Threads.isMainThread)
+			{
+				threadWorker.removeListener("message", fnOnMessage);
+				threadWorker.removeListener("exit", fnOnExit);
+				threadWorker.removeListener("error", fnOnError);
+			}
+			else
+			{
+				Threads.parentPort.removeListener("message", fnOnMessage);
+				Threads.parentPort.removeListener("close", fnOnClose);
+			}
 		};
 
-		threadWorker.on("message", fnOnMessage);
-		threadWorker.on("exit", fnOnExit);
-		threadWorker.on("error", fnOnError);
+		if(Threads.isMainThread)
+		{
+			threadWorker.on("message", fnOnMessage);
+			threadWorker.on("exit", fnOnExit);
+			threadWorker.on("error", fnOnError);
+		}
+		else
+		{
+			Threads.parentPort.on("message", fnOnMessage);
+			Threads.parentPort.on("close", fnOnClose);
+		}
 
 
-		if(!threadWorker.parentPort)
+		if(Threads.isMainThread)
 		{
 			const nTimeoutWaitForWorkerReady = setTimeout(
 				(event) => {
@@ -195,7 +228,14 @@ class BidirectionalWorkerThreadRouter extends JSONRPC.RouterBase
 				jsonrpc: "2.0"
 			};
 
-			threadWorker.postMessage(objResponse);
+			if(Threads.isMainThread)
+			{
+				threadWorker.postMessage(objResponse);
+			}
+			else
+			{
+				Threads.parentPort.postMessage(objResponse);
+			}
 		}
 		catch(error)
 		{
@@ -210,7 +250,15 @@ class BidirectionalWorkerThreadRouter extends JSONRPC.RouterBase
 				jsonrpc: "2.0"
 			};
 			
-			threadWorker.postMessage(objResponse);
+			if(Threads.isMainThread)
+			{
+				threadWorker.postMessage(objResponse);
+			}
+			else
+			{
+				Threads.parentPort.postMessage(objResponse);
+			}
+			
 
 			this._objWaitForWorkerReadyPromises[nConnectionID].fnReject(error);
 		}
@@ -299,7 +347,14 @@ class BidirectionalWorkerThreadRouter extends JSONRPC.RouterBase
 
 				if(!bNotification)
 				{
-					threadWorker.postMessage(incomingRequest.callResultSerialized);
+					if(Threads.isMainThread)
+					{
+						threadWorker.postMessage(incomingRequest.callResultSerialized);
+					}
+					else
+					{
+						Threads.parentPort.postMessage(incomingRequest.callResultSerialized);
+					}
 				}
 			}
 			else if(objMessage.hasOwnProperty("result") || objMessage.hasOwnProperty("error"))
@@ -309,9 +364,13 @@ class BidirectionalWorkerThreadRouter extends JSONRPC.RouterBase
 					&& this._objSessions[nConnectionID].clientThreadTransportPlugin === null
 				)
 				{
-					if(threadWorker.parentPort)
+					if(Threads.isMainThread)
 					{
 						threadWorker.terminate();
+					}
+					else
+					{
+						process.exit(objMessage.hasOwnProperty("error") ? 1 : 0);
 					}
 
 					throw new Error("How can the client be not initialized, and yet getting responses from phantom requests?");
@@ -342,9 +401,13 @@ class BidirectionalWorkerThreadRouter extends JSONRPC.RouterBase
 			console.log(`Unclean state. Closing thread worker ${threadWorker.threadId}.`);
 			
 			this.onConnectionEnded(nConnectionID);
-			if(threadWorker.parentPort)
+			if(Threads.isMainThread)
 			{
 				threadWorker.terminate();
+			}
+			else
+			{
+				process.exit(1);
 			}
 		}
 	}

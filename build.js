@@ -1,4 +1,4 @@
-const exec = require("child_process").exec;
+const ChildProcess = require("child_process");
 const fs = require("fs");
 const path = require("path");
 
@@ -16,21 +16,21 @@ process.on(
 );
 
 
-async function runCLICommand(strCommand)
+async function spawnPassthru(strExecutablePath, arrParams)
 {
-	const processCommand = exec(strCommand);
-	processCommand.stdout.pipe(process.stdout);
-	processCommand.stderr.pipe(process.stderr);
-	return new Promise(async (fnResolve, fnReject) => {
-		processCommand.on("error", fnReject);
-		processCommand.on("exit", (nCode) => {
+	const childProcess = ChildProcess.spawn(strExecutablePath, arrParams, {stdio: "inherit"});
+	//childProcess.stdout.pipe(process.stdout);
+	//childProcess.stderr.pipe(process.stderr);
+	return new Promise(async(fnResolve, fnReject) => {
+		childProcess.on("error", fnReject);
+		childProcess.on("exit", (nCode) => {
 			if(nCode === 0)
 			{
 				fnResolve();
 			}
 			else
 			{
-				fnReject(new Error("Failed with error code " + nCode));
+				fnReject(new Error(`Exec process exited with error code ${nCode}`));
 			}
 		});
 	});
@@ -48,7 +48,7 @@ async function runCLICommand(strCommand)
 
 
 	console.log("Building.");
-	await runCLICommand(path.resolve("./node_modules/.bin/webpack"));
+	await spawnPassthru(path.resolve("./node_modules/.bin/webpack"));
 	//process.chdir(__dirname);
 	
 	console.log("Done.");
