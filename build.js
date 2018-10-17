@@ -1,5 +1,6 @@
 const ChildProcess = require("child_process");
 const fs = require("fs");
+const os = require("os");
 const path = require("path");
 
 
@@ -16,7 +17,7 @@ process.on(
 );
 
 
-async function spawnPassthru(strExecutablePath, arrParams)
+async function spawnPassthru(strExecutablePath, arrParams = [])
 {
 	const childProcess = ChildProcess.spawn(strExecutablePath, arrParams, {stdio: "inherit"});
 	//childProcess.stdout.pipe(process.stdout);
@@ -48,7 +49,7 @@ async function spawnPassthru(strExecutablePath, arrParams)
 
 
 	console.log("Building.");
-	await spawnPassthru(path.resolve("./node_modules/.bin/webpack"));
+	await spawnPassthru(path.resolve("./node_modules/.bin/webpack" + (os.platform() === "win32" ? ".cmd" : "")));
 	//process.chdir(__dirname);
 	
 	console.log("Done.");

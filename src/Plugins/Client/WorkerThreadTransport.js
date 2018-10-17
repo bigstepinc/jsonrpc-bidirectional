@@ -4,7 +4,15 @@ JSONRPC.Utils = require("../../Utils");
 
 const assert = require("assert");
 
-const Threads = require("worker_threads");
+let Threads;
+try
+{
+	Threads = require("worker_threads");
+}
+catch(error)
+{
+	console.error(error);
+}
 
 class WorkerThreadTransport extends JSONRPC.ClientPluginBase
 {

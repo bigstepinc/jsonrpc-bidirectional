@@ -13,7 +13,15 @@ const sleep = require("sleep-promise");
 const Phantom = require("phantom");
 
 const cluster = require("cluster");
-const Threads = require("worker_threads");
+let Threads;
+try
+{
+	Threads = require("worker_threads");
+}
+catch(error)
+{
+	console.error(error);
+}
 
 const querystring = require("querystring");
 const fetch = require("node-fetch");

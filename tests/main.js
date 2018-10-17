@@ -5,7 +5,15 @@ const AllTests = require("./Tests/AllTests");
 
 const os = require("os");
 const cluster = require("cluster");
-const Threads = require("worker_threads");
+let Threads;
+try
+{
+	Threads = require("worker_threads");
+}
+catch(error)
+{
+	console.error(error);
+}
 
 
 process.on(
