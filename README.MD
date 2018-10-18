@@ -4,7 +4,6 @@
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fbigstepinc%2Fjsonrpc-bidirectional.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fbigstepinc%2Fjsonrpc-bidirectional?ref=badge_shield)
 
 [![Linux build](https://travis-ci.org/bigstepinc/jsonrpc-bidirectional.svg?branch=master)](https://travis-ci.org/bigstepinc/jsonrpc-bidirectional)
-[![Windows Build](https://ci.appveyor.com/api/projects/status/github/oxygens/jsonrpc-bidirectional?branch=master&svg=true)](https://ci.appveyor.com/project/oxygens/jsonrpc-bidirectional)
 
 A main goal of this project is to have the JSON-RPC server and client support __bidirectional JSON-RPC requests over a single WebSocket connection.__ In short, it makes it possible to have a JSONRPC __Server__ on the client side, or on both sides at once.
 
