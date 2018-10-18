@@ -1,8 +1,7 @@
 environment:
   matrix:
     - nodejs_version: "10.12"
-platform:
-  - x64
+platform: Any CPU
 matrix:
   fast_finish: true
 install:
