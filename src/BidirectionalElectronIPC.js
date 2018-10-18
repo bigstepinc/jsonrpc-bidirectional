@@ -17,7 +17,6 @@ if(process && process.versions["electron"])
 
 const JSONRPC = {};
 JSONRPC.Exception = require("./Exception");
-JSONRPC.Server = require("./Server");
 JSONRPC.Client = require("./Client");
 JSONRPC.IncomingRequest = require("./IncomingRequest");
 JSONRPC.EndpointBase = require("./EndpointBase");

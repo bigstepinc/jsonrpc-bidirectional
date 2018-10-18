@@ -1,4 +1,4 @@
-const JSONRPC = require("../..");
+const JSONRPC = require("../../index");
 
 const ChildProcess = require("child_process");
 
@@ -21,7 +21,7 @@ try
 }
 catch(error)
 {
-	console.error(error);
+	// console.error(error);
 }
 
 const querystring = require("querystring");

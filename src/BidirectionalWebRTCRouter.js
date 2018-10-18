@@ -1,13 +1,14 @@
-const JSONRPC = require("../index");
-JSONRPC.Exception = require("./Exception");
-JSONRPC.Server = require("./Server");
-JSONRPC.IncomingRequest = require("./IncomingRequest");
-JSONRPC.EndpointBase = require("./EndpointBase");
-JSONRPC.RouterBase = require("./RouterBase");
-
-JSONRPC.Plugins = {};
-JSONRPC.Plugins.Client = require("./Plugins/Client");
-JSONRPC.Utils = require("./Utils");
+const JSONRPC = {
+	Exception: require("./Exception"),
+	Server: require("./Server"),
+	IncomingRequest: require("./IncomingRequest"),
+	EndpointBase: require("./EndpointBase"),
+	RouterBase: require("./RouterBase"),
+	Plugins: {
+		Client: require("./Plugins/Client")
+	},
+	Utils: require("./Utils")
+};
 
 /**
  * @event madeReverseCallsClient

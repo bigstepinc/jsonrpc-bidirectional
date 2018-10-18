@@ -1,4 +1,4 @@
-const JSONRPC = require("..");
+const JSONRPC = require("../index");
 
 const cluster = require("cluster");
 const assert = require("assert");
@@ -13,7 +13,7 @@ try
 }
 catch(error)
 {
-	console.error(error);
+	// console.error(error);
 }
 
 

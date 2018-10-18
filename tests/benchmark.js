@@ -1,4 +1,4 @@
-const JSONRPC = require("..");
+const JSONRPC = require("../index");
 const AllTests = require("./Tests/AllTests");
 
 const sleep = require("sleep-promise");
@@ -12,7 +12,7 @@ try
 }
 catch(error)
 {
-	console.error(error);
+	// console.error(error);
 }
 
 process.on(

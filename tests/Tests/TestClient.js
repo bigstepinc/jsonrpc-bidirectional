@@ -1,4 +1,4 @@
-const JSONRPC = require("../..");
+const JSONRPC = require("../../index");
 
 module.exports =
 class TestClient extends JSONRPC.Client

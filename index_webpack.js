@@ -1,12 +1,35 @@
 // Do not use const here, webpack/babel issues.
-var objExport = {
-	JSONRPC: require("./index")
+var objExports = {
+	Client: require("./src/Client"),
+	ClientPluginBase: require("./src/ClientPluginBase"),
+
+	Server: require("./src/Server"),
+	ServerPluginBase: require("./src/ServerPluginBase"),
+
+	EndpointBase: require("./src/EndpointBase"),
+
+	BidirectionalWebsocketRouter: require("./src/BidirectionalWebsocketRouter"),
+	BidirectionalWorkerRouter: require("./src/BidirectionalWorkerRouter"),
+	BidirectionalWebRTCRouter: require("./src/BidirectionalWebRTCRouter"),
+	BidirectionalElectronIPC: require("./src/BidirectionalElectronIPC"),
+	RouterBase: require("./src/RouterBase"),
+	
+	Exception: require("./src/Exception"), 
+
+	Utils: require("./src/Utils"),
+
+	Plugins: {
+		Client: require("./src/Plugins/Client"),
+		Server: require("./src/Plugins/Server")
+	},
+
+	WebSocketAdapters: {
+		WebSocketWrapperBase: require("./src/WebSocketAdapters/WebSocketWrapperBase"),
+		uws: {
+			WebSocketWrapper: require("./src/WebSocketAdapters/uws/WebSocketWrapper")
+		}
+	}
 };
 
-objExport.JSONRPC.NodeClusterBase = null;
-delete objExport.JSONRPC.NodeClusterBase;
 
-objExport.JSONRPC.BidirectionalWorkerThreadRouter = null;
-delete objExport.JSONRPC.BidirectionalWorkerThreadRouter;
-
-module.exports = objExport;
+module.exports = {JSONRPC: objExports};

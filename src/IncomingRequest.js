@@ -3,8 +3,7 @@ const assert = require("assert");
 const JSONRPC = {};
 JSONRPC.EndpointBase = require("./EndpointBase");
 JSONRPC.Exception = require("./Exception");
-JSONRPC.Server = require("./Server");
-JSONRPC.RouterBase = require("./RouterBase");
+//JSONRPC.RouterBase = require("./RouterBase");
 
 const { URL } = require("url");
 const querystring = require("querystring");
@@ -228,7 +227,7 @@ class IncomingRequest
 	set router(router)
 	{
 		//assert(router.constructor.name === "BidirectionalWebsocketRouter", "router must be an instance of BidirectionalWebsocketRouter.");
-		assert(router instanceof JSONRPC.RouterBase, "router must extend JSONRPC.RouterBase.");
+		// assert(router instanceof JSONRPC.RouterBase, "router must extend JSONRPC.RouterBase.");
 
 		this._router = router;
 	}

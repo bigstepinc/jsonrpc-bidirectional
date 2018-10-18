@@ -18,7 +18,7 @@ module.exports = [
 			"fs-promise": "null",
 			"fs-extra": "null",
 			"node-forge": "forge",
-			"typescript-parser": "null",
+			"typescript-parser": "",
 			"worker_threads": "null"
 		}, 
 		entry: [
@@ -103,7 +103,7 @@ module.exports = [
 			"fs-promise": "",
 			"fs-extra": "",
 			"node-forge": "forge",
-			"typescript-parser": "null",
+			"typescript-parser": "",
 			"worker_threads": "null"
 		}, 
 		entry: [

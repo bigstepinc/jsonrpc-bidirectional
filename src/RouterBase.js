@@ -1,7 +1,8 @@
 const assert = require("assert");
 
-const JSONRPC = require("../index");
-JSONRPC.Server = require("./Server");
+const JSONRPC = {
+	Server: require("./Server")
+};
 
 const EventEmitter = require("events");
 

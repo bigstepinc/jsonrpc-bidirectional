@@ -49,7 +49,7 @@ async function spawnPassthru(strExecutablePath, arrParams = [])
 
 
 	console.log("Building.");
-	await spawnPassthru(path.resolve("./node_modules/.bin/webpack" + (os.platform() === "win32" ? ".cmd" : "")));
+	await spawnPassthru(path.resolve("./node_modules/.bin/webpack" + (os.platform() === "win32" ? ".cmd" : "")), [/*"--display-modules"*/]);
 	//process.chdir(__dirname);
 	
 	console.log("Done.");

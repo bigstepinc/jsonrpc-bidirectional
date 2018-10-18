@@ -1,4 +1,4 @@
-const JSONRPC = require("../../../..");
+const JSONRPC = require("../../../../index");
 
 const assert = require("assert");
 

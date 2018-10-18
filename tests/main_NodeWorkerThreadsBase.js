@@ -1,4 +1,4 @@
-const JSONRPC = require("..");
+const JSONRPC = require("../index");
 
 let Threads;
 try
@@ -7,7 +7,7 @@ try
 }
 catch(error)
 {
-	console.error(error);
+	// console.error(error);
 }
 
 const assert = require("assert");

@@ -2,7 +2,7 @@ const sleep = require("sleep-promise");
 
 const cluster = require("cluster");
 
-const JSONRPC = require("../..");
+const JSONRPC = require("../../index");
 
 const TestClient = require("./TestClient");
 
@@ -27,7 +27,6 @@ class TestEndpoint extends JSONRPC.EndpointBase
 
 		this.fnResolveWaitForWebPage = null;
 		this.nWaitForWebPageRemainingCallsCount = null;
-
 
 
 		/*******************************************************

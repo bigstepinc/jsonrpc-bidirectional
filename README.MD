@@ -48,10 +48,14 @@ For Worker client support in Node.js and browsers, `JSONRPC.Plugins.Client.Worke
 
 See `tests/Tests/AllTests.runClusterTests()` and `tests/Browser/index.html` for an example of how to setup servers and clients for master-worker asynchronous communication.
 
+Build your application upon `src/NodeClusterBase` to automatically scale to all CPU cores using forked child processed.
+
 #### Worker Threads
 For Worker Threads support in Node.js, `JSONRPC.Plugins.Client.WorkerThreadTransport` and `JSONRPC.BidirectionalWorkerThreadRouter` accept Node.js [worker_threads.Worker](https://nodejs.org/api/worker_threads.html#worker_threads_class_worker) class instances. 
 
 See `tests/Tests/AllTests.runThreadsTests()` for an example of how to setup servers and clients for inter-thread asynchronous communication.
+
+Build your application upon `src/NodeWorkerThreadsBase` to automatically scale to all CPU cores using worker threads.
 
 #### WebRTC
 Browser to browser asynchronous RPC.

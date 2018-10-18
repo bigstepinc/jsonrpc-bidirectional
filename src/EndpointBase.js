@@ -4,7 +4,7 @@ const assert = require("assert");
 
 const EventEmitter = require("events");
 
-const {TypescriptParser} = require("typescript-parser");
+const TypescriptParserNamespace = require("typescript-parser");
 
 
 /**
@@ -76,7 +76,7 @@ class EndpointBase extends EventEmitter
 		let strServerAPIClientMethods = "";
 		for(const classInstance of arrAPITraits)
 		{
-			const objParsedJavaScript = await (new TypescriptParser()).parseSource(classInstance.constructor.toString());
+			const objParsedJavaScript = await (new TypescriptParserNamespace.TypeScriptParser()).parseSource(classInstance.constructor.toString());
 			
 			for(const objMethod of objParsedJavaScript.declarations[0].methods)
 			{

@@ -97,7 +97,7 @@ class OutgoingRequest
 
 
 	/**
-	 * @returns {String|null}
+	 * @returns {string|null}
 	 */
 	get methodName()
 	{
@@ -126,7 +126,7 @@ class OutgoingRequest
 
 
 	/**
-	 * @returns {String|null}
+	 * @returns {string|null}
 	 */
 	get endpointURL()
 	{
@@ -204,7 +204,7 @@ class OutgoingRequest
 
 
 	/**
-	 * @returns {string|object|null} 
+	 * @returns {string|Object|null} 
 	 */
 	get responseBody()
 	{
@@ -213,7 +213,7 @@ class OutgoingRequest
 
 
 	/**
-	 * @param {string|object} mxResponseBody 
+	 * @param {string|Object} mxResponseBody 
 	 */
 	set responseBody(mxResponseBody)
 	{

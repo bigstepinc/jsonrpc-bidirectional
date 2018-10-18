@@ -8,6 +8,7 @@ var objExports = {
 
 	EndpointBase: require("./src/EndpointBase"),
 
+	BidirectionalWorkerThreadRouter: require("./src/BidirectionalWorkerThreadRouter"),
 	BidirectionalWebsocketRouter: require("./src/BidirectionalWebsocketRouter"),
 	BidirectionalWorkerRouter: require("./src/BidirectionalWorkerRouter"),
 	BidirectionalWebRTCRouter: require("./src/BidirectionalWebRTCRouter"),
@@ -30,24 +31,9 @@ var objExports = {
 		}
 	},
 
-	NodeClusterBase: require("./src/NodeClusterBase")
+	NodeClusterBase: require("./src/NodeClusterBase"),
+	NodeWorkerThreadsBase: require("./src/NodeWorkerThreadsBase")
 };
-
-
-let bWorkerThreadsSupportExists = false;
-try
-{
-	require("worker_threads");
-	bWorkerThreadsSupportExists = true;
-}
-catch(error)
-{
-}
-
-if(bWorkerThreadsSupportExists)
-{
-	objExports.NodeWorkerThreadsBase = require("./src/NodeWorkerThreadsBase");
-}
 
 
 if(process && parseInt(process.version.replace("v", "").split(".", 2)[0]) >= 10)
