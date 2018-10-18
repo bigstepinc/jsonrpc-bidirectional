@@ -1,6 +1,6 @@
 environment:
   matrix:
-    - nodejs_version: "7.8"
+    - nodejs_version: "10.12"
 platform:
   - x86
   - x64

@@ -1,13 +1,49 @@
-const JSONRPC = require("..");
+const sleep = require("sleep-promise");
+
+// const JSONRPC = require("..");
 const AllTests = require("./Tests/AllTests");
+
+let Threads;
+try
+{
+	Threads = require("worker_threads");
+}
+catch(error)
+{
+	console.error(error);
+}
 
 process.on(
 	"unhandledRejection", 
-	(reason, promise) => 
+	async(reason, promise) => 
 	{
-		console.log("[" + process.pid + "] Unhandled Rejection at: Promise", promise, "reason", reason);
+		console.log("[" + process.pid + (Threads && !Threads.isMainThread ? ` worker thread ID ${Threads.threadId}` : "") + "] Unhandled Rejection at: Promise", promise, "reason", reason);
+		process.exitCode = 1;
 		
-		process.exit(1);
+		if(Threads && !Threads.isMainThread)
+		{
+			// Give time for thread to flush to stdout.
+			await sleep(2000);
+		}
+
+		process.exit(process.exitCode);
+	}
+);
+
+process.on(
+	"uncaughtException",
+	async(error) => {
+		console.log("[" + process.pid + (Threads && !Threads.isMainThread ? ` worker thread ID ${Threads.threadId}` : "") + "] Unhandled exception.");
+		console.error(error);
+		process.exitCode = 1;
+		
+		if(Threads && !Threads.isMainThread)
+		{
+			// Give time for thread to flush to stdout.
+			await sleep(2000);
+		}
+
+		process.exit(process.exitCode);
 	}
 );
 

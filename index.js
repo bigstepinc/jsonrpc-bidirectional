@@ -33,6 +33,23 @@ var objExports = {
 	NodeClusterBase: require("./src/NodeClusterBase")
 };
 
+
+let bWorkerThreadsSupportExists = false;
+try
+{
+	require("worker_threads");
+	bWorkerThreadsSupportExists = true;
+}
+catch(error)
+{
+}
+
+if(bWorkerThreadsSupportExists)
+{
+	objExports.NodeWorkerThreadsBase = require("./src/NodeWorkerThreadsBase");
+}
+
+
 if(process && parseInt(process.version.replace("v", "").split(".", 2)[0]) >= 10)
 {
 	objExports.BidirectionalWorkerThreadRouter = require("./src/BidirectionalWorkerThreadRouter");

@@ -100,9 +100,9 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 			});
 		}
 
-
 		const objSession = {
 			worker: worker,
+			workerID: worker.id,
 			nConnectionID: nConnectionID,
 			clientReverseCalls: null,
 			clientWorkerTransportPlugin: null,

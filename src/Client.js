@@ -144,6 +144,7 @@ class Client extends EventEmitter
 			let bHTTPErrorMode = false;
 			if(!outgoingRequest.isMethodCalled)
 			{
+				/* eslint-disable*/ 
 				const request = new (fetch.Request ? fetch.Request : Request)(
 					outgoingRequest.endpointURL,
 					{
@@ -155,6 +156,7 @@ class Client extends EventEmitter
 						credentials: "include"
 					}
 				);
+				/* eslint-enable*/ 
 
 				response = await fetch(request, this._objFetchOptions);
 

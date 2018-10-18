@@ -8,6 +8,7 @@ const path = require("path");
 const fs = require("fs");
 const os = require("os");
 
+const chalk = require("chalk");
 const sleep = require("sleep-promise");
 
 const Phantom = require("phantom");
@@ -237,6 +238,7 @@ class AllTests
 		await this.setupSiteC();
 		await this.setupSiteDisconnecter();
 
+
 		await this.endpointNotFoundError();
 		await this.outsideJSONRPCPathError();
 
@@ -245,6 +247,7 @@ class AllTests
 
 		await this.requestParseError();
 		await this.responseParseError();
+
 
 		if(!this._bWebSocketMode)
 		{
@@ -256,6 +259,7 @@ class AllTests
 			await this._jsonrpcClientSiteC.rpc("ImHereForTheParty", ["Baracus", "Baracus does the harlem shake", /*bDoNotAuthorizeMe*/ false]);
 			await this._jsonrpcClientSiteDisconnecter.rpc("ImHereForTheParty", ["Murdock", "Murdock does the harlem shake", /*bDoNotAuthorizeMe*/ false]);
 		}
+
 
 		await this.callRPCMethodFromWebPage();
 
@@ -273,7 +277,7 @@ class AllTests
 		await this.callRPCMethodSiteB(/*bDoNotSleep*/ true, /*bNotification*/ true);
 		await this.callRPCMethodSiteB(/*bDoNotSleep*/ true, /*bNotification*/ true);
 
-
+		
 		if(this._bWebSocketMode)
 		{
 			await this.callRPCMethodSiteDisconnecter();
@@ -281,6 +285,7 @@ class AllTests
 			await this._jsonrpcClientSiteDisconnecter.rpc("ImHereForTheParty", ["Murdock", "Murdock does the harlem shake", /*bDoNotAuthorizeMe*/ false]);
 			await this.callRPCMethodSiteDisconnecter(/*bTerminate*/ true);
 		}
+
 
 		await this.callRPCMethodSiteBWhichThrowsJSONRPCException();
 		await this.callRPCMethodSiteBWhichThrowsSimpleError();
@@ -311,6 +316,7 @@ class AllTests
 
 
 		await this.manyCallsInParallel();
+
 
 		if(this._webSocketServerSiteA)
 		{
@@ -503,13 +509,13 @@ class AllTests
 			console.log(`Main thread ${Threads.threadId} initializing JSONRPC.`);
 
 			// Unless the worker is immediately added to the router, and the add operation awaited,
-			// deadlocks may occur because of the awaits on addThreadWorker which may miss the ready call from the worker.
+			// deadlocks may occur because of the awaits on addWorker which may miss the ready call from the worker.
 			// Use await Promise.all or add them one by one as below.
-			const workerA = new Threads.Worker(path.join(path.dirname(__dirname), "main.js"));
-			const nConnectionIDA = await workerJSONRPCRouter.addThreadWorker(workerA);
+			const workerA = new Threads.Worker(process.mainModule.filename);
+			const nConnectionIDA = await workerJSONRPCRouter.addWorker(workerA);
 
-			const workerB = new Threads.Worker(path.join(path.dirname(__dirname), "main.js"));
-			const nConnectionIDB = await workerJSONRPCRouter.addThreadWorker(workerB);
+			const workerB = new Threads.Worker(process.mainModule.filename);
+			const nConnectionIDB = await workerJSONRPCRouter.addWorker(workerB);
 
 			const clientA = workerJSONRPCRouter.connectionIDToSingletonClient(nConnectionIDA, TestClient);
 			const clientB = workerJSONRPCRouter.connectionIDToSingletonClient(nConnectionIDB, TestClient);
@@ -532,7 +538,7 @@ class AllTests
 			
 			console.log(`Worker thread ${Threads.threadId} initializing JSONRPC.`);
 
-			const nConnectionID = await workerJSONRPCRouter.addThreadWorker(Threads, "/api");
+			const nConnectionID = await workerJSONRPCRouter.addWorker(Threads, "/api");
 			const client = workerJSONRPCRouter.connectionIDToSingletonClient(nConnectionID, TestClient);
 
 			// This is a mandatory call to signal to the master, that the worker is ready to receive JSONRPC requests on a chosen endpoint.
@@ -1542,6 +1548,11 @@ class AllTests
 
 	async callRPCMethodFromWebPage()
 	{
+		if(this._bBenchmarkMode)
+		{
+			return;
+		}
+
 		// There are some issues on Linux with this.
 		if(os.platform() !== "win32")
 		{
@@ -1811,7 +1822,8 @@ class AllTests
 		}
 		else
 		{
-			nCallCount = this._bWebSocketMode ? (this._bBenchmarkMode ? 20000 : 2000) : 500;
+			// Careful not to exhaust client TCP ports.
+			nCallCount = this._bWebSocketMode ? (this._bBenchmarkMode ? 500 : 500) : 500;
 		}
 
 		const fnPickAMethodIndex = (i) => {
@@ -1825,19 +1837,45 @@ class AllTests
 			}
 		};
 
-		for(let i = 0; i < nCallCount; i++)
+
+		let nCallCountBenchmark = 0;
+
+		if(this._bBenchmarkMode)
 		{
-			arrPromises.push(arrMethods[fnPickAMethodIndex(i)].apply(this, []));
+			let nRunsLeft = 100;
+			while(nRunsLeft > 0)
+			{
+				--nRunsLeft;
+
+				nCallCountBenchmark += nCallCount;
+
+				for(let i = 0; i < nCallCount; i++)
+				{
+					arrPromises.push(arrMethods[fnPickAMethodIndex(i)].apply(this, []));
+				}
+	
+				await Promise.all(arrPromises);
+			}
+		}
+		else
+		{
+			nCallCountBenchmark = nCallCount;
+
+			for(let i = 0; i < nCallCount; i++)
+			{
+				arrPromises.push(arrMethods[fnPickAMethodIndex(i)].apply(this, []));
+			}
+
+			await Promise.all(arrPromises);
 		}
 
-		await Promise.all(arrPromises);
 
 		if(this._bBenchmarkMode)
 		{
 			this.enableConsole();
 		}
 
-		console.log(nCallCount + " calls executed in " + ((new Date()).getTime() - nStartTime) + " milliseconds.");
+		console.log(chalk.magenta(nCallCountBenchmark + " calls") + " executed in " + chalk.green(((new Date()).getTime() - nStartTime) + " milliseconds") + ", single CPU core, in batches of " + chalk.magenta(nCallCount + " calls"));
 
 		if(this._bBenchmarkMode)
 		{

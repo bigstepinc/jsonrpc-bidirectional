@@ -20,33 +20,36 @@ process.on(
 	"unhandledRejection", 
 	async(reason, promise) => 
 	{
-		console.log("[" + process.pid + "] Unhandled Rejection at: Promise", promise, "reason", reason);
+		console.log("[" + process.pid + (Threads && !Threads.isMainThread ? ` worker thread ID ${Threads.threadId}` : "") + "] Unhandled Rejection at: Promise", promise, "reason", reason);
+		process.exitCode = 1;
 		
-		if(!Threads.isMainThread)
+		if(Threads && !Threads.isMainThread)
 		{
 			// Give time for thread to flush to stdout.
 			await sleep(2000);
 		}
 
-		process.exit(1);
+		process.exit(process.exitCode);
 	}
 );
 
 process.on(
 	"uncaughtException",
 	async(error) => {
-		console.log("[" + process.pid + "] Unhandled exception.");
+		console.log("[" + process.pid + (Threads && !Threads.isMainThread ? ` worker thread ID ${Threads.threadId}` : "") + "] Unhandled exception.");
 		console.error(error);
+		process.exitCode = 1;
 		
-		if(!Threads.isMainThread)
+		if(Threads && !Threads.isMainThread)
 		{
 			// Give time for thread to flush to stdout.
 			await sleep(2000);
 		}
 
-		process.exit(1);
+		process.exit(process.exitCode);
 	}
 );
+
 
 (
 	async () =>

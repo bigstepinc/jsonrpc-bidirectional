@@ -69,9 +69,11 @@ class BidirectionalWorkerThreadRouter extends JSONRPC.RouterBase
 	 * 
 	 * @returns {number}
 	 */
-	async addThreadWorker(threadWorker, strEndpointPath, nWorkerReadyTimeoutMilliseconds = 60000)
+	async addWorker(threadWorker, strEndpointPath, nWorkerReadyTimeoutMilliseconds = 60000)
 	{
 		assert(threadWorker instanceof Threads.Worker || threadWorker === Threads);
+
+		const nThreadID = threadWorker.threadId;
 
 		if(!strEndpointPath)
 		{
@@ -107,6 +109,7 @@ class BidirectionalWorkerThreadRouter extends JSONRPC.RouterBase
 
 		const objSession = {
 			threadWorker: threadWorker,
+			threadWorkerID: nThreadID,
 			nConnectionID: nConnectionID,
 			clientReverseCalls: null,
 			clientThreadTransportPlugin: null,
@@ -160,7 +163,7 @@ class BidirectionalWorkerThreadRouter extends JSONRPC.RouterBase
 
 
 		const fnOnExit = (nCode) => {
-			console.log(`Thread worker ID ${threadWorker.threadId} exited with code ${nCode}.`);
+			console.log(`Thread worker thread ID ${nThreadID} exited with code ${nCode}.`);
 
 			this.onConnectionEnded(nConnectionID);
 
@@ -194,7 +197,10 @@ class BidirectionalWorkerThreadRouter extends JSONRPC.RouterBase
 		{
 			const nTimeoutWaitForWorkerReady = setTimeout(
 				(event) => {
-					this._objWaitForWorkerReadyPromises[nConnectionID].fnReject(new Error("Timed out waiting for thread worker to be ready for JSONRPC."));
+					if(this._objWaitForWorkerReadyPromises[nConnectionID])
+					{
+						this._objWaitForWorkerReadyPromises[nConnectionID].fnReject(new Error("Timed out waiting for thread worker to be ready for JSONRPC."));
+					}
 				},
 				nWorkerReadyTimeoutMilliseconds
 			);
@@ -303,11 +309,12 @@ class BidirectionalWorkerThreadRouter extends JSONRPC.RouterBase
 	async _routeMessage(objMessage, objSession)
 	{
 		const threadWorker = objSession.threadWorker;
+		const nThreadID = objSession.threadID;
 		const nConnectionID = objSession.nConnectionID;
 
 		if(typeof objMessage !== "object")
 		{
-			console.error(`BidirectionalWorkerThreadRouter [thread ID ${threadWorker.threadId}]: Received ${typeof objMessage} instead of object. Ignoring. RAW message: ${JSON.stringify(objMessage)}`);
+			console.error(`BidirectionalWorkerThreadRouter [thread ID ${nThreadID}]: Received ${typeof objMessage} instead of object. Ignoring. RAW message: ${JSON.stringify(objMessage)}`);
 			return;
 		}
 
@@ -406,7 +413,7 @@ class BidirectionalWorkerThreadRouter extends JSONRPC.RouterBase
 			console.error(error);
 			console.error("Uncaught error. RAW remote message: " + JSON.stringify(objMessage));
 
-			console.log(`Unclean state. Closing thread worker ${threadWorker.threadId}.`);
+			console.log(`Unclean state. Closing thread worker ${nThreadID}.`);
 			
 			this.onConnectionEnded(nConnectionID);
 			if(Threads.isMainThread)

@@ -1,0 +1,1 @@
+Reusable base for NodeClusterBase and NodeWorkerThreadsBase. See their respective documentation.

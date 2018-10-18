@@ -1,9 +1,19 @@
-const cluster = require("cluster");
 const NodeMultiCoreCPUBase = require("../NodeMultiCoreCPUBase");
 
 const JSONRPC = {
-	BidirectionalWorkerRouter: require("../BidirectionalWorkerRouter")
+	BidirectionalWorkerThreadRouter: require("../BidirectionalWorkerThreadRouter")
 };
+
+let Threads;
+try
+{
+	Threads = require("worker_threads");
+}
+catch(error)
+{
+	console.error(error);
+}
+
 
 /**
  * Extend this class to export extra worker RPC APIs.
@@ -15,11 +25,11 @@ class WorkerEndpoint extends NodeMultiCoreCPUBase.WorkerEndpoint
 {
 	constructor(classReverseCallsClient)
 	{
-		console.log(`Fired up cluster ${cluster.isWorker ? "worker" : "master"} with PID ${process.pid}`);
+		console.log(`Fired up ${Threads.isMainThread ? "main" : "worker"} thread with threadId ${Threads.threadId}`);
 
-		if(cluster.isMaster)
+		if(Threads.isMainThread)
 		{
-			throw new Error("WorkerEndpoint can only be instantiated in a worker process.");
+			throw new Error("WorkerEndpoint can only be instantiated in a worker thread.");
 		}
 		
 		super(classReverseCallsClient);
@@ -31,17 +41,18 @@ class WorkerEndpoint extends NodeMultiCoreCPUBase.WorkerEndpoint
 	 */
 	async _currentWorkerID()
 	{
-		return cluster.worker.id;
+		return Threads.threadId;
 	}
 
 
 	/**
-	 * @returns {process}
+	 * @returns {worker_threads}
 	 */
 	async _currentWorker()
 	{
-		return process;
+		return Threads;
 	}
+
 
 
 	/**
@@ -51,7 +62,7 @@ class WorkerEndpoint extends NodeMultiCoreCPUBase.WorkerEndpoint
 	 */
 	async _makeBidirectionalRouter(jsonrpcServer)
 	{
-		return new JSONRPC.BidirectionalWorkerRouter(this._jsonrpcServer);
+		return new JSONRPC.BidirectionalWorkerThreadRouter(this._jsonrpcServer);
 	}
 };
 

@@ -34,6 +34,7 @@ class WorkerThreadTransport extends JSONRPC.ClientPluginBase
 
 		this._bBidirectionalMode = !!bBidirectionalMode;
 		this._threadWorker = threadWorker;
+		this._threadID = threadWorker.threadId;
 
 		
 		this._setupThreadWorker();
@@ -41,7 +42,7 @@ class WorkerThreadTransport extends JSONRPC.ClientPluginBase
 
 
 	/**
-	 * @returns {worker_threads.Worker|process}
+	 * @returns {worker_threads.Worker|worker_threads}
 	 */
 	get threadWorker()
 	{
@@ -74,9 +75,9 @@ class WorkerThreadTransport extends JSONRPC.ClientPluginBase
 			|| !this._objWorkerRequestsPromises[objResponse.id]
 		)
 		{
-			console.error(new Error(`Couldn't find JSONRPC response call ID in this._objWorkerRequestsPromises from thread ID ${this.threadWorker.threadId}. RAW response: ${JSON.stringify(objResponse)}`));
-			console.error(new Error(`RAW remote message from thread ID ${this.threadWorker.threadId}: ` + JSON.stringify(objResponse)));
-			console.log(`Unclean state in WorkerThreadTransport. Unable to match message from thread Worker thread ID ${this.threadWorker.threadId} to an existing Promise or qualify it as a request.`);
+			console.error(new Error(`Couldn't find JSONRPC response call ID in this._objWorkerRequestsPromises from thread ID ${this._threadID}. RAW response: ${JSON.stringify(objResponse)}`));
+			console.error(new Error(`RAW remote message from thread ID ${this._threadID}: ` + JSON.stringify(objResponse)));
+			console.log(`Unclean state in WorkerThreadTransport. Unable to match message from thread Worker thread ID ${this._threadID} to an existing Promise or qualify it as a request.`);
 			
 			if(Threads.isMainThread)
 			{
@@ -190,7 +191,7 @@ class WorkerThreadTransport extends JSONRPC.ClientPluginBase
 	rejectAllPromises(error)
 	{
 		//console.error(error);
-		console.log(`Rejecting all Promise instances for WorkerThreadTransport thread Id ${this.threadWorker.threadId}.`);
+		console.log(`Rejecting all Promise instances for WorkerThreadTransport thread Id ${this._threadID}.`);
 
 		let nCount = 0;
 
@@ -204,7 +205,7 @@ class WorkerThreadTransport extends JSONRPC.ClientPluginBase
 
 		if(nCount)
 		{
-			console.error(`Rejected ${nCount} Promise instances for WorkerThreadTransport thread Id ${this.threadWorker.threadId}`);
+			console.error(`Rejected ${nCount} Promise instances for WorkerThreadTransport thread Id ${this._threadID}`);
 		}
 	}
 
@@ -224,7 +225,7 @@ class WorkerThreadTransport extends JSONRPC.ClientPluginBase
 			await this.processResponse(objMessage);
 		};
 		const fnOnExit = (nCode) => {
-			this.rejectAllPromises(new Error(`Thread Worker with thread ID ${this.threadWorker.threadId} closed. Code: ${JSON.stringify(nCode)}`));
+			this.rejectAllPromises(new Error(`Thread Worker with thread ID ${this._threadID} closed. Code: ${JSON.stringify(nCode)}`));
 
 			if(Threads.isMainThread)
 			{

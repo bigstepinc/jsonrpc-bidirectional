@@ -1,11 +1,5 @@
 const JSONRPC = require("..");
 
-const cluster = require("cluster");
-const assert = require("assert");
-const path = require("path");
-
-const sleep = require("sleep-promise");
-
 let Threads;
 try
 {
@@ -15,6 +9,11 @@ catch(error)
 {
 	console.error(error);
 }
+
+const assert = require("assert");
+const path = require("path");
+
+const sleep = require("sleep-promise");
 
 
 process.on(
@@ -55,12 +54,13 @@ process.on(
 // Keep this process alive.
 setInterval(() => {}, 10000);
 
+
 (
 	async () =>
 	{
-		if(cluster.isMaster)
+		if(Threads.isMainThread)
 		{
-			const endpoint = new JSONRPC.NodeClusterBase.MasterEndpoint(JSONRPC.NodeClusterBase.WorkerClient);
+			const endpoint = new JSONRPC.NodeWorkerThreadsBase.MasterEndpoint(JSONRPC.NodeWorkerThreadsBase.WorkerClient);
 			await endpoint.start();
 			await endpoint.watchForUpgrade(path.join(path.dirname(__dirname), "package.json"));
 
@@ -86,7 +86,7 @@ setInterval(() => {}, 10000);
 		}
 		else
 		{
-			const endpoint = new JSONRPC.NodeClusterBase.WorkerEndpoint(JSONRPC.NodeClusterBase.MasterClient);
+			const endpoint = new JSONRPC.NodeWorkerThreadsBase.WorkerEndpoint(JSONRPC.NodeWorkerThreadsBase.MasterClient);
 			await endpoint.start();
 
 			assert(await endpoint.masterClient.ping("Test") === "Test", "Calling MasterEndpoint.ping() returned the wrong thing.");
