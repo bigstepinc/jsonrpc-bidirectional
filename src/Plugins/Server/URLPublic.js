@@ -552,7 +552,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 		assert(typeof strBase64 === "string", `Invalid parameter type for base64URLEscape. Expecting "string", but got "${typeof strBase64}".`);
 		return strBase64
 			.replace(/\+/g, "-")
-			.replace(/\//g, "!")
+			.replace(/\//g, ",")
 			.replace(/\=/g, "_")
 		;
 	}
@@ -569,7 +569,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 		return strBase64URLSafe
 			.replace(/\-/g, "+")
 			.replace(/_/g, "=")
-			.replace(/\!/g, "/")
+			.replace(/\,/g, "/")
 		;
 	}
 
