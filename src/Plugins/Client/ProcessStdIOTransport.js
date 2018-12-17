@@ -8,20 +8,17 @@ module.exports =
 class ProcessStdIOTransport extends JSONRPC.ClientPluginBase
 {
 	/**
-	 * @param {string} strEndpointCommand
+	 * @param {string} strExePath
 	 * @param {string} strWorkingDirectoryPath
+	 * @param {string[]} arrArguments
 	 */
-	constructor(strEndpointCommand, strWorkingDirectoryPath)
+	constructor(strExePath, strWorkingDirectoryPath, arrArguments = [])
 	{
 		super();
 		
-		this._strEndpointCommand = strEndpointCommand;
+		this._strExePath = strExePath;
 		this._strWorkingDirectoryPath = strWorkingDirectoryPath;
-
-		if(!this.constructor._objSpawnedChildren)
-		{
-			this.constructor._objSpawnedChildren = {};
-		}
+		this._arrArguments = arrArguments;
 	}
 
 
@@ -47,19 +44,13 @@ class ProcessStdIOTransport extends JSONRPC.ClientPluginBase
 			maxBuffer: 10 * 1024 * 1024
 		};
 
-		const strExePath = this._strEndpointCommand.trim().split(/[\s]+/, 1)[0];
-		const strArguments = this._strEndpointCommand.substr(strExePath.length).trim();
-		
-		const child = ChildProcess.spawn(strExePath, [strArguments], objExecOptions);
-
-		this.constructor._objSpawnedChildren[child.pid] = child;
+		const child = ChildProcess.spawn(this._strExePath, this._arrArguments, objExecOptions);
 
 		return new Promise((fnResolve, fnReject) => {
 			child.on(
 				"close", 
 				(code) => {
 					child.stdin.end();
-					delete this.constructor._objSpawnedChildren[child.pid];
 
 					fnResolve(null);
 				}
@@ -73,34 +64,16 @@ class ProcessStdIOTransport extends JSONRPC.ClientPluginBase
 				}
 			);
 
-			function errorHandler(error)
-			{
-				// Stream errors sometimes don't have a proper stacktrace or enough information to know where they are coming from.
-				console.error(outgoingRequest);
-				console.error(error);
-
-				delete this.constructor._objSpawnedChildren[child.pid];
-				
-				fnReject(error);
-			}
-			
-			child.on("error", errorHandler);
-			child.stdin.on("error", errorHandler);
-			child.stdout.on("error", errorHandler);
+			child.on(
+				"error", 
+				(error) => {
+					fnReject(error);
+				}
+			);
 
 			child.stdin.setEncoding("utf-8");
 			child.stdin.write(outgoingRequest.requestBody);
 		});
-	}
-
-	/**
-	 * Collection of running spawned child processes.
-	 * 
-	 * @returns {Object|null} _objSpawnedChildren
-	 */
-	static get spawnedChildren()
-	{
-		return this._objSpawnedChildren ? this._objSpawnedChildren : null;
 	}
 };
 
