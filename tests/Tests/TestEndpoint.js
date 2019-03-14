@@ -320,9 +320,13 @@ class TestEndpoint extends JSONRPC.EndpointBase
 			throw new Error("Only available on the master.");
 		}
 
-		for(let worker of cluster.workers)
+		for(let mxIndex in cluster.workers)
 		{
-			if(worker.pid === nPID)
+			const worker = cluster.workers[mxIndex];
+
+			// NodeJS 10.15.3 has a breaking change where worker.pid is now undefined and the PID must be read from worker.process.
+			const nWorkerPID = worker.process ? worker.process.pid : worker.pid;
+			if(nWorkerPID === nPID)
 			{
 				worker.kill();
 				return;

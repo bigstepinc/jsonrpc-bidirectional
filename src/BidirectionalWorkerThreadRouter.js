@@ -205,6 +205,7 @@ class BidirectionalWorkerThreadRouter extends JSONRPC.RouterBase
 				nWorkerReadyTimeoutMilliseconds
 			);
 			await promiseWaitForWorkerReady;
+			console.log(`promiseWaitForWorkerReady for connection ID ${nConnectionID} resolved.`);
 			clearTimeout(nTimeoutWaitForWorkerReady);
 		}
 		

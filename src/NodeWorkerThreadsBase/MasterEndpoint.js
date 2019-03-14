@@ -52,6 +52,10 @@ class MasterEndpoint extends NodeMultiCoreCPUBase.MasterEndpoint
 	async _addWorker()
 	{
 		const workerThread = new Threads.Worker(process.mainModule.filename);
+		await new Promise((fnResolve, fnReject) => {
+			workerThread.on("online", fnResolve);
+			setTimeout(fnReject, 10000);
+		});
 
 		const nThreadID = workerThread.threadId;
 
