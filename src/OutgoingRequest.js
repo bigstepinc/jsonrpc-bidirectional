@@ -13,10 +13,15 @@ class OutgoingRequest
 	 * A mxCallID null is not allowed for this JSONRPC 2.0 client library as it cannot be used to match asynchronous requests to out of order responses.
 	 * The spec also recommends in avoiding null when composing requests.
 	 * 
+	 * arrTransferList is passed as the second param of postMessage further down the road:
+	 * https://nodejs.org/dist/latest-v10.x/docs/api/worker_threads.html#worker_threads_port_postmessage_value_transferlist
+	 * https://nodejs.org/dist/latest-v10.x/docs/api/worker_threads.html#worker_threads_worker_postmessage_value_transferlist
+	 * https://developer.mozilla.org/en-US/docs/Web/API/Worker/postMessage
+	 * 
 	 * @param {string} strMethod
 	 * @param {Array} arrParams
 	 * @param {number|string|undefined} mxCallID
-	 * @param {Array} arrTransferList
+	 * @param {ArrayBuffer[]|Transferable[]} arrTransferList
 	 */
 	constructor(strMethod, arrParams, mxCallID, arrTransferList = [])
 	{
