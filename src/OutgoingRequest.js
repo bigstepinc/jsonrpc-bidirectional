@@ -281,7 +281,7 @@ class OutgoingRequest
 	}
 
 	/**
-	 * @returns {Array}
+	 * @returns {ArrayBuffer[]|Transferable[]}
 	 */
 	get transferList()
 	{
