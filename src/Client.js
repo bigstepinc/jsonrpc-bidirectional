@@ -77,13 +77,9 @@ class Client extends EventEmitter
 	 * Aka fire and forget.
 	 * Defaults to false.
 	 * 
-	 * TransferList is an optional array of Transferable objects to transfer ownership of. 
-	 * If the ownership of an object is transferred, it becomes unusable (neutered) in the 
-	 * context it was sent from and becomes available only to the worker it was sent to.
-	 * Transferable objects are instances of classes like ArrayBuffer, MessagePort or ImageBitmap
-	 * objects that can be transferred. null is not an acceptable value for the transferList.
-	 * Defaults to empty array.
-	 *
+	 * arrTransferList is passed as the second param of postMessage further down the road:
+	 * https://nodejs.org/dist/latest-v10.x/docs/api/worker_threads.html#worker_threads_port_postmessage_value_transferlist
+	 * https://nodejs.org/dist/latest-v10.x/docs/api/worker_threads.html#worker_threads_worker_postmessage_value_transferlist
 	 * https://developer.mozilla.org/en-US/docs/Web/API/Worker/postMessage
 	 * 
 	 * @param {string} strFunctionName
