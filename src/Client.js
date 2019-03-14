@@ -85,7 +85,7 @@ class Client extends EventEmitter
 	 * @param {string} strFunctionName
 	 * @param {Array} arrParams
 	 * @param {boolean} bNotification = false
-	 * @param {Array} arrTransferList = []
+	 * @param {ArrayBuffer[]|Transferable[]} arrTransferList = []
 	 */
 	async rpc(strFunctionName, arrParams, bNotification = false, arrTransferList = [])
 	{
