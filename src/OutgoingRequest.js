@@ -16,6 +16,7 @@ class OutgoingRequest
 	 * @param {string} strMethod
 	 * @param {Array} arrParams
 	 * @param {number|string|undefined} mxCallID
+	 * @param {Array} arrTransferList
 	 */
 	constructor(strMethod, arrParams, mxCallID, arrTransferList = [])
 	{
