@@ -100,7 +100,7 @@ setInterval(() => {}, 10000);
 			}
 			else
 			{
-				throw new Error("Something went wrong with the data transfer of the transferList.");
+				throw new Error("Data from transferList could not be sent to the other process.");
 			}
 
 			console.log("Will call masterClient.gracefulExit() after sleeping for 10 seconds.");
