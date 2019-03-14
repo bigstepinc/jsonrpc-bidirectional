@@ -480,7 +480,26 @@ class AllTests
 			//await clientStandAlone.rpc("rpc.connectToEndpoint", [clientStandAlone.endpointURL]);
 			//console.log(await clientStandAlone.ping(strMessage + " stand-alone client."));
 
-			client.killWorker(process.pid);
+
+			setInterval(() => { console.log(`Worker PID ${process.pid} still alive, waiting to be killed.`); }, 5000);
+
+			try
+			{
+				// When CPU 100% busy, the master process still hasn't ran all tests, so this worker suicide would prevent it from successfully talking to this worker.
+				// A better solution would be to ask the master if it finished, the sleep is still unsafe.
+				await sleep(5000);
+
+				await client.killWorker(process.pid);
+			}
+			catch(error)
+			{
+				console.error(error);
+			}
+
+			while(true)
+			{
+				await sleep(2000);
+			}
 		}
 	}
 
@@ -511,9 +530,17 @@ class AllTests
 			// deadlocks may occur because of the awaits on addWorker which may miss the ready call from the worker.
 			// Use await Promise.all or add them one by one as below.
 			const workerA = new Threads.Worker(process.mainModule.filename);
+			await new Promise((fnResolve, fnReject) => {
+				workerA.on("online", fnResolve);
+				setTimeout(fnReject, 10000);
+			});
 			const nConnectionIDA = await workerJSONRPCRouter.addWorker(workerA);
 
 			const workerB = new Threads.Worker(process.mainModule.filename);
+			await new Promise((fnResolve, fnReject) => {
+				workerB.on("online", fnResolve);
+				setTimeout(fnReject, 10000);
+			});
 			const nConnectionIDB = await workerJSONRPCRouter.addWorker(workerB);
 
 			const clientA = workerJSONRPCRouter.connectionIDToSingletonClient(nConnectionIDA, TestClient);
@@ -565,7 +592,25 @@ class AllTests
 			//await clientStandAlone.rpc("rpc.connectToEndpoint", [clientStandAlone.endpointURL]);
 			//console.log(await clientStandAlone.ping(strMessage + " stand-alone client."));
 
-			// client.killThread(threads.pid);
+
+			// setInterval(() => { console.log(`Worker thread ${Threads.threadId} still alive, waiting to be killed.`); }, 5000);
+
+			try
+			{
+				// When CPU 100% busy, the master process still hasn't ran all tests, so this worker suicide would prevent it from successfully talking to this thread.
+				// await sleep(5000);
+
+				// await client.killThread(Threads.threadId);
+			}
+			catch(error)
+			{
+				console.error(error);
+			}
+
+			while(true)
+			{
+				await sleep(2000);
+			}
 		}
 	}
 

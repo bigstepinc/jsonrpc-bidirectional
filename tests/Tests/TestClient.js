@@ -61,6 +61,6 @@ class TestClient extends JSONRPC.Client
 	 */
 	async killWorker(nPID)
 	{
-		return this.rpc("killWorker", [...arguments]);
+		return this.rpc("killWorker", [...arguments], /*bNotification*/ false);
 	}
 };
