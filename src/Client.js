@@ -77,16 +77,23 @@ class Client extends EventEmitter
 	 * Aka fire and forget.
 	 * Defaults to false.
 	 * 
+	 * arrTransferList is passed as the second param of postMessage further down the road:
+	 * https://nodejs.org/dist/latest-v10.x/docs/api/worker_threads.html#worker_threads_port_postmessage_value_transferlist
+	 * https://nodejs.org/dist/latest-v10.x/docs/api/worker_threads.html#worker_threads_worker_postmessage_value_transferlist
+	 * https://developer.mozilla.org/en-US/docs/Web/API/Worker/postMessage
+	 * 
 	 * @param {string} strFunctionName
 	 * @param {Array} arrParams
 	 * @param {boolean} bNotification = false
+	 * @param {ArrayBuffer[]|Transferable[]} arrTransferList = []
 	 */
-	async rpc(strFunctionName, arrParams, bNotification = false)
+	async rpc(strFunctionName, arrParams, bNotification = false, arrTransferList = [])
 	{
 		assert(typeof bNotification === "boolean", "bNotification must be of type boolean.");
 		assert(Array.isArray(arrParams), "arrParams must be an Array.");
+		assert(Array.isArray(arrTransferList), "arrTransferList must be an Array.");
 
-		const outgoingRequest = new JSONRPC.OutgoingRequest(strFunctionName, arrParams, bNotification ? undefined : this._nCallID);
+		const outgoingRequest = new JSONRPC.OutgoingRequest(strFunctionName, arrParams, bNotification ? undefined : this._nCallID, arrTransferList);
 		
 		// Increment even for notification requests, just in case it is referenced somehow elsewhere for other purposes.
 		this._nCallID++;

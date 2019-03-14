@@ -155,14 +155,14 @@ class WorkerThreadTransport extends JSONRPC.ClientPluginBase
 				this._objWorkerRequestsPromises[outgoingRequest.requestObject.id].fnReject = fnReject;
 			});
 		}
-
+		
 		if(Threads.isMainThread)
 		{
-			this.threadWorker.postMessage(outgoingRequest.requestObject);
+			this.threadWorker.postMessage(outgoingRequest.requestObject, outgoingRequest.transferList);
 		}
 		else
 		{
-			Threads.parentPort.postMessage(outgoingRequest.requestObject);
+			Threads.parentPort.postMessage(outgoingRequest.requestObject, outgoingRequest.transferList);
 		}
 
 

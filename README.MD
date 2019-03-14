@@ -186,6 +186,7 @@ class TestClient extends JSONRPC.Client
 	{
 		return this.rpc("divide", [...arguments]);
 	}
+}
 ```
 
 

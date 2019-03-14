@@ -503,7 +503,6 @@ class AllTests
 		}
 	}
 
-
 	/**
 	 * @returns {undefined}
 	 */

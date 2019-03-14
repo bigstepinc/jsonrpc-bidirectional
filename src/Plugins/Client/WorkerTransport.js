@@ -154,7 +154,15 @@ class WorkerTransport extends JSONRPC.ClientPluginBase
 
 		if(this.worker.postMessage)
 		{
-			this.worker.postMessage(outgoingRequest.requestObject);
+			// Internet Explorer 10 does not support transferList. Not sending the param at all if empty.
+			if(outgoingRequest.transferList.length)
+			{
+				this.worker.postMessage(outgoingRequest.requestObject, outgoingRequest.transferList);
+			}
+			else
+			{
+				this.worker.postMessage(outgoingRequest.requestObject);
+			}
 		}
 		else
 		{

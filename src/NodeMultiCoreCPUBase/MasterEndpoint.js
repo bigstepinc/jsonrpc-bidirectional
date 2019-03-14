@@ -475,6 +475,10 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 		return strReturn;
 	}
 
+	async sendTransferListTest(incomingRequest, arrayBufferForTest)
+	{
+		console.log("Received buffer", arrayBufferForTest);
+	}
 
 	/**
 	 * @param {JSONRPC.IncomingRequest} incomingRequest
