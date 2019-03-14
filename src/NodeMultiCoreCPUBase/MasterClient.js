@@ -38,6 +38,10 @@ class MasterClient extends JSONRPC.Client
 		return this.rpc("ping", [strReturn]);
 	}
 
+	async sendTransferListTest(arrayBufferForTest)
+	{
+		return this.rpc("sendTransferListTest", [...arguments], /*bNotification*/ true, [arrayBufferForTest]);
+	}
 
 	/**
 	 * @param {number} nWorkerID

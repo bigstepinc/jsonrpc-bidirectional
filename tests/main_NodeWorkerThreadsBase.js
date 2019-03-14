@@ -90,7 +90,19 @@ setInterval(() => {}, 10000);
 			await endpoint.start();
 
 			assert(await endpoint.masterClient.ping("Test") === "Test", "Calling MasterEndpoint.ping() returned the wrong thing.");
-			
+		
+			let packet = Buffer.alloc(2000);
+			await endpoint.masterClient.sendTransferListTest(packet.buffer);
+
+			if(packet.length === 0)
+			{
+				console.log("The allocated buffer has been detached from the process because it has been added to a transferList.");
+			}
+			else
+			{
+				throw new Error("Something went wrong with the data transfer of the transferList.");
+			}
+
 			console.log("Will call masterClient.gracefulExit() after sleeping for 10 seconds.");
 			await sleep(10 * 1000);
 			// This will call all worker's gracefulExit() methods.
