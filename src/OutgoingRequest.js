@@ -17,7 +17,7 @@ class OutgoingRequest
 	 * @param {Array} arrParams
 	 * @param {number|string|undefined} mxCallID
 	 */
-	constructor(strMethod, arrParams, mxCallID)
+	constructor(strMethod, arrParams, mxCallID, arrTransferList = [])
 	{
 		this._strMethod = strMethod;
 		this._arrParams = arrParams;
@@ -40,6 +40,8 @@ class OutgoingRequest
 		//this._httpRequest
 
 		this._mxCallID = mxCallID;
+
+		this._arrTransferList = arrTransferList;
 
 		Object.seal(this);
 	}
@@ -272,6 +274,13 @@ class OutgoingRequest
 		this._mxResult = mxResult;
 	}
 
+	/**
+	 * @returns {Array}
+	 */
+	get transferList()
+	{
+		return this._arrTransferList;
+	}
 
 	/**
 	 * @returns {Object}

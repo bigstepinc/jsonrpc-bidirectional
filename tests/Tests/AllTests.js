@@ -484,6 +484,86 @@ class AllTests
 		}
 	}
 
+	/**
+	 * @returns {undefined}
+	 */
+	async runThreadTransferListTest()
+	{
+		const jsonrpcServer = new JSONRPC.Server();
+		jsonrpcServer.registerEndpoint(new TestEndpoint()); // See "Define an endpoint" section above.
+
+		// By default, JSONRPC.Server rejects all requests as not authenticated and not authorized.
+		jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthenticationSkip());
+		jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthorizeAll());
+
+		const workerJSONRPCRouter = new JSONRPC.BidirectionalWorkerThreadRouter(jsonrpcServer);
+
+		if(Threads.isMainThread)
+		{
+			console.log(`Main thread ${Threads.threadId} initializing JSONRPC.`);
+
+			// Unless the worker is immediately added to the router, and the add operation awaited,
+			// deadlocks may occur because of the awaits on addWorker which may miss the ready call from the worker.
+			// Use await Promise.all or add them one by one as below.
+			const worker = new Threads.Worker(process.mainModule.filename);
+			const nConnectionID = await workerJSONRPCRouter.addWorker(worker);
+
+			const client = workerJSONRPCRouter.connectionIDToSingletonClient(nConnectionID, TestClient);
+
+			let arrBuffers = [];
+			let nIterations = 50000;
+
+			for(let i = 0; i < nIterations; i++)
+			{
+				arrBuffers.push(Buffer.alloc(2000));
+			}
+
+			let arrPromises = [];
+			let nStartTimestamp = new Date().getTime();
+			
+			for(let i = 0; i < nIterations; i++)
+			{
+				arrPromises.push(client.rpc("ping", ["Main thread => Worker thread"], true, [arrBuffers[i].buffer]))
+			}
+
+			await Promise.all(arrPromises);
+
+			let nEndTimestamp = new Date().getTime();
+
+			console.log("Sending 50k packets took", nEndTimestamp - nStartTimestamp, "ms");
+
+			let bError = false;
+
+			for(let i = 0; i < nIterations; i++)
+			{
+				if(arrBuffers[i].length !== 0)
+				{
+					bError = true;
+					console.log("Not all buffers were detached");
+					break;
+				}
+			}
+
+			if(!bError)
+			{
+				console.log("All allocated buffers were detached from the master process because they were added to a transferList");
+			}
+		}
+		else
+		{
+			assert(!Threads.isMainThread);
+			
+			console.log(`Worker thread ${Threads.threadId} initializing JSONRPC.`);
+
+			const nConnectionID = await workerJSONRPCRouter.addWorker(Threads, "/api");
+			const client = workerJSONRPCRouter.connectionIDToSingletonClient(nConnectionID, TestClient);
+
+			// This is a mandatory call to signal to the master, that the worker is ready to receive JSONRPC requests on a chosen endpoint.
+			// This can be hidden in an JSONRPC.Client extending class, inside an overriden .rpc() method.
+			// And awaited once.
+			await client.rpc("rpc.connectToEndpoint", ["/api"]);
+		}
+	}
 
 	/**
 	 * @returns {undefined}

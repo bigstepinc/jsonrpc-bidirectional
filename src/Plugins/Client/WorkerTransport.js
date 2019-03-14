@@ -154,7 +154,7 @@ class WorkerTransport extends JSONRPC.ClientPluginBase
 
 		if(this.worker.postMessage)
 		{
-			this.worker.postMessage(outgoingRequest.requestObject);
+			this.worker.postMessage(outgoingRequest.requestObject, outgoingRequest.transferList);
 		}
 		else
 		{
