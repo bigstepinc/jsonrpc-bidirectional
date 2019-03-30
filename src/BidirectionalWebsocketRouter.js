@@ -274,7 +274,12 @@ class BidirectionalWebsocketRouter extends JSONRPC.RouterBase
 				
 				if(webSocket.readyState !== JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN)
 				{
-					console.error("webSocket.readyState: " + JSON.stringify(webSocket.readyState) + ". Request was " + strMessage + ". Attempted responding with " + JSON.stringify(incomingRequest.callResultToBeSerialized, undefined, "\t") + ".");
+					let strAttemptedResponse = JSON.stringify(incomingRequest.callResultToBeSerialized);
+					if(strAttemptedResponse.length > 200)
+					{
+						strAttemptedResponse = strAttemptedResponse.substr(0, 100) + ` <... truncated ${strAttemptedResponse.length - 200} characters ...> ` + strAttemptedResponse.substr(-100);
+					}
+					console.error("webSocket.readyState: " + JSON.stringify(webSocket.readyState) + ". Request was " + strMessage + ". Attempted responding with " + strAttemptedResponse + ".");
 				}
 
 				if(!bNotification)
