@@ -36,14 +36,20 @@ class PerformanceCounters extends JSONRPC.ServerPluginBase
 	 */
 	async afterJSONDecode(incomingRequest)
 	{
-		if(this._bFakeAuthenticatedExportedMethod)
+		if(this._bExportMethodOnEndpoint)
 		{
-			incomingRequest.isAuthenticated = true;
-		}
+			if(["rpc.performanceCounters", "rpc.performanceCountersClear"].includes(incomingRequest.requestObject.method))
+			{
+				if(this._bFakeAuthenticatedExportedMethod)
+				{
+					incomingRequest.isAuthenticated = true;
+				}
 
-		if(this._bFakeAuthorizedExportedMethod)
-		{
-			incomingRequest.isAuthorized = true;
+				if(this._bFakeAuthorizedExportedMethod)
+				{
+					incomingRequest.isAuthorized = true;
+				}
+			}
 		}
 		
 
