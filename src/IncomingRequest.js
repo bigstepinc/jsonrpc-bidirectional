@@ -43,6 +43,8 @@ class IncomingRequest
 		// Only change this to true if it is safe to export stack traces to the RPC called.
 		this._bStackInErrorMessage = false;
 
+		this._nUnixTimeMilliseconds = 0;
+
 		Object.seal(this);
 	}
 
@@ -654,5 +656,28 @@ class IncomingRequest
 		}
 
 		return objResponse;
+	}
+
+
+	/**
+	 * @returns {null}
+	 */
+	startDurationTimer()
+	{
+		this._nUnixTimeMilliseconds = new Date().getTime();
+	}
+
+
+	/**
+	 * @returns {number}
+	 */
+	get durationMilliseconds()
+	{
+		if(this._nUnixTimeMilliseconds)
+		{
+			return new Date().getTime() - this._nUnixTimeMilliseconds;
+		}
+
+		return 0;
 	}
 };
