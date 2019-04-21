@@ -11,8 +11,8 @@ class PerformanceCounters extends JSONRPC.ServerPluginBase
 	 * If bExportMethodOnEndpoint is true, then a method named "rpc.performanceCounters" with no params 
 	 * is exported on any endpoint of the Server which added this plugin.
 	 * 
-	 * bFakeAuthenticatedExportedMethod will set the IncomingRequest.isAuthenticated property from thus plugin directly.
-	 * bFakeAuthorizedExportedMethod will set the IncomingRequest.isAuthenticated property from thus plugin directly.
+	 * bFakeAuthenticatedExportedMethod will set the IncomingRequest.isAuthenticated property from this plugin directly.
+	 * bFakeAuthorizedExportedMethod will set the IncomingRequest.isAuthenticated property from this plugin directly.
 	 * 
 	 * @param {boolean} bExportMethodOnEndpoint = false
 	 * @param {boolean} bFakeAuthenticatedExportedMethod = false
