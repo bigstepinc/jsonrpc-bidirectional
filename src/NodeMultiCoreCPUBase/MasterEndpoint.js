@@ -386,6 +386,11 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 			}
 		}
 
+		if(bFreshlyCachedWorkerProxyMode && arrWorkerStates.length === 1)
+		{
+			return this.rpcToRoundRobinWorker(incomingRequest, strMethodName, arrParams, /*bFreshlyCachedWorkerProxyMode*/ false);
+		}
+
 		throw new JSONRPC.Exception("No ready for RPC cluster workers were found.", JSONRPC.Exception.INTERNAL_ERROR);
 	}
 
