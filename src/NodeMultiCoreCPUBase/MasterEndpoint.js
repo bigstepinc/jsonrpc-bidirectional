@@ -64,13 +64,13 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 
 	async _configureBeforeStart()
 	{
-		throw new Error("Must implement _configureBeforeStart()");
+		throw new Error("Subclass must implement _configureBeforeStart()");
 	}
 
 
 	async _addWorker()
 	{
-		throw new Error("Must implement _addWorker()");
+		throw new Error("Subclass must implement _addWorker()");
 	}
 
 
@@ -81,7 +81,7 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 	 */
 	async _transportPluginFromReverseClient(reverseCallsClient)
 	{
-		throw new Error("Must implement _transportPluginFromReverseClient()");
+		throw new Error("Subclass must implement _transportPluginFromReverseClient()");
 	}
 
 
@@ -90,7 +90,7 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 	 */
 	async _makeBidirectionalRouter()
 	{
-		throw new Error("Must implement _makeBidirectionalRouter().");
+		throw new Error("Subclass must implement _makeBidirectionalRouter().");
 	}
 
 
@@ -136,7 +136,7 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 	{
 		if(incomingRequest)
 		{
-			throw new Error("This mustn't be called through JSONRPC.");
+			throw new Error("_startServices mustn't be called through JSONRPC.");
 		}
 
 		// this.workerClients is empty at this stage.
@@ -155,7 +155,7 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 	{
 		if(incomingRequest)
 		{
-			throw new Error("This mustn't be called through JSONRPC.");
+			throw new Error("_stopServices mustn't be called through JSONRPC.");
 		}
 	}
 
