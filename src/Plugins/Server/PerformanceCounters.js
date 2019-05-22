@@ -13,6 +13,8 @@ class PerformanceCounters extends JSONRPC.ServerPluginBase
 	 * 
 	 * bFakeAuthenticatedExportedMethod will set the IncomingRequest.isAuthenticated property from this plugin directly.
 	 * bFakeAuthorizedExportedMethod will set the IncomingRequest.isAuthenticated property from this plugin directly.
+	 *
+	 * There's an UI implementation here: https://github.com/oxygen/api-performance-counters-ui
 	 * 
 	 * @param {boolean} bExportMethodOnEndpoint = false
 	 * @param {boolean} bFakeAuthenticatedExportedMethod = false
