@@ -508,6 +508,56 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 
 		return await this.workerClients[nWorkerID].client.rpc(strFunctionName, arrParams, bNotification);
 	}
+
+	/**
+	 * @typedef {{ message: string, stack: string=, code: number=, type: string=, errorClass: string }} ErrorObject
+	 * 
+	 * @param {JSONRPC.IncomingRequest} incomingRequest 
+	 * @param {string} strFunctionName 
+	 * @param {Array<*>} arrParams
+	 * @param {boolean=} [bNotification=false]
+	 * @param {boolean=} [bThrowOnError=false]
+	 * 
+	 * @returns {{ [key: number]: * }} { [nWorkerID]: mxResult | { error: ErrorObject } }
+	 */
+	async rpcWorkersBroadcast(incomingRequest, strFunctionName, arrParams, bNotification = false, bThrowOnError = false)
+	{
+		const objResponses = {};
+		const arrPromises = [];
+
+		for(const strWorkerID of Object.keys(this.workerClients))
+		{
+			const nWorkerID = parseInt(strWorkerID, 10);
+			arrPromises.push(new Promise(async (fnResolve, fnReject) => {
+				try
+				{
+					objResponses[nWorkerID] = await this.rpcWorker(incomingRequest, nWorkerID, strFunctionName, arrParams, bNotification);
+					fnResolve();
+				}
+				catch(error)
+				{
+					if(bThrowOnError)
+					{
+						fnReject(error);
+					}
+					else
+					{
+						objResponses[nWorkerID] = {
+							message: error.message,
+							stack: error.stack,
+							code: error.code,
+							type: "error",
+							errorClass: error.constructor.name
+						};
+					}
+				}
+			}));
+		}
+
+		await Promise.all(arrPromises);
+
+		return objResponses;
+	}
 };
 
 module.exports = MasterEndpoint;
