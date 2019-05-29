@@ -236,6 +236,10 @@ class IncomingRequest
 
 
 	/**
+	 * WARNING: this getter may throw when the connection has just been closed.
+	 * You may want to handle the error.
+	 * Due to compatibility with existing implementations, not switching to a function instead of a getter.
+	 * 
 	 * @returns {Class}
 	 */
 	get reverseCallsClient()
