@@ -217,7 +217,36 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 	 */
 	_setupWebSocket()
 	{
-		if(this._webSocket.addEventListener)
+		if(this._webSocket.on && this._webSocket.removeListener && process && process.release)
+		{
+			const fnOnError = (error) => {
+				this.rejectAllPromises(error);
+			};
+			const fnOnMessage = async (mxData, objFlags) => {
+				await this.processResponse(mxData);
+			};
+			const fnOnClose = (nCode, strReason, bWasClean) => {
+				this.rejectAllPromises(new Error("WebSocket closed. Code: " + JSON.stringify(nCode) + ". Message: " + JSON.stringify(strReason)));
+
+				if(!this._bBidirectionalWebSocketMode)
+				{
+					this._webSocket.removeListener("message", fnOnMessage);
+				}
+	
+				this._webSocket.removeListener("close", fnOnClose);
+				this._webSocket.removeListener("error", fnOnError);
+			};
+
+			
+			this._webSocket.on("error", fnOnError);
+			this._webSocket.on("close", fnOnClose);
+
+			if(!this._bBidirectionalWebSocketMode)
+			{
+				this._webSocket.on("message", fnOnMessage);
+			}
+		}
+		else if(this._webSocket.addEventListener && this._webSocket.removeEventListener)
 		{
 			const fnOnMessage = async (messageEvent) => {
 				await this.processResponse(messageEvent.data);
@@ -248,32 +277,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 		}
 		else
 		{
-			const fnOnError = (error) => {
-				this.rejectAllPromises(error);
-			};
-			const fnOnMessage = async (mxData, objFlags) => {
-				await this.processResponse(mxData);
-			};
-			const fnOnClose = (nCode, strReason, bWasClean) => {
-				this.rejectAllPromises(new Error("WebSocket closed. Code: " + JSON.stringify(nCode) + ". Message: " + JSON.stringify(strReason)));
-
-				if(!this._bBidirectionalWebSocketMode)
-				{
-					this._webSocket.removeListener("message", fnOnMessage);
-				}
-	
-				this._webSocket.removeListener("close", fnOnClose);
-				this._webSocket.removeListener("error", fnOnError);
-			};
-
-			
-			this._webSocket.on("error", fnOnError);
-			this._webSocket.on("close", fnOnClose);
-
-			if(!this._bBidirectionalWebSocketMode)
-			{
-				this._webSocket.on("message", fnOnMessage);
-			}
+			throw new Error("Failed to detect runtime or websocket interface not support (browser, nodejs, websockets/ws npm package compatible interface, etc.");
 		}
 	}
 };

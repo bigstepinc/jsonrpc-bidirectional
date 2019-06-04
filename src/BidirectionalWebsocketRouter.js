@@ -85,7 +85,7 @@ class BidirectionalWebsocketRouter extends JSONRPC.RouterBase
 		};
 		
 
-		if(webSocket.on)
+		if(webSocket.on && webSocket.removeListener && process && process.release)
 		{
 			const fnOnMessage = (strData, objFlags) => {
 				this._routeMessage(strData, objSession);
@@ -124,7 +124,7 @@ class BidirectionalWebsocketRouter extends JSONRPC.RouterBase
 		}
 		else
 		{
-			throw new Error("Not a supported WebSocket interface.");
+			throw new Error("Failed to detect runtime or websocket interface not support (browser, nodejs, websockets/ws npm package compatible interface, etc.");
 		}
 
 
