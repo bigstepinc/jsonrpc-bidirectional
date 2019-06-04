@@ -1,7 +1,7 @@
 {
   "name": "jsonrpc-bidirectional",
   "description": "Bidirectional JSONRPC over web sockets or HTTP with extensive plugin support.",
-  "version": "8.9.0",
+  "version": "8.9.1",
   "scripts": {
     "build": "node --experimental-worker build.js",
     "test": "node test.js",
