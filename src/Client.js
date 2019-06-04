@@ -83,11 +83,13 @@ class Client extends EventEmitter
 	 * https://developer.mozilla.org/en-US/docs/Web/API/Worker/postMessage
 	 * 
 	 * @param {string} strFunctionName
-	 * @param {Array} arrParams
+	 * @param {Array} arrParams = []
 	 * @param {boolean} bNotification = false
 	 * @param {ArrayBuffer[]|Transferable[]} arrTransferList = []
+	 * 
+	 * @returns {*}
 	 */
-	async rpc(strFunctionName, arrParams, bNotification = false, arrTransferList = [])
+	async rpc(strFunctionName, arrParams = [], bNotification = false, arrTransferList = [])
 	{
 		assert(typeof bNotification === "boolean", "bNotification must be of type boolean.");
 		assert(Array.isArray(arrParams), "arrParams must be an Array.");

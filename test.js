@@ -63,5 +63,11 @@ async function spawnPassthru(strExecutablePath, arrParams = [])
 	// @TODO: automate test_rtc using headless Chrome.
 	// console.log(chalk.bgWhite.black("npm run test_rtc"));
 	// await spawnPassthru("npm" + (os.platform() === "win32" ? ".cmd" : ""), ["run", "test_rtc"]);
+
+	// @TODO Add CPU stress parallel process to test for race conditions.
+
+	console.log("");
+	console.log("[" + process.pid + "] \x1b[42m\x1b[30mAll tests done (test_lib, test_cluster, test_worker_threads). No unhandled (intentional) errors encountered.\x1b[0m Which means all is good or the tests are incomplete/buggy.");
+	console.log("");
 })();
 

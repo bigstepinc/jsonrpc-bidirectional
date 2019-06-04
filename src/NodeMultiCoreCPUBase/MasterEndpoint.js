@@ -64,13 +64,13 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 
 	async _configureBeforeStart()
 	{
-		throw new Error("Must implement _configureBeforeStart()");
+		throw new Error("Subclass must implement _configureBeforeStart()");
 	}
 
 
 	async _addWorker()
 	{
-		throw new Error("Must implement _addWorker()");
+		throw new Error("Subclass must implement _addWorker()");
 	}
 
 
@@ -81,7 +81,7 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 	 */
 	async _transportPluginFromReverseClient(reverseCallsClient)
 	{
-		throw new Error("Must implement _transportPluginFromReverseClient()");
+		throw new Error("Subclass must implement _transportPluginFromReverseClient()");
 	}
 
 
@@ -90,7 +90,7 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 	 */
 	async _makeBidirectionalRouter()
 	{
-		throw new Error("Must implement _makeBidirectionalRouter().");
+		throw new Error("Subclass must implement _makeBidirectionalRouter().");
 	}
 
 
@@ -136,7 +136,7 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 	{
 		if(incomingRequest)
 		{
-			throw new Error("This mustn't be called through JSONRPC.");
+			throw new Error("_startServices mustn't be called through JSONRPC.");
 		}
 
 		// this.workerClients is empty at this stage.
@@ -155,7 +155,7 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 	{
 		if(incomingRequest)
 		{
-			throw new Error("This mustn't be called through JSONRPC.");
+			throw new Error("_stopServices mustn't be called through JSONRPC.");
 		}
 	}
 
@@ -386,6 +386,11 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 			}
 		}
 
+		if(bFreshlyCachedWorkerProxyMode && arrWorkerStates.length === 1)
+		{
+			return this.rpcToRoundRobinWorker(incomingRequest, strMethodName, arrParams, /*bFreshlyCachedWorkerProxyMode*/ false);
+		}
+
 		throw new JSONRPC.Exception("No ready for RPC cluster workers were found.", JSONRPC.Exception.INTERNAL_ERROR);
 	}
 
@@ -502,6 +507,56 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 		}
 
 		return await this.workerClients[nWorkerID].client.rpc(strFunctionName, arrParams, bNotification);
+	}
+
+	/**
+	 * @typedef {{ message: string, stack: string=, code: number=, type: string=, errorClass: string }} ErrorObject
+	 * 
+	 * @param {JSONRPC.IncomingRequest} incomingRequest 
+	 * @param {string} strFunctionName 
+	 * @param {Array<*>} arrParams
+	 * @param {boolean=} [bNotification=false]
+	 * @param {boolean=} [bThrowOnError=false]
+	 * 
+	 * @returns {{ [key: number]: * }} { [nWorkerID]: mxResult | { error: ErrorObject } }
+	 */
+	async rpcWorkersBroadcast(incomingRequest, strFunctionName, arrParams, bNotification = false, bThrowOnError = false)
+	{
+		const objResponses = {};
+		const arrPromises = [];
+
+		for(const strWorkerID of Object.keys(this.workerClients))
+		{
+			const nWorkerID = parseInt(strWorkerID, 10);
+			arrPromises.push(new Promise(async (fnResolve, fnReject) => {
+				try
+				{
+					objResponses[nWorkerID] = await this.rpcWorker(incomingRequest, nWorkerID, strFunctionName, arrParams, bNotification);
+					fnResolve();
+				}
+				catch(error)
+				{
+					if(bThrowOnError)
+					{
+						fnReject(error);
+					}
+					else
+					{
+						objResponses[nWorkerID] = {
+							message: error.message,
+							stack: error.stack,
+							code: error.code,
+							type: "error",
+							errorClass: error.constructor.name
+						};
+					}
+				}
+			}));
+		}
+
+		await Promise.all(arrPromises);
+
+		return objResponses;
 	}
 };
 

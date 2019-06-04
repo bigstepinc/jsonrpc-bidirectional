@@ -108,6 +108,7 @@ class AllTests
 		// Used by SiteB and SiteC, which trusts the remote server based on SSL certificates.
 		this._serverAuthenticationSkipPlugin = new JSONRPC.Plugins.Server.AuthenticationSkip();
 		this._serverAuthorizeAllPlugin = new JSONRPC.Plugins.Server.AuthorizeAll();
+		this._performanceCountersPlugin = new JSONRPC.Plugins.Server.PerformanceCounters();
 
 		let objRandomURLPublicConfig = this.urlPublicConfig;
 		this._serverURLPublicPlugin = new JSONRPC.Plugins.Server.URLPublic(
@@ -401,6 +402,10 @@ class AllTests
 		{
 			this.enableConsole();
 		}
+
+
+		console.log("Still running calls: " + this._performanceCountersPlugin.runningCallsCount);
+		console.log("Performance metrics: " + JSON.stringify(this._performanceCountersPlugin.metricsAsObject, undefined, "    "));
 	}
 
 
@@ -726,6 +731,8 @@ class AllTests
 
 				jsonrpcServer.addPlugin(this._serverAuthenticationSkipPlugin);
 				jsonrpcServer.addPlugin(this._serverAuthorizeAllPlugin);
+				jsonrpcServer.addPlugin(this._performanceCountersPlugin);
+				
 
 				const wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(jsonrpcServer);
 
@@ -976,6 +983,7 @@ class AllTests
 	{
 		this._jsonrpcServerSiteA.addPlugin(this._serverAuthorizeAllPlugin);
 		this._jsonrpcServerSiteA.addPlugin(this._serverAuthenticationSkipPlugin);
+		this._jsonrpcServerSiteA.addPlugin(this._performanceCountersPlugin);
 	}
 
 
@@ -1020,6 +1028,7 @@ class AllTests
 
 			this._jsonrpcServerSiteB.addPlugin(this._serverAuthenticationSkipPlugin);
 			this._jsonrpcServerSiteB.addPlugin(this._serverAuthorizeAllPlugin);
+			this._jsonrpcServerSiteB.addPlugin(this._performanceCountersPlugin);
 			this._jsonrpcServerSiteB.addPlugin(new Tests.Plugins.Server.DebugMarker("SiteB"));
 
 			console.log("[" + process.pid + "] Instantiating JSONRPC.BidirectionalWebsocketRouter on SiteB.");
@@ -1072,6 +1081,7 @@ class AllTests
 
 			this._jsonrpcServerSiteC.addPlugin(this._serverAuthenticationSkipPlugin);
 			this._jsonrpcServerSiteC.addPlugin(this._serverAuthorizeAllPlugin);
+			this._jsonrpcServerSiteC.addPlugin(this._performanceCountersPlugin);
 			this._jsonrpcServerSiteC.addPlugin(new Tests.Plugins.Server.DebugMarker("SiteC"));
 
 			console.log("[" + process.pid + "] Instantiating JSONRPC.BidirectionalWebsocketRouter on SiteC.");
@@ -1124,6 +1134,7 @@ class AllTests
 
 			this._jsonrpcServerSiteDisconnecter.addPlugin(this._serverAuthenticationSkipPlugin);
 			this._jsonrpcServerSiteDisconnecter.addPlugin(this._serverAuthorizeAllPlugin);
+			this._jsonrpcServerSiteDisconnecter.addPlugin(this._performanceCountersPlugin);
 			this._jsonrpcServerSiteDisconnecter.addPlugin(new Tests.Plugins.Server.DebugMarker("SiteDisconnecter"));
 
 			console.log("[" + process.pid + "] Instantiating JSONRPC.BidirectionalWebsocketRouter on SiteDisconnecter.");

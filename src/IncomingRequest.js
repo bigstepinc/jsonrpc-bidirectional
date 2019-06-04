@@ -43,6 +43,8 @@ class IncomingRequest
 		// Only change this to true if it is safe to export stack traces to the RPC called.
 		this._bStackInErrorMessage = false;
 
+		this._nUnixTimeMilliseconds = 0;
+
 		Object.seal(this);
 	}
 
@@ -234,6 +236,10 @@ class IncomingRequest
 
 
 	/**
+	 * WARNING: this getter may throw when the connection has just been closed.
+	 * You may want to handle the error.
+	 * Due to compatibility with existing implementations, not switching to a function instead of a getter.
+	 * 
 	 * @returns {Class}
 	 */
 	get reverseCallsClient()
@@ -654,5 +660,28 @@ class IncomingRequest
 		}
 
 		return objResponse;
+	}
+
+
+	/**
+	 * @returns {null}
+	 */
+	startDurationTimer()
+	{
+		this._nUnixTimeMilliseconds = new Date().getTime();
+	}
+
+
+	/**
+	 * @returns {number}
+	 */
+	get durationMilliseconds()
+	{
+		if(this._nUnixTimeMilliseconds)
+		{
+			return new Date().getTime() - this._nUnixTimeMilliseconds;
+		}
+
+		return 0;
 	}
 };
