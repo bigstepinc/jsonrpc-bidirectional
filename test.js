@@ -1,6 +1,7 @@
 const ChildProcess = require("child_process");
 const chalk = require("chalk");
 const os = require("os");
+const fs = require("fs");
 
 
 // Avoiding "DeprecationWarning: Unhandled promise rejections are deprecated. In the future, promise rejections that are not handled will terminate the Node.js process with a non-zero exit code."
@@ -51,26 +52,52 @@ async function spawnPassthru(strExecutablePath, arrParams = [])
 (async () => {
 	process.chdir(__dirname);
 
-	console.log(chalk.bgWhite.black("npm run build"));
-	await spawnPassthru("npm" + (os.platform() === "win32" ? ".cmd" : ""), ["run", "build"]);
+	let bBuiltNow = false;
 
-	console.log(chalk.bgWhite.black("npm run test_lib"));
-	await spawnPassthru("npm" + (os.platform() === "win32" ? ".cmd" : ""), ["run", "test_lib"]);
+	try
+	{
+		if(!fs.existsSync("./builds/browser/es5/jsonrpc.min.js"))
+		{
+			bBuiltNow = true;
+			console.log(chalk.bgWhite.black("npm run build"));
+			await spawnPassthru("npm" + (os.platform() === "win32" ? ".cmd" : ""), ["run", "build"]);
+		}
 
-	console.log(chalk.bgWhite.black("npm run test_cluster"));
-	await spawnPassthru("npm" + (os.platform() === "win32" ? ".cmd" : ""), ["run", "test_cluster"]);
+		console.log(chalk.bgWhite.black("npm run test_lib"));
+		await spawnPassthru("npm" + (os.platform() === "win32" ? ".cmd" : ""), ["run", "test_lib"]);
 
-	console.log(chalk.bgWhite.black("npm run test_worker_threads"));
-	await spawnPassthru("npm" + (os.platform() === "win32" ? ".cmd" : ""), ["run", "test_worker_threads"]);
+		console.log(chalk.bgWhite.black("npm run test_cluster"));
+		await spawnPassthru("npm" + (os.platform() === "win32" ? ".cmd" : ""), ["run", "test_cluster"]);
 
-	// @TODO: automate test_rtc using headless Chrome.
-	// console.log(chalk.bgWhite.black("npm run test_rtc"));
-	// await spawnPassthru("npm" + (os.platform() === "win32" ? ".cmd" : ""), ["run", "test_rtc"]);
+		console.log(chalk.bgWhite.black("npm run test_worker_threads"));
+		await spawnPassthru("npm" + (os.platform() === "win32" ? ".cmd" : ""), ["run", "test_worker_threads"]);
 
-	// @TODO Add CPU stress parallel process to test for race conditions.
+		// @TODO: automate test_rtc using headless Chrome.
+		// console.log(chalk.bgWhite.black("npm run test_rtc"));
+		// await spawnPassthru("npm" + (os.platform() === "win32" ? ".cmd" : ""), ["run", "test_rtc"]);
 
-	console.log("");
-	console.log("[" + process.pid + "] \x1b[42m\x1b[30mAll tests done (test_lib, test_cluster, test_worker_threads). No unhandled (intentional) errors encountered.\x1b[0m Which means all is good or the tests are incomplete/buggy.");
-	console.log("");
+		// @TODO Add CPU stress parallel process to test for race conditions.
+
+		console.log("");
+		console.log("[" + process.pid + "] \x1b[42m\x1b[30mAll tests done (test_lib, test_cluster, test_worker_threads). No unhandled (intentional) errors encountered.\x1b[0m Which means all is good or the tests are incomplete/buggy.");
+		console.log("");
+	}
+	catch(error)
+	{
+		if(bBuiltNow)
+		{
+			if(fs.existsSync("./builds/browser/es5/jsonrpc.min.js"))
+			{
+				fs.unlinkSync("./builds/browser/es5/jsonrpc.min.js");
+			}
+			
+			if(fs.existsSync("./builds/browser/es7/jsonrpc.min.js"))
+			{
+				fs.unlinkSync("./builds/browser/es7/jsonrpc.min.js");
+			}
+		}
+
+		throw error;
+	}
 })();
 
