@@ -51,6 +51,9 @@ async function spawnPassthru(strExecutablePath, arrParams = [])
 (async () => {
 	process.chdir(__dirname);
 
+	console.log(chalk.bgWhite.black("npm run build"));
+	await spawnPassthru("npm" + (os.platform() === "win32" ? ".cmd" : ""), ["run", "build"]);
+
 	console.log(chalk.bgWhite.black("npm run test_lib"));
 	await spawnPassthru("npm" + (os.platform() === "win32" ? ".cmd" : ""), ["run", "test_lib"]);
 
