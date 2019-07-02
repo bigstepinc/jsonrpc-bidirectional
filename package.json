@@ -1,10 +1,10 @@
 {
   "name": "jsonrpc-bidirectional",
   "description": "Bidirectional JSONRPC over web sockets or HTTP with extensive plugin support.",
-  "version": "8.9.4",
+  "version": "8.9.7",
   "scripts": {
     "build": "node --experimental-worker build.js",
-    "prepublish": "npm i && node --experimental-worker build.js && node --expose-gc --max-old-space-size=1024 --experimental-worker tests/main.js",
+    "prepublish": "node --experimental-worker build.js && node --expose-gc --max-old-space-size=1024 --experimental-worker tests/main.js",
     "test": "node test.js",
     "test_lib": "node --expose-gc --max-old-space-size=1024 --experimental-worker tests/main.js",
     "test_rtc": "node --expose-gc --max-old-space-size=1024 --experimental-worker tests/BrowserWebRTC/main_server.js",
@@ -64,13 +64,13 @@
     "babel-preset-stage-3": "^6.24.1",
     "chalk": "^2.4.1",
     "electron": "^1.7.9",
-    "eslint": "^3.19.0",
-    "eslint-plugin-jsdoc": "^3.3.1",
+    "eslint": "^4.18.2",
+    "eslint-plugin-jsdoc": "^10.0.3",
     "phantom": "^4.0.12",
     "recursive-keys": "^0.9.0",
     "uglify-js": "^2.8.22",
     "uws": "^0.14.5",
-    "webpack": "^2.4.1",
+    "webpack": "^2.7.0",
     "ws": "^5.1.1"
   },
   "files": [
