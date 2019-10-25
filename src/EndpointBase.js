@@ -4,7 +4,15 @@ const assert = require("assert");
 
 const EventEmitter = require("events");
 
-const TypescriptParserNamespace = require("typescript-parser");
+let TypescriptParserNamespace = null;
+try
+{
+	TypescriptParserNamespace = require("typescript-parser");
+}
+catch(error)
+{
+	// Ignored optional dependency.
+}
 
 
 /**
