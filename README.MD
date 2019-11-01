@@ -25,7 +25,7 @@ These transports are already implemented, and they all offer promise-based async
 | Worker | bidirectional over a single connection | [Worker](https://developer.mozilla.org/en-US/docs/Web/API/Worker) | [Worker](https://nodejs.org/api/cluster.html#cluster_class_worker) | [Structured cloning](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm) |
 | Worker Threads | bidirectional over a single connection |  | [Worker Thread](https://nodejs.org/api/worker_threads.html#worker_threads_class_worker) | [Structured cloning](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm) + [SharedArrayBuffer support](https://nodejs.org/api/worker_threads.html#worker_threads_worker_postmessage_value_transferlist) |
 | ProcessStdIO | one-way, new child process per call | | [Process](https://nodejs.org/api/process.html#process_process) | JSON |
-| WebRTC | bidirectional over a single connection | [RTCDataChannel](https://developer.mozilla.org/en/docs/Web/API/RTCDataChannel) | [wrtc](https://www.npmjs.com/package/wrtc) | JSON |
+| WebRTC | bidirectional over a single connection | [RTCDataChannel](https://developer.mozilla.org/en/docs/Web/API/RTCDataChannel) | [wrtc RTCDataChannel](https://www.npmjs.com/package/wrtc) | JSON |
 | ElectronIPC | bidirectional over a single connection | [ipcRenderer](https://electronjs.org/docs/api/ipc-renderer) | [ipcMain](https://electronjs.org/docs/api/ipc-main) | JSON (internally in IPC)
  
 #### WebSocket
