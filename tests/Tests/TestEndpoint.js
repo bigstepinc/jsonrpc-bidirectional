@@ -37,7 +37,7 @@ class TestEndpoint extends JSONRPC.EndpointBase
 		this._nWebRTCConnectionID = 0;
 
 		this._nWebRTCCupidonHeartBeat = setInterval(
-			async () => {
+			async() => {
 				while(this._arrLonelyHeartWebRTCClients.length >= 2)
 				{
 					const objMale = this._arrLonelyHeartWebRTCClients.pop();
@@ -71,7 +71,7 @@ class TestEndpoint extends JSONRPC.EndpointBase
 
 						objMale.client.plugins[0].webSocket.on(
 							"close",
-							async (nCode, strReason) => {
+							async(nCode, strReason) => {
 								if(objFemale.client.plugins[0].webSocket.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN)
 								{
 									delete this._objHookedUpRTCPairs[nRTCConnectionID];
@@ -81,7 +81,7 @@ class TestEndpoint extends JSONRPC.EndpointBase
 						);
 						objFemale.client.plugins[0].webSocket.on(
 							"close",
-							async (nCode, strReason) => {
+							async(nCode, strReason) => {
 								if(objMale.client.plugins[0].webSocket.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN)
 								{
 									delete this._objHookedUpRTCPairs[nRTCConnectionID];
@@ -361,7 +361,7 @@ class TestEndpoint extends JSONRPC.EndpointBase
 	/**
 	 * @param {JSONRPC.IncomingRequest} incomingRequest
 	 * @param {number} nRTCConnectionID
-	 * @param {Object} objRTCIceCandidate
+	 * @param {object} objRTCIceCandidate
 	 * 
 	 * @returns {null}
 	 */

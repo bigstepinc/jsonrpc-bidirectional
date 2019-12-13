@@ -63,7 +63,7 @@ class WorkerThreadTransport extends JSONRPC.ClientPluginBase
 	/**
 	 * objResponse is the object obtained after JSON parsing for strResponse.
 	 * 
-	 * @param {Object|undefined} objResponse
+	 * @param {object|undefined} objResponse
 	 */
 	async processResponse(objResponse)
 	{
@@ -221,7 +221,7 @@ class WorkerThreadTransport extends JSONRPC.ClientPluginBase
 		const fnOnClose = () => {
 			this.rejectAllPromises(new Error("Thread MessagePort closed."));
 		};
-		const fnOnMessage = async (objMessage) => {
+		const fnOnMessage = async(objMessage) => {
 			await this.processResponse(objMessage);
 		};
 		const fnOnExit = (nCode) => {

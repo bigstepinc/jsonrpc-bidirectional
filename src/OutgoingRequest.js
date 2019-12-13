@@ -125,7 +125,7 @@ class OutgoingRequest
 
 
 	/**
-	 * @returns {Object} 
+	 * @returns {object} 
 	 */
 	get headers()
 	{
@@ -154,7 +154,7 @@ class OutgoingRequest
 
 
 	/**
-	 * @returns {Object|Array|null}
+	 * @returns {object|Array|null}
 	 */
 	get requestObject()
 	{
@@ -163,7 +163,7 @@ class OutgoingRequest
 
 
 	/**
-	 * @param {Object|Array} objRequest
+	 * @param {object|Array} objRequest
 	 */
 	set requestObject(objRequest)
 	{
@@ -184,7 +184,7 @@ class OutgoingRequest
 
 
 	/**
-	 * @param {string|Object} mxRequestBody 
+	 * @param {string|object} mxRequestBody 
 	 */
 	set requestBody(mxRequestBody)
 	{
@@ -212,7 +212,7 @@ class OutgoingRequest
 
 
 	/**
-	 * @returns {string|Object|null} 
+	 * @returns {string|object|null} 
 	 */
 	get responseBody()
 	{
@@ -221,7 +221,7 @@ class OutgoingRequest
 
 
 	/**
-	 * @param {string|Object} mxResponseBody 
+	 * @param {string|object} mxResponseBody 
 	 */
 	set responseBody(mxResponseBody)
 	{
@@ -232,7 +232,7 @@ class OutgoingRequest
 
 
 	/**
-	 * @returns {Object|Array|null}
+	 * @returns {object|Array|null}
 	 */
 	get responseObject()
 	{
@@ -241,7 +241,7 @@ class OutgoingRequest
 
 
 	/**
-	 * @param {Object|Array} objResponse
+	 * @param {object|Array} objResponse
 	 */
 	set responseObject(objResponse)
 	{
@@ -259,7 +259,7 @@ class OutgoingRequest
 
 
 	/**
-	 * @returns {number|string|null|Object|Array|Error}
+	 * @returns {number|string|null|object|Array|Error}
 	 */
 	get callResult()
 	{
@@ -270,7 +270,7 @@ class OutgoingRequest
 
 	
 	/**
-	 * @param {number|string|null|Object|Array|Error} mxResult
+	 * @param {number|string|null|object|Array|Error} mxResult
 	 */
 	set callResult(mxResult)
 	{
@@ -289,7 +289,7 @@ class OutgoingRequest
 	}
 
 	/**
-	 * @returns {Object}
+	 * @returns {object}
 	 */
 	toRequestObject()
 	{

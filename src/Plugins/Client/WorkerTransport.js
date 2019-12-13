@@ -53,7 +53,7 @@ class WorkerTransport extends JSONRPC.ClientPluginBase
 	/**
 	 * objResponse is the object obtained after JSON parsing for strResponse.
 	 * 
-	 * @param {Object|undefined} objResponse
+	 * @param {object|undefined} objResponse
 	 */
 	async processResponse(objResponse)
 	{
@@ -229,7 +229,7 @@ class WorkerTransport extends JSONRPC.ClientPluginBase
 			const fnOnError = (error) => {
 				this.rejectAllPromises(error);
 			};
-			const fnOnMessage = async (messageEvent) => {
+			const fnOnMessage = async(messageEvent) => {
 				await this.processResponse(messageEvent.data);
 			};
 
@@ -245,7 +245,7 @@ class WorkerTransport extends JSONRPC.ClientPluginBase
 			const fnOnError = (error) => {
 				this.rejectAllPromises(error);
 			};
-			const fnOnMessage = async (objMessage) => {
+			const fnOnMessage = async(objMessage) => {
 				await this.processResponse(objMessage);
 			};
 			const fnOnExit = (nCode, nSignal) => {

@@ -54,7 +54,6 @@ class WorkerEndpoint extends NodeMultiCoreCPUBase.WorkerEndpoint
 	}
 
 
-
 	/**
 	 * @param {JSONRPC.Server} jsonrpcServer 
 	 * 

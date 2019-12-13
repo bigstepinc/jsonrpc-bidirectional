@@ -862,7 +862,7 @@ class AllTests
 
 		this._httpServerSiteA.on(
 			"request",
-			async (incomingRequest, serverResponse) => {
+			async(incomingRequest, serverResponse) => {
 				// API requests are handled by the VMEndpoint instance above.
 
 				const objParsedURL = url.parse(incomingRequest.url);
@@ -960,7 +960,7 @@ class AllTests
 
 		this._webSocketServerSiteA.on(
 			"connection",
-			async (webSocket, upgradeRequest) =>
+			async(webSocket, upgradeRequest) =>
 			{
 				if(this._classWebSocketAdapter)
 				{
@@ -1673,7 +1673,7 @@ class AllTests
 		let nTimeoutIDWaitForWebPage = null;
 		const promiseWaitForWebPage = new Promise((fnResolve, fnReject) => {
 			nTimeoutIDWaitForWebPage = setTimeout(
-				async () => {
+				async() => {
 					this._testEndpoint.fnResolveWaitForWebPage = null;
 
 					console.log(

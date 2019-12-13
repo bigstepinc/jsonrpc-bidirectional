@@ -23,7 +23,7 @@ class Client extends EventEmitter
 {
 	/**
 	 * @param {string} strEndpointURL
-	 * @param {Object|undefined} objFetchOptions
+	 * @param {object|undefined} objFetchOptions
 	 */
 	constructor(strEndpointURL, objFetchOptions)
 	{
@@ -401,7 +401,7 @@ class Client extends EventEmitter
 	/**
 	 * @param {string} strFunctionName
 	 * 
-	 * @returns {Object}
+	 * @returns {object}
 	 */
 	rpcReflectionFunction(strFunctionName)
 	{
@@ -412,7 +412,7 @@ class Client extends EventEmitter
 	/**
 	 * @param {Array} arrFunctionNames
 	 * 
-	 * @returns {Object}
+	 * @returns {object}
 	 */
 	rpcReflectionFunctions(arrFunctionNames)
 	{

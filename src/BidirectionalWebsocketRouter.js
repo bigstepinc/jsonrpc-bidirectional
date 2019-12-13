@@ -52,12 +52,12 @@ class BidirectionalWebsocketRouter extends JSONRPC.RouterBase
 
 		const strEndpointPath = JSONRPC.EndpointBase.normalizePath(
 			webSocket.url 
-			? /*WebSocket client*/ webSocket.url
-			: (
-				webSocket.upgradeReq 
-				? /*ws 2.4*/ webSocket.upgradeReq.url 
-				: /*ws >= 4.x*/ upgradeRequest.url
-			)
+				? /*WebSocket client*/ webSocket.url
+				: (
+					webSocket.upgradeReq 
+						? /*ws 2.4*/ webSocket.upgradeReq.url 
+						: /*ws >= 4.x*/ upgradeRequest.url
+				)
 		);
 
 		const objSession = {
@@ -136,7 +136,7 @@ class BidirectionalWebsocketRouter extends JSONRPC.RouterBase
 	 * Overridable to allow configuring the client further.
 	 * 
 	 * @param {Class} ClientClass
-	 * @param {Object} objSession
+	 * @param {object} objSession
 	 * 
 	 * @returns {JSONRPC.Client}
 	 */
@@ -157,7 +157,7 @@ class BidirectionalWebsocketRouter extends JSONRPC.RouterBase
 	 * Routes websocket messages to either the client or the server websocket plugin.
 	 * 
 	 * @param {string} strMessage
-	 * @param {Object} objSession
+	 * @param {object} objSession
 	 */
 	async _routeMessage(strMessage, objSession)
 	{

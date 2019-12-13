@@ -5,7 +5,7 @@ module.exports =
 class Cache extends JSONRPC.ClientPluginBase
 {
 	/**
-	 * @param {Object} objFunctionNameToCacheSeconds . The keys are function names and the values are the number of seconds until the cached result expires. The values must be numbers greater than 0.
+	 * @param {object} objFunctionNameToCacheSeconds . The keys are function names and the values are the number of seconds until the cached result expires. The values must be numbers greater than 0.
 	 * @param {boolean} bDeepFreeze . If true, deep freeze the returned value using recursive Object.freeze.
 	 * @param {boolean} bReturnDeepCopy . If true, return a deep copy of the cached value.
 	 * @param {number} nMaxEntries . The maximum number of entries in the cache. When this limit is reached, clear the cache.
@@ -178,7 +178,7 @@ class Cache extends JSONRPC.ClientPluginBase
 
 	/**
 	 * @param {string} strMethodName
-	 * @param {Object} objParams
+	 * @param {object} objParams
 	 * 
 	 * @returns {string}
 	 */
@@ -210,8 +210,8 @@ class Cache extends JSONRPC.ClientPluginBase
 
 	
 	/**
-	 * @param {Object} object
-	 * @returns {Object}
+	 * @param {object} object
+	 * @returns {object}
 	 */
 	static _deepCopy(object)
 	{

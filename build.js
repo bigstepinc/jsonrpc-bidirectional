@@ -9,7 +9,7 @@ const path = require("path");
 // This allows the watcher to restart this process.
 process.on(
 	"unhandledRejection", 
-	async (reason, promise) => 
+	async(reason, promise) => 
 	{
 		console.log("Unhandled Rejection at: Promise", promise, "reason", reason);
 		process.exit(1);
@@ -38,7 +38,7 @@ async function spawnPassthru(strExecutablePath, arrParams = [])
 }
 
 
-(async () => {
+(async() => {
 	const objPackageJSON = JSON.parse(fs.readFileSync("package.json"));
 
 	const arrVersionParts = objPackageJSON.version.split(".");

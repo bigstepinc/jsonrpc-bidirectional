@@ -80,7 +80,7 @@ class RouterBase extends EventEmitter
 
 	/**
 	 * @param {Class} ClientClass
-	 * @param {Object} objSession
+	 * @param {object} objSession
 	 * 
 	 * @returns {JSONRPC.Client}
 	 */

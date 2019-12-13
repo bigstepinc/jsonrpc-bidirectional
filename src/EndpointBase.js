@@ -29,7 +29,7 @@ class EndpointBase extends EventEmitter
 	/**
 	 * @param {string} strName
 	 * @param {string} strPath
-	 * @param {Object} objReflection
+	 * @param {object} objReflection
 	 * @param {Class|null} classReverseCallsClient
 	 */
 	constructor(strName, strPath, objReflection, classReverseCallsClient)
@@ -166,7 +166,7 @@ class EndpointBase extends EventEmitter
 
 
 	/**
-	 * @returns {Object}
+	 * @returns {object}
 	 */
 	get reflection()
 	{

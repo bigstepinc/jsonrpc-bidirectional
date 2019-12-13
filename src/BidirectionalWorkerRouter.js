@@ -130,7 +130,7 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 
 		if(worker.addEventListener)
 		{
-			const fnOnMessage = async (messageEvent) => {
+			const fnOnMessage = async(messageEvent) => {
 				if(
 					cluster.isMaster
 					&& typeof messageEvent.data === "object"
@@ -155,7 +155,7 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 		}
 		else
 		{
-			const fnOnMessage = async (objMessage, handle) => {
+			const fnOnMessage = async(objMessage, handle) => {
 				if(
 					cluster.isMaster
 					&& typeof objMessage === "object"
@@ -203,7 +203,7 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 
 
 	/**
-	 * @param {Object} objMessage 
+	 * @param {object} objMessage 
 	 * @param {number} nConnectionID
 	 */
 	_onRPCConnectToEndpoint(objMessage, nConnectionID)
@@ -270,7 +270,7 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 	 * Overridable to allow configuring the client further.
 	 * 
 	 * @param {Class} ClientClass
-	 * @param {Object} objSession
+	 * @param {object} objSession
 	 * 
 	 * @returns {JSONRPC.Client}
 	 */
@@ -290,8 +290,8 @@ class BidirectionalWorkerRouter extends JSONRPC.RouterBase
 	/**
 	 * Routes worker messages to either the client or the server worker plugin.
 	 * 
-	 * @param {Object} objMessage
-	 * @param {Object} objSession
+	 * @param {object} objMessage
+	 * @param {object} objSession
 	 */
 	async _routeMessage(objMessage, objSession)
 	{

@@ -52,7 +52,7 @@ process.on(
 
 
 (
-	async () =>
+	async() =>
 	{
 		let allTests;
 		const bBenchmarkMode = false;

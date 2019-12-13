@@ -21,7 +21,7 @@ Usage:
 const WorkersRPC = require("./YourWorkersRPCSubclasses");
 const cluster = require("cluster");
 
-(async () => {
+(async() => {
   if(cluster.isMaster)
   {
     const masterEndpoint = new WorkersRPC.MasterEndpoint(/*your custom params*/);

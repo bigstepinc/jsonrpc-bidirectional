@@ -13,7 +13,7 @@ process.on(
 );
 
 (
-	async () =>
+	async() =>
 	{
 		const allTests = new AllTests(/*bBenchmarkMode*/ false, /*bWebSocketMode*/ true, require("ws"), require("ws").Server, undefined, /*bDisableVeryLargePacket*/ false);
 		await allTests.setupHTTPServer();

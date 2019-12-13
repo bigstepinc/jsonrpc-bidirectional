@@ -97,7 +97,7 @@ class BidirectionalElectronIPCRouter extends JSONRPC.RouterBase
 
 		electron.ipcMain.on(
 			strChannel, 
-			async (event, objJSONRPCRequest) => {
+			async(event, objJSONRPCRequest) => {
 				if(objJSONRPCRequest.method === "rpc.connectToEndpoint")
 				{
 					return this._onRPCConnectToEndpoint(objJSONRPCRequest, nConnectionID, strChannel);
@@ -159,7 +159,7 @@ class BidirectionalElectronIPCRouter extends JSONRPC.RouterBase
 
 		(window || self).require("electron").ipcRenderer.on( // eslint-disable-line
 			strChannel, 
-			async (event, objJSONRPCRequest) => {
+			async(event, objJSONRPCRequest) => {
 				await this._routeMessage(objJSONRPCRequest, objSession, strChannel);
 			}
 		);
@@ -172,7 +172,7 @@ class BidirectionalElectronIPCRouter extends JSONRPC.RouterBase
 
 
 	/**
-	 * @param {Object} objJSONRPCRequest 
+	 * @param {object} objJSONRPCRequest 
 	 * @param {number} nConnectionID
 	 * @param {string} strChannel
 	 */
@@ -227,7 +227,7 @@ class BidirectionalElectronIPCRouter extends JSONRPC.RouterBase
 	 * Overridable to allow configuring the client further.
 	 * 
 	 * @param {Class} ClientClass
-	 * @param {Object} objSession
+	 * @param {object} objSession
 	 * 
 	 * @returns {JSONRPC.Client}
 	 */
@@ -247,8 +247,8 @@ class BidirectionalElectronIPCRouter extends JSONRPC.RouterBase
 	/**
 	 * Routes messages to either the client or the server plugin.
 	 * 
-	 * @param {Object} objMessage
-	 * @param {Object} objSession
+	 * @param {object} objMessage
+	 * @param {object} objSession
 	 * @param {string} strChannel
 	 */
 	async _routeMessage(objMessage, objSession, strChannel)

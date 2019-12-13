@@ -59,7 +59,7 @@ class BidirectionalWebRTCRouter extends JSONRPC.RouterBase
 
 		this._objSessions[nConnectionID] = objSession;
 		
-		const fnOnMessage = async (messageEvent) => {
+		const fnOnMessage = async(messageEvent) => {
 			await this._routeMessage(messageEvent.data, objSession);
 		};
 		const fnOnError = (error) => {
@@ -92,7 +92,7 @@ class BidirectionalWebRTCRouter extends JSONRPC.RouterBase
 	 * Overridable to allow configuring the client further.
 	 * 
 	 * @param {Class} ClientClass
-	 * @param {Object} objSession
+	 * @param {object} objSession
 	 * 
 	 * @returns {JSONRPC.Client}
 	 */
@@ -113,7 +113,7 @@ class BidirectionalWebRTCRouter extends JSONRPC.RouterBase
 	 * Routes RTCDataChannel messages to either the client or the server WenRTC plugin.
 	 * 
 	 * @param {string} strMessage
-	 * @param {Object} objSession
+	 * @param {object} objSession
 	 */
 	async _routeMessage(strMessage, objSession)
 	{

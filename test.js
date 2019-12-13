@@ -49,7 +49,7 @@ async function spawnPassthru(strExecutablePath, arrParams = [])
 }
 
 
-(async () => {
+(async() => {
 	process.chdir(__dirname);
 
 	let bBuiltNow = false;

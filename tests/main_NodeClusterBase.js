@@ -56,7 +56,7 @@ process.on(
 setInterval(() => {}, 10000);
 
 (
-	async () =>
+	async() =>
 	{
 		if(cluster.isMaster)
 		{

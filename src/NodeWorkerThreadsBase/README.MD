@@ -32,7 +32,7 @@ Usage:
 const WorkerThreadsRPC = require("./YourWorkersRPCSubclasses");
 const Threads = require("worker_threads");
 
-(async () => {
+(async() => {
   if(Threads.isMainThread)
   {
     const masterEndpoint = new WorkerThreadsRPC.MasterEndpoint(/*your custom params*/);

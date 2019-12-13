@@ -3,18 +3,13 @@ const assert = require("assert");
 const ExtendableError = require("extendable-error-class");
 
 
-/**
- * Class representing the JSONRPC Exceptions.
- * @class
- * @extends Error
- */
 module.exports =
 class Exception extends ExtendableError
 {
 	/**
 	 * @param {string} strMessage
 	 * @param {number} nCode
-	 * @param {Object} objData
+	 * @param {object} objData
 	 */
 	constructor(strMessage, nCode = 0, objData = {})
 	{
@@ -49,7 +44,7 @@ class Exception extends ExtendableError
 
 
 	/**
-	 * @returns {Object}
+	 * @returns {object}
 	 */
 	get data()
 	{
@@ -58,7 +53,7 @@ class Exception extends ExtendableError
 
 
 	/**
-	 * @param {Object} objData
+	 * @param {object} objData
 	 */
 	set data(objData)
 	{

@@ -54,7 +54,7 @@ class WebSocketWrapper extends WebSocketWrapperBase
 
 
 	/**
-	 * @returns {Object|undefined}
+	 * @returns {object|undefined}
 	 */
 	get upgradeReq()
 	{

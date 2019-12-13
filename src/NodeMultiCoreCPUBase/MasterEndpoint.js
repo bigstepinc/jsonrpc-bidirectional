@@ -216,7 +216,7 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 		const nIntervalMilliseconds = 10 * 1000;
 
 		const nIntervalID = setInterval(
-			async () => {
+			async() => {
 				try
 				{
 					if(nPackageJSONModificationTime !== (await fs.stat(strPackageJSONPath)).mtime.getTime())
@@ -416,14 +416,14 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 			{
 				// Do not await, need these in parallel.
 				/*await*/ this.objWorkerIDToState[nWorkerID].client.gracefulExit()
-				.then(() => { /*gracefulExit should never return.*/ })
-				.catch((error) => {
-					console.error(error);
-				})
-				.finally(() => {
-					this.objWorkerIDToState[nWorkerID].ready = false;
-					delete this.objWorkerIDToState[nWorkerID];
-				});
+					.then(() => { /*gracefulExit should never return.*/ })
+					.catch((error) => {
+						console.error(error);
+					})
+					.finally(() => {
+						this.objWorkerIDToState[nWorkerID].ready = false;
+						delete this.objWorkerIDToState[nWorkerID];
+					});
 			}
 			else
 			{
@@ -528,7 +528,7 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 		for(const strWorkerID of Object.keys(this.workerClients))
 		{
 			const nWorkerID = parseInt(strWorkerID, 10);
-			arrPromises.push(new Promise(async (fnResolve, fnReject) => {
+			arrPromises.push(new Promise(async(fnResolve, fnReject) => {
 				try
 				{
 					objResponses[nWorkerID] = await this.rpcWorker(incomingRequest, nWorkerID, strFunctionName, arrParams, bNotification);

@@ -43,7 +43,7 @@ class WebRTCTransport extends JSONRPC.ClientPluginBase
 	 * objResponse is the object obtained after JSON parsing for strResponse.
 	 * 
 	 * @param {string} strResponse
-	 * @param {Object|undefined} objResponse
+	 * @param {object|undefined} objResponse
 	 */
 	async processResponse(strResponse, objResponse)
 	{
@@ -209,7 +209,7 @@ class WebRTCTransport extends JSONRPC.ClientPluginBase
 		const fnOnError = (error) => {
 			this.rejectAllPromises(error);
 		};
-		const fnOnMessage = async (messageEvent) => {
+		const fnOnMessage = async(messageEvent) => {
 			await this.processResponse(messageEvent.data);
 		};
 		const fnOnClose = (closeEvent) => {

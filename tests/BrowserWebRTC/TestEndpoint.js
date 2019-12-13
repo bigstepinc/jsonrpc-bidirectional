@@ -84,7 +84,7 @@ class TestEndpoint extends JSONRPC.EndpointBase
 		);
 
 
-		this._rtcConnection.onicecandidate = async (event) => {
+		this._rtcConnection.onicecandidate = async(event) => {
 			await incomingRequest.reverseCallsClient.rpc("webRTCAddIceCandidate", [nRTCConnectionID, event.candidate]);
 		};
 
@@ -109,7 +109,7 @@ class TestEndpoint extends JSONRPC.EndpointBase
 	/**
 	 * @param {JSONRPC.IncomingRequest} incomingRequest
 	 * @param {number} nRTCConnectionID
-	 * @param {Object} objOffer
+	 * @param {object} objOffer
 	 * @param {Array} arrIceServers
 	 */
 	async makeAnswer(incomingRequest, nRTCConnectionID, objOffer, arrIceServers)
@@ -145,12 +145,12 @@ class TestEndpoint extends JSONRPC.EndpointBase
 		this._rtcConnection.setLocalDescription(new RTCSessionDescription(answer));
 
 		
-		this._rtcConnection.onicecandidate = async (event) => {
+		this._rtcConnection.onicecandidate = async(event) => {
 			await incomingRequest.reverseCallsClient.rpc("webRTCAddIceCandidate", [nRTCConnectionID, event.candidate]);
 		};
 
 
-		this._rtcConnection.ondatachannel = async (event) => {
+		this._rtcConnection.ondatachannel = async(event) => {
 			if(event.channel.protocol === "jsonrpc")
 			{
 				if(JSONRPC.EndpointBase.normalizePath(event.channel.label) !== this.path)
@@ -187,7 +187,7 @@ class TestEndpoint extends JSONRPC.EndpointBase
 	/**
 	 * @param {JSONRPC.IncomingRequest} incomingRequest
 	 * @param {number} nRTCConnectionID
-	 * @param {Object} objAnswer
+	 * @param {object} objAnswer
 	 */
 	async thatsWhatSheSaid(incomingRequest, nRTCConnectionID, objAnswer)
 	{
@@ -203,7 +203,7 @@ class TestEndpoint extends JSONRPC.EndpointBase
 	/**
 	 * @param {JSONRPC.IncomingRequest} incomingRequest
 	 * @param {number} nRTCConnectionID
-	 * @param {Object} objRTCIceCandidate
+	 * @param {object} objRTCIceCandidate
 	 */
 	async webRTCAddIceCandidate(incomingRequest, nRTCConnectionID, objRTCIceCandidate)
 	{

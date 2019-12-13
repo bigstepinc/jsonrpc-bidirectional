@@ -12,7 +12,7 @@ const zlib = require("zlib");
 class URLPublic extends JSONRPC.ServerPluginBase
 {
 	/**
-	 * @param {{active_index: string, keys:Object<string,{aes_key: string, salt: string, created: string}>}} objKeys
+	 * @param {{active_index: string, keys:object<string,{aes_key: string, salt: string, created: string}>}} objKeys
 	 * @param {string} strCompressionType
 	 */
 	constructor(objKeys, strCompressionType = URLPublic.COMPRESSION_TYPE_ZLIB)
@@ -62,7 +62,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 
 
 	/**
-	 * @returns {Object}
+	 * @returns {object}
 	 */
 	get _keys()
 	{
@@ -167,7 +167,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 	 * 
 	 * @param {string} strJSONRequest 
 	 * 
-	 * @returns {Object}
+	 * @returns {object}
 	 */
 	async JSONRequestToURLEncryptedParams(strJSONRequest)
 	{
@@ -188,7 +188,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 	 * 
 	 * @param {string} strJSONRequest 
 	 * 
-	 * @returns {Object}
+	 * @returns {object}
 	 */
 	async JSONRequestToURLPlainParams(strJSONRequest)
 	{
@@ -207,7 +207,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 	 * 
 	 * @param {string} strJSONRequest 
 	 * 
-	 * @returns {Object}
+	 * @returns {object}
 	 */
 	async JSONRequestToURLBase64Params(strJSONRequest)
 	{
@@ -438,7 +438,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 
 	/**
 	 * 
-	 * @param {Object} objParams 
+	 * @param {object} objParams 
 	 * @param {boolean} bEmptyOnError 
 	 * 
 	 * @returns {string} JSON
@@ -666,7 +666,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 	/**
 	 * Throws and error if the encryption keys object is not valid.
 	 * 
-	 * @param {{active_index: string, keys:Object<string,{aes_key: string, salt: string, created: string}>}} objKeys
+	 * @param {{active_index: string, keys:object<string,{aes_key: string, salt: string, created: string}>}} objKeys
 	 * 
 	 * @returns {undefined}
 	 */

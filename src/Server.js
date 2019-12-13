@@ -49,7 +49,7 @@ class Server extends EventEmitter
 
 		httpServer.on(
 			"request",
-			async (httpRequest, httpResponse) => {
+			async(httpRequest, httpResponse) => {
 				const strRequestPath = JSONRPC.EndpointBase.normalizePath(httpRequest.url);
 
 				// Ignore paths which do not fall under strRootPath, or are not strRootPath. 
@@ -190,7 +190,7 @@ class Server extends EventEmitter
 
 
 	/**
-	 * @returns {Object}
+	 * @returns {object}
 	 */
 	get endpoints()
 	{
@@ -201,7 +201,7 @@ class Server extends EventEmitter
 	/**
 	 * Adds a plugin.
 	 * 
-	 * @param {Object} plugin
+	 * @param {object} plugin
 	 */
 	addPlugin(plugin)
 	{
@@ -217,7 +217,7 @@ class Server extends EventEmitter
 	/**
 	 * Removes a plugin.
 	 * 
-	 * @param {Object} plugin
+	 * @param {object} plugin
 	 */
 	removePlugin(plugin)
 	{

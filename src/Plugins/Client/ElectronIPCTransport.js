@@ -43,6 +43,7 @@ class ElectronIPCTransport extends JSONRPC.ClientPluginBase
 		this._bBidirectionalMode = !!bBidirectionalMode;
 		this._browserWindow = browserWindow;
 		
+		// eslint-disable-next-line no-undef
 		this._strChannel = "jsonrpc_winid_" + (browserWindow ? browserWindow.id : (window || self).require("electron").remote.getCurrentWindow().id);
 		
 		this._setupIPCTransport();
@@ -77,7 +78,7 @@ class ElectronIPCTransport extends JSONRPC.ClientPluginBase
 	/**
 	 * objResponse is the object obtained after JSON parsing for strResponse.
 	 * 
-	 * @param {Object|undefined} objResponse
+	 * @param {object|undefined} objResponse
 	 */
 	async processResponse(objResponse)
 	{
@@ -168,6 +169,7 @@ class ElectronIPCTransport extends JSONRPC.ClientPluginBase
 		}
 		else
 		{
+			// eslint-disable-next-line no-undef
 			(window || self).require("electron").ipcRenderer.send(this.channel, outgoingRequest.requestObject);
 		}
 
@@ -225,9 +227,10 @@ class ElectronIPCTransport extends JSONRPC.ClientPluginBase
 		{
 			if(!this._bBidirectionalMode)
 			{
+				// eslint-disable-next-line no-undef
 				(window || self).require("electron").ipcRenderer.on(
 					this._strChannel, 
-					async (event, objJSONRPCRequest) => {
+					async(event, objJSONRPCRequest) => {
 						await this.processResponse(objJSONRPCRequest);
 					}
 				);
@@ -246,7 +249,7 @@ class ElectronIPCTransport extends JSONRPC.ClientPluginBase
 			{
 				electron.ipcMain.on(
 					this.channel, 
-					async (event, objJSONRPCRequest) => {
+					async(event, objJSONRPCRequest) => {
 						await this.processResponse(objJSONRPCRequest);
 					}
 				);

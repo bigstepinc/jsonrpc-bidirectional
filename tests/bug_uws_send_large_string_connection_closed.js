@@ -15,7 +15,7 @@ process.on(
 // https://github.com/uWebSockets/uWebSockets/issues/583
 
 (
-	async () =>
+	async() =>
 	{
 		const bBenchmarkMode = false;
 		

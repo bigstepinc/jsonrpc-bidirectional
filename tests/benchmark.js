@@ -51,7 +51,7 @@ process.on(
 
 
 (
-	async () =>
+	async() =>
 	{
 		const bBenchmarkMode = true;
 

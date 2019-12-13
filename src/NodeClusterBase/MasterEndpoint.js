@@ -39,7 +39,7 @@ class MasterEndpoint extends NodeMultiCoreCPUBase.MasterEndpoint
 	{
 		cluster.on(
 			"fork",
-			async (worker) => {
+			async(worker) => {
 				try
 				{
 					this.objWorkerIDToState[worker.id] = {
@@ -65,7 +65,7 @@ class MasterEndpoint extends NodeMultiCoreCPUBase.MasterEndpoint
 
 		cluster.on(
 			"exit", 
-			async (worker, nExitCode, nKillSignal) => {
+			async(worker, nExitCode, nKillSignal) => {
 				try
 				{
 					console.log(`Worker with PID  ${worker.process.pid} died. Exit code: ${nExitCode}. Signal: ${nKillSignal}.`);

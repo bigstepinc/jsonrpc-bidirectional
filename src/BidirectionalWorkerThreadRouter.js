@@ -147,7 +147,7 @@ class BidirectionalWorkerThreadRouter extends JSONRPC.RouterBase
 		};
 		
 
-		const fnOnMessage = async (objMessage, transferList) => {
+		const fnOnMessage = async(objMessage, transferList) => {
 			if(
 				Threads.isMainThread
 				&& typeof objMessage === "object"
@@ -215,7 +215,7 @@ class BidirectionalWorkerThreadRouter extends JSONRPC.RouterBase
 
 
 	/**
-	 * @param {Object} objMessage 
+	 * @param {object} objMessage 
 	 * @param {number} nConnectionID
 	 */
 	_onRPCConnectToEndpoint(objMessage, nConnectionID)
@@ -284,7 +284,7 @@ class BidirectionalWorkerThreadRouter extends JSONRPC.RouterBase
 	 * Overridable to allow configuring the client further.
 	 * 
 	 * @param {Class} ClientClass
-	 * @param {Object} objSession
+	 * @param {object} objSession
 	 * 
 	 * @returns {JSONRPC.Client}
 	 */
@@ -304,8 +304,8 @@ class BidirectionalWorkerThreadRouter extends JSONRPC.RouterBase
 	/**
 	 * Routes worker messages to either the client or the server worker plugin.
 	 * 
-	 * @param {Object} objMessage
-	 * @param {Object} objSession
+	 * @param {object} objMessage
+	 * @param {object} objSession
 	 */
 	async _routeMessage(objMessage, objSession)
 	{

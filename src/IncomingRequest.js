@@ -107,7 +107,7 @@ class IncomingRequest
 
 
 	/**
-	 * @returns {string|Object|null}
+	 * @returns {string|object|null}
 	 */
 	get requestBody()
 	{
@@ -116,7 +116,7 @@ class IncomingRequest
 
 
 	/**
-	 * @param {string|Object} mxRequestBody
+	 * @param {string|object} mxRequestBody
 	 */
 	set requestBody(mxRequestBody)
 	{
@@ -126,7 +126,7 @@ class IncomingRequest
 	/**
 	 * Contains the query of the HTTP GET request as an object.
 	 *
-	 * @returns {Object|null}
+	 * @returns {object|null}
 	 */
 	get requestHTTPGetQuery()
 	{
@@ -163,7 +163,7 @@ class IncomingRequest
 
 
 	/**
-	 * @returns {Object|Array|null}
+	 * @returns {object|Array|null}
 	 */
 	get requestObject()
 	{
@@ -172,7 +172,7 @@ class IncomingRequest
 
 
 	/**
-	 * @param {Object|Array} objRequest
+	 * @param {object|Array} objRequest
 	 */
 	set requestObject(objRequest)
 	{
@@ -280,7 +280,7 @@ class IncomingRequest
 
 
 	/**
-	 * @returns {number|string|null|Object|Array|Error}
+	 * @returns {number|string|null|object|Array|Error}
 	 */
 	get callResult()
 	{
@@ -289,7 +289,7 @@ class IncomingRequest
 
 
 	/**
-	 * @param {number|string|null|Object|Array|Error} mxResult
+	 * @param {number|string|null|object|Array|Error} mxResult
 	 */
 	set callResult(mxResult)
 	{
@@ -299,7 +299,7 @@ class IncomingRequest
 
 
 	/**
-	 * @returns {Object}
+	 * @returns {object}
 	 */
 	get callResultToBeSerialized()
 	{
@@ -308,7 +308,7 @@ class IncomingRequest
 
 
 	/**
-	 * @param {Object} objResultToBeSerialized
+	 * @param {object} objResultToBeSerialized
 	 */
 	set callResultToBeSerialized(objResultToBeSerialized)
 	{
@@ -317,7 +317,7 @@ class IncomingRequest
 
 
 	/**
-	 * @returns {string|Buffer|Object}
+	 * @returns {string|Buffer|object}
 	 */
 	get callResultSerialized()
 	{
@@ -347,7 +347,7 @@ class IncomingRequest
 
 
 	/**
-	 * @param {string|Buffer|Object} mxResultSerialized
+	 * @param {string|Buffer|object} mxResultSerialized
 	 */
 	set callResultSerialized(mxResultSerialized)
 	{
@@ -366,7 +366,7 @@ class IncomingRequest
 	/**
 	 * Sets the HTTP Server Response.
 	 *
-	 * @param {Object | null} value
+	 * @param {object | null} value
 	 */
 	set httpServerResponse(value)
 	{
@@ -391,7 +391,7 @@ class IncomingRequest
 	/**
 	 * Sets the HTTP Incoming Request.
 	 *
-	 * @param {Object | null} value
+	 * @param {object | null} value
 	 */
 	set httpIncomingMessage(value)
 	{
@@ -405,7 +405,7 @@ class IncomingRequest
 
 
 	/**
-	 * @returns {Object}
+	 * @returns {object}
 	 */
 	get headers()
 	{
@@ -414,7 +414,7 @@ class IncomingRequest
 
 
 	/**
-	 * @param {Object} objHeaders
+	 * @param {object} objHeaders
 	 */
 	set headers(objHeaders)
 	{
@@ -430,7 +430,7 @@ class IncomingRequest
 	 * 
 	 * If multiple plugins needs their own session, sandbox each plugin's stuff into its own key.
 	 * 
-	 * @returns {Object|null}
+	 * @returns {object|null}
 	 */
 	get session() 
 	{
@@ -446,7 +446,7 @@ class IncomingRequest
 	 * 
 	 * If multiple plugins needs their own session, sandbox each plugin's stuff into its own key.
 	 * 
-	 * @param {Object} objSession
+	 * @param {object} objSession
 	 */
 	set session(objSession)
 	{
@@ -460,7 +460,7 @@ class IncomingRequest
 
 
 	/**
-	 * @param {Object} objResponseHeaders
+	 * @param {object} objResponseHeaders
 	 */
 	addHTTPResponseHeaders(objResponseHeaders)
 	{
@@ -596,7 +596,7 @@ class IncomingRequest
 	}
 
 	/**
-	 * @returns {Object}
+	 * @returns {object}
 	 */
 	toResponseObject()
 	{

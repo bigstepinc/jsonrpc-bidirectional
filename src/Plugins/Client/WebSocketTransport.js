@@ -46,7 +46,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 	 * objResponse is the object obtained after JSON parsing for strResponse.
 	 * 
 	 * @param {string} strResponse
-	 * @param {Object|undefined} objResponse
+	 * @param {object|undefined} objResponse
 	 */
 	async processResponse(strResponse, objResponse)
 	{
@@ -222,7 +222,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 			const fnOnError = (error) => {
 				this.rejectAllPromises(error);
 			};
-			const fnOnMessage = async (mxData, objFlags) => {
+			const fnOnMessage = async(mxData, objFlags) => {
 				await this.processResponse(mxData);
 			};
 			const fnOnClose = (nCode, strReason, bWasClean) => {
@@ -248,7 +248,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 		}
 		else if(this._webSocket.addEventListener && this._webSocket.removeEventListener)
 		{
-			const fnOnMessage = async (messageEvent) => {
+			const fnOnMessage = async(messageEvent) => {
 				await this.processResponse(messageEvent.data);
 			};
 			const fnOnError = (error) => {
