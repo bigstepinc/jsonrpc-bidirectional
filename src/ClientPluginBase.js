@@ -1,8 +1,10 @@
+const EventEmitter = require("events");
+
+
 /**
  * JSONRPC.Client plugins need to extend this class.
  */
-module.exports =
-class ClientPluginBase
+class ClientPluginBase extends EventEmitter
 {
 	/**
 	 * Gives a chance to modify the client request object before sending it out.
@@ -77,4 +79,16 @@ class ClientPluginBase
 	{
 		// outgoingRequest.callResult is available here, and it is a subclass of Error.
 	}
+
+
+	/**
+	 * @returns {null}
+	 */
+	dispose()
+	{
+		this.emit("disposed");
+	}
 };
+
+
+module.exports = ClientPluginBase;

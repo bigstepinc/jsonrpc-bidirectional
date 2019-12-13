@@ -1,5 +1,10 @@
-module.exports =
-class ServerPluginBase
+const EventEmitter = require("events");
+
+
+/**
+ * @event disposed
+ */
+class ServerPluginBase extends EventEmitter
 {
 	/**
 	 * Called before JSON parsing of the JSONRPC request.
@@ -93,4 +98,15 @@ class ServerPluginBase
 
 		// Normally, this allows extending the protocol.
 	}
+
+
+	/**
+	 * @returns {null}
+	 */
+	dispose()
+	{
+		this.emit("disposed");
+	}
 };
+
+module.exports = ServerPluginBase;

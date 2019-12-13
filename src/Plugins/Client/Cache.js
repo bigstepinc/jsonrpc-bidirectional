@@ -35,6 +35,12 @@ class Cache extends JSONRPC.ClientPluginBase
 	}
 
 
+	dispose()
+	{
+		this.clear();
+	}
+
+
 	clear()
 	{
 		this.mapCache.clear();

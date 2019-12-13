@@ -6,7 +6,10 @@ const JSONRPC = {
 
 const EventEmitter = require("events");
 
-module.exports =
+
+/**
+ * @event disposed {bCallJSONRPCServerDispose, bCallEndpointDispose, bCallPluginDispose}
+ */
 class RouterBase extends EventEmitter
 {
 	/**
@@ -28,6 +31,20 @@ class RouterBase extends EventEmitter
 		this._nConnectionIDCounter = 0;
 
 		this._objSessions = {};
+	}
+
+
+	/**
+	 * @returns {null}
+	 */
+	dispose({bCallJSONRPCServerDispose = true, bCallEndpointDispose = true, bCallPluginDispose = true} = {})
+	{
+		if(bCallJSONRPCServerDispose && this._jsonrpcServer)
+		{
+			this._jsonrpcServer.dispose({bCallEndpointDispose, bCallPluginDispose});
+		}
+
+		this.emit("disposed", {bCallJSONRPCServerDispose, bCallEndpointDispose, bCallPluginDispose});
 	}
 
 
@@ -89,3 +106,6 @@ class RouterBase extends EventEmitter
 		throw new Error("Must implement.");
 	}
 };
+
+
+module.exports = RouterBase;

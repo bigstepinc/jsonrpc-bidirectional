@@ -16,9 +16,14 @@ const assert = require("assert");
 
 
 /**
- * 
+ * @event beforeJSONEncode outgoingRequest
+ * @event afterJSONEncode outgoingRequest
+ * @event makeRequest outgoingRequest
+ * @event beforeJSONDecode outgoingRequest
+ * @event afterJSONDecode outgoingRequest
+ * @event exceptionCatch outgoingRequest
+ * @event disposed
  */
-module.exports =
 class Client extends EventEmitter
 {
 	/**
@@ -53,6 +58,28 @@ class Client extends EventEmitter
 		{
 			// throw new Error("Unsupported protocol " + JSON.stringify(strProtocol) + ", URL: " + strEndpointURL + ".");
 		}*/
+	}
+
+
+	/**
+	 * @param {{bCallPluginDispose:boolean}} param0
+	 * 
+	 * @returns {null}
+	 */
+	dispose({bCallPluginDispose = true} = {})
+	{
+		for(let i = this._arrPlugins.length - 1; i >= 0; i--)
+		{
+			if(bCallPluginDispose)
+			{
+				this._arrPlugins[i].dispose();
+			}
+
+			this._arrPlugins.splice(i, 1);
+		}
+		this._arrPlugins.splice(0);
+
+		this.emit("disposed", {bCallPluginDispose});
 	}
 
 
@@ -454,3 +481,6 @@ class Client extends EventEmitter
 		}
 	}
 };
+
+
+module.exports = Client;

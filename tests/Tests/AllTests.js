@@ -506,6 +506,9 @@ class AllTests
 				await sleep(2000);
 			}
 		}
+
+		jsonrpcServer.dispose();
+		workerJSONRPCRouter.dispose();
 	}
 
 	/**

@@ -30,6 +30,24 @@ class WebRTCTransport extends JSONRPC.ClientPluginBase
 
 
 	/**
+	 * @returns {null}
+	 */
+	dispose()
+	{
+		try
+		{
+			this._dataChannel.close();
+		}
+		catch(error)
+		{
+			console.error(error);
+		}
+		
+		super.dispose();
+	}
+
+
+	/**
 	 * @returns {RTCDataChannel} 
 	 */
 	get dataChannel()

@@ -25,6 +25,9 @@ class WorkerThreadTransport extends JSONRPC.ClientPluginBase
 		super();
 
 
+		this._arrDisposeCalls = [];
+
+
 		assert(threadWorker instanceof Threads.Worker || threadWorker === Threads);
 		
 
@@ -36,8 +39,25 @@ class WorkerThreadTransport extends JSONRPC.ClientPluginBase
 		this._threadWorker = threadWorker;
 		this._threadID = threadWorker.threadId;
 
-		
+
 		this._setupThreadWorker();
+	}
+
+
+	/**
+	 * @returns {null}
+	 */
+	dispose()
+	{
+		for(const fnDispose of this._arrDisposeCalls)
+		{
+			fnDispose();
+		}
+		this._arrDisposeCalls.slice(0);
+
+		this.rejectAllPromises();
+
+		super.dispose();
 	}
 
 
@@ -251,20 +271,27 @@ class WorkerThreadTransport extends JSONRPC.ClientPluginBase
 		if(Threads.isMainThread)
 		{
 			this._threadWorker.on("exit", fnOnExit);
+			this._arrDisposeCalls.push(() => { this._threadWorker.removeListener("exit", fnOnExit); });
+
 			this._threadWorker.on("error", fnOnError);
+			this._arrDisposeCalls.push(() => { this._threadWorker.removeListener("error", fnOnError); });
+
 
 			if(!this._bBidirectionalMode)
 			{
 				this._threadWorker.on("message", fnOnMessage);
+				this._arrDisposeCalls.push(() => { this._threadWorker.removeListener("message", fnOnMessage); });
 			}
 		}
 		else
 		{
 			Threads.parentPort.on("close", fnOnClose);
+			this._arrDisposeCalls.push(() => { Threads.parentPort.removeListener("close", fnOnClose); });
 
 			if(!this._bBidirectionalMode)
 			{
 				Threads.parentPort.on("message", fnOnMessage);
+				this._arrDisposeCalls.push(() => { Threads.parentPort.removeListener("message", fnOnMessage); });
 			}
 		}
 	}

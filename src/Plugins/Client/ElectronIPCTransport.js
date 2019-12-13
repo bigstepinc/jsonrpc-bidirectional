@@ -36,6 +36,9 @@ class ElectronIPCTransport extends JSONRPC.ClientPluginBase
 		super();
 		
 
+		this._arrDisposeCalls = [];
+
+
 		// JSONRPC call ID as key, {promise: {Promise}, fnResolve: {Function}, fnReject: {Function}, outgoingRequest: {OutgoingRequest}} as values.
 		this._objBrowserWindowRequestsPromises = {};
 
@@ -46,7 +49,25 @@ class ElectronIPCTransport extends JSONRPC.ClientPluginBase
 		// eslint-disable-next-line no-undef
 		this._strChannel = "jsonrpc_winid_" + (browserWindow ? browserWindow.id : (window || self).require("electron").remote.getCurrentWindow().id);
 		
+
 		this._setupIPCTransport();
+	}
+
+
+	/**
+	 * @returns {null}
+	 */
+	dispose()
+	{
+		for(const fnDispose of this._arrDisposeCalls)
+		{
+			fnDispose();
+		}
+		this._arrDisposeCalls.slice(0);
+
+		this.rejectAllPromises();
+
+		super.dispose();
 	}
 
 
@@ -227,32 +248,33 @@ class ElectronIPCTransport extends JSONRPC.ClientPluginBase
 		{
 			if(!this._bBidirectionalMode)
 			{
+				const fnOnChannel = async(event, objJSONRPCRequest) => {
+					await this.processResponse(objJSONRPCRequest);
+				};
+
 				// eslint-disable-next-line no-undef
-				(window || self).require("electron").ipcRenderer.on(
-					this._strChannel, 
-					async(event, objJSONRPCRequest) => {
-						await this.processResponse(objJSONRPCRequest);
-					}
-				);
+				(window || self).require("electron").ipcRenderer.on(this._strChannel, fnOnChannel);
+
+				// eslint-disable-next-line no-undef
+				this._arrDisposeCalls.push(() => { (window || self).require("electron").ipcRenderer.removeListener(this._strChannel, fnOnChannel); });
 			}
 		}
 		else
 		{
-			this._browserWindow.on(
-				"closed",
-				() => {
-					this.rejectAllPromises(new Error(`BrowserWindow ${this.browserWindow.id} closed`));
-				}
-			);
+			const fnOnClosed = () => {
+				this.rejectAllPromises(new Error(`BrowserWindow ${this.browserWindow.id} closed`));
+			};
+			this._browserWindow.on("closed", fnOnClosed);
+			this._arrDisposeCalls.push(() => { this._browserWindow.removeListener("closed", fnOnClosed); });
 			
 			if(!this._bBidirectionalMode)
 			{
-				electron.ipcMain.on(
-					this.channel, 
-					async(event, objJSONRPCRequest) => {
-						await this.processResponse(objJSONRPCRequest);
-					}
-				);
+				const fnOnChannel = async(event, objJSONRPCRequest) => {
+					await this.processResponse(objJSONRPCRequest);
+				};
+
+				electron.ipcMain.on(this.channel, fnOnChannel);
+				this._arrDisposeCalls.push(() => { electron.ipcMain.removeListener(this.channel, fnOnChannel); });
 			}
 		}
 	}

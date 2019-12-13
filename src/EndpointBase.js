@@ -23,6 +23,8 @@ catch(error)
  * 
  * Methods defined by subclasses, which are to be exported through RPC, 
  * must each return a single Promise object or simply decorated with async so they are awaitable. 
+ * 
+ * @event disposed
  */
 class EndpointBase extends EventEmitter
 {
@@ -44,6 +46,15 @@ class EndpointBase extends EventEmitter
 		this._strPath = EndpointBase.normalizePath(strPath);
 		this._objReflection = objReflection;
 		this._classReverseCallsClient = classReverseCallsClient;
+	}
+
+
+	/**
+	 * @returns {null}
+	 */
+	dispose()
+	{
+		this.emit("disposed");
 	}
 
 

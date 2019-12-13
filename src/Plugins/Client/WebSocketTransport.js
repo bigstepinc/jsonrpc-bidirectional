@@ -33,6 +33,24 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 
 
 	/**
+	 * @returns {null}
+	 */
+	dispose()
+	{
+		try
+		{
+			this._webSocket.close();
+		}
+		catch(error)
+		{
+			console.error(error);
+		}
+
+		super.dispose();
+	}
+
+
+	/**
 	 * @returns {WebSocket} 
 	 */
 	get webSocket()

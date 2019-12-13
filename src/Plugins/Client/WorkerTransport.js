@@ -17,6 +17,9 @@ class WorkerTransport extends JSONRPC.ClientPluginBase
 	constructor(worker, bBidirectionalWorkerMode)
 	{
 		super();
+
+
+		this._arrDisposeCalls = [];
 		
 
 		// JSONRPC call ID as key, {promise: {Promise}, fnResolve: {Function}, fnReject: {Function}, outgoingRequest: {OutgoingRequest}} as values.
@@ -28,6 +31,23 @@ class WorkerTransport extends JSONRPC.ClientPluginBase
 
 		
 		this._setupWorker();
+	}
+
+
+	/**
+	 * @returns {null}
+	 */
+	dispose()
+	{
+		for(const fnDispose of this._arrDisposeCalls)
+		{
+			fnDispose();
+		}
+		this._arrDisposeCalls.slice(0);
+
+		this.rejectAllPromises();
+
+		super.dispose();
 	}
 
 
@@ -234,10 +254,12 @@ class WorkerTransport extends JSONRPC.ClientPluginBase
 			};
 
 			this._worker.addEventListener("error", fnOnError);
+			this._arrDisposeCalls.push(() => { this._worker.removeEventListener("error", fnOnError); });
 
 			if(!this._bBidirectionalWorkerMode)
 			{
 				this._worker.addEventListener("message", fnOnMessage);
+				this._arrDisposeCalls.push(() => { this._worker.removeEventListener("message", fnOnMessage); });
 			}
 		}
 		else
@@ -261,11 +283,15 @@ class WorkerTransport extends JSONRPC.ClientPluginBase
 			};
 
 			this._worker.on("exit", fnOnExit);
+			this._arrDisposeCalls.push(() => { this._worker.removeListener("exit", fnOnExit); });
+
 			this._worker.on("error", fnOnError);
+			this._arrDisposeCalls.push(() => { this._worker.removeListener("error", fnOnError); });
 
 			if(!this._bBidirectionalWorkerMode)
 			{
 				this._worker.on("message", fnOnMessage);
+				this._arrDisposeCalls.push(() => { this._worker.removeListener("message", fnOnMessage); });
 			}
 		}
 	}

@@ -10,17 +10,72 @@ const EventEmitter = require("events");
 const assert = require("assert");
 // const querystring = require("querystring");
 
-module.exports =
+
+/**
+ * @event beforeJSONDecode incomingRequest
+ * @event afterJSONDecode incomingRequest
+ * @event callFunction incomingRequest
+ * @event result incomingRequest
+ * @event exceptionCatch incomingRequest
+ * @event response incomingRequest
+ * @event afterSerialize incomingRequest
+ * @event disposed {bCallEndpointDispose: boolean, bCallPluginDispose: boolean}
+ */
 class Server extends EventEmitter
 {
 	constructor()
 	{
 		super();
 
+		// http.Server as key and another map as value. The nested map has an URL path as key and the callback used to listen to HTTP requests.
+		this._mapHTTPServerToPathToCallbackMap = new Map();
+
 		this._arrPlugins = [];
 		this._objEndpoints = {};
 
 		Object.seal(this);
+	}
+
+
+	/**
+	 * @param {{bCallEndpointDispose: boolean, bCallPluginDispose:boolean}} param0
+	 * 
+	 * @returns {null}
+	 */
+	dispose({bCallEndpointDispose = true, bCallPluginDispose = true} = {})
+	{
+		for(const httpServer of this._mapHTTPServerToPathToCallbackMap.keys())
+		{
+			for(const strRootPath of this._mapHTTPServerToPathToCallbackMap.get(httpServer).keys())
+			{
+				this.detachFromHTTPServer(httpServer, strRootPath);
+			}
+		}
+		this._mapHTTPServerToPathToCallbackMap.clear();
+
+		for(const strEndpointPath in this._objEndpoints)
+		{
+			if(bCallEndpointDispose)
+			{
+				this._objEndpoints[strEndpointPath].dispose();
+			}
+
+			this.unregisterEndpoint(strEndpointPath);
+		}
+
+		
+		for(let i = this._arrPlugins.length - 1; i >= 0; i--)
+		{
+			if(bCallPluginDispose)
+			{
+				this._arrPlugins[i].dispose();
+			}
+
+			this._arrPlugins.splice(i, 1);
+		}
+		this._arrPlugins.splice(0);
+
+		this.emit("disposed", {bCallEndpointDispose, bCallPluginDispose});
 	}
 	
 
@@ -36,9 +91,13 @@ class Server extends EventEmitter
 	 * 
 	 * Endpoint paths must fall under strRootPath or they will be ignored.
 	 * 
+	 * Returns a function to detach the 
+	 * 
 	 * @param {http.Server} httpServer
 	 * @param {string} strRootPath
 	 * @param {boolean} bSharedWithWebSocketServer
+	 * 
+	 * @returns {Function}
 	 */
 	async attachToHTTPServer(httpServer, strRootPath, bSharedWithWebSocketServer)
 	{
@@ -47,104 +106,142 @@ class Server extends EventEmitter
 
 		strRootPath = JSONRPC.EndpointBase.normalizePath(strRootPath);
 
-		httpServer.on(
-			"request",
-			async(httpRequest, httpResponse) => {
-				const strRequestPath = JSONRPC.EndpointBase.normalizePath(httpRequest.url);
 
-				// Ignore paths which do not fall under strRootPath, or are not strRootPath. 
-				if(strRequestPath.substr(0, strRootPath.length) !== strRootPath)
+		if(!this._mapHTTPServerToPathToCallbackMap.has(httpServer))
+		{
+			this._mapHTTPServerToPathToCallbackMap.set(httpServer, new Map());
+		}
+
+		if(this._mapHTTPServerToPathToCallbackMap.get(httpServer).get(strRootPath))
+		{
+			console.error(new Error(`URL pathname ${strRootPath} already attached to this JSONRPC.Server for specified http.Server instance.`));
+			return;
+		}
+
+
+		const fnOnRequest = async(httpRequest, httpResponse) => {
+			const strRequestPath = JSONRPC.EndpointBase.normalizePath(httpRequest.url);
+
+			// Ignore paths which do not fall under strRootPath, or are not strRootPath. 
+			if(strRequestPath.substr(0, strRootPath.length) !== strRootPath)
+			{
+				// Do not call .end() here, or co-existing HTTP handlers on the same server will not have a chance to set headers or respond.
+				// httpResponse.end();
+				return;
+			}
+
+			if (httpRequest.method === "OPTIONS")
+			{
+				// Needed by CORS preflight request. Other headers will be set by the HTTP server to which this server is attached.
+				httpResponse.status = 204;
+				httpResponse.end();
+				return;
+			}
+
+			if(httpRequest.headers["sec-websocket-version"])
+			{
+				if(bSharedWithWebSocketServer)
 				{
 					// Do not call .end() here, or co-existing HTTP handlers on the same server will not have a chance to set headers or respond.
 					// httpResponse.end();
 					return;
 				}
 
-				if (httpRequest.method === "OPTIONS")
-				{
-					// Needed by CORS preflight request. Other headers will be set by the HTTP server to which this server is attached.
-					httpResponse.status = 204;
-					httpResponse.end();
-					return;
-				}
-
-				if(httpRequest.headers["sec-websocket-version"])
-				{
-					if(bSharedWithWebSocketServer)
-					{
-						// Do not call .end() here, or co-existing HTTP handlers on the same server will not have a chance to set headers or respond.
-						// httpResponse.end();
-						return;
-					}
-
-					console.error("Received websocket upgrade request, yet not sharing the HTTP connection with a WebSocket.");
-					httpResponse.statusCode = 403; //Forbidden.
-					httpResponse.end();
-					return;
-				}
-
-				try
-				{
-					const incomingRequest = await this.processHTTPRequest(httpRequest, httpResponse);
-					await this.processRequest(incomingRequest);
-
-					if(incomingRequest.callResult instanceof Error)
-					{
-						// HTTP status code for an error must be a number between 500 and 599
-						if(
-							(typeof httpResponse.statusCode !== "number")
-							|| httpResponse.statusCode < 500 
-							|| httpResponse.statusCode > 599
-						)
-						{
-							httpResponse.statusCode = 500; // Internal Server Error
-						}
-					}
-					else if(incomingRequest.isNotification)
-					{
-						httpResponse.statusCode = 204; // No Content
-					}
-					else
-					{
-						httpResponse.statusCode = httpResponse.statusCode || 200; // Ok, if nothig was set
-					}
-
-					if(incomingRequest.isNotification)
-					{
-						/*httpResponse.write(JSON.stringify({
-							id: null,
-							jsonrpc: "2.0",
-							error: {
-								message: "JSONRPC 2.0 notfications are not supported.",
-								code: JSONRPC.Exception.INTERNAL_ERROR
-							}
-						}, undefined, "\t"));*/
-					}
-					else
-					{
-						httpResponse.setHeader("Content-Type", "application/json");
-
-						// Some plugins may be disabling serialization, with a JSONRPC service shared for both HTTP and some other transport with serialization disabled.
-						if(typeof incomingRequest.callResultSerialized === "object")
-						{
-							httpResponse.write(JSON.stringify(incomingRequest.callResultSerialized, undefined, "\t"));
-						}
-						else
-						{
-							httpResponse.write(incomingRequest.callResultSerialized);
-						}
-						
-					}
-				}
-				catch(error)
-				{
-					httpResponse.statusCode = 500; // Internal Server Error
-					console.error(error);
-				}
-
+				console.error("Received websocket upgrade request, yet not sharing the HTTP connection with a WebSocket.");
+				httpResponse.statusCode = 403; //Forbidden.
 				httpResponse.end();
+				return;
 			}
-		);
+
+			try
+			{
+				const incomingRequest = await this.processHTTPRequest(httpRequest, httpResponse);
+				await this.processRequest(incomingRequest);
+
+				if(incomingRequest.callResult instanceof Error)
+				{
+					// HTTP status code for an error must be a number between 500 and 599
+					if(
+						(typeof httpResponse.statusCode !== "number")
+						|| httpResponse.statusCode < 500 
+						|| httpResponse.statusCode > 599
+					)
+					{
+						httpResponse.statusCode = 500; // Internal Server Error
+					}
+				}
+				else if(incomingRequest.isNotification)
+				{
+					httpResponse.statusCode = 204; // No Content
+				}
+				else
+				{
+					httpResponse.statusCode = httpResponse.statusCode || 200; // Ok, if nothig was set
+				}
+
+				if(incomingRequest.isNotification)
+				{
+					/*httpResponse.write(JSON.stringify({
+						id: null,
+						jsonrpc: "2.0",
+						error: {
+							message: "JSONRPC 2.0 notfications are not supported.",
+							code: JSONRPC.Exception.INTERNAL_ERROR
+						}
+					}, undefined, "\t"));*/
+				}
+				else
+				{
+					httpResponse.setHeader("Content-Type", "application/json");
+
+					// Some plugins may be disabling serialization, with a JSONRPC service shared for both HTTP and some other transport with serialization disabled.
+					if(typeof incomingRequest.callResultSerialized === "object")
+					{
+						httpResponse.write(JSON.stringify(incomingRequest.callResultSerialized, undefined, "\t"));
+					}
+					else
+					{
+						httpResponse.write(incomingRequest.callResultSerialized);
+					}
+					
+				}
+			}
+			catch(error)
+			{
+				httpResponse.statusCode = 500; // Internal Server Error
+				console.error(error);
+			}
+
+			httpResponse.end();
+		};
+
+
+		httpServer.on("request", fnOnRequest);
+
+		
+		this._mapHTTPServerToPathToCallbackMap.get(httpServer).set(strRootPath, fnOnRequest);
+	}
+
+
+	/**
+	 * @param {http.Server} httpServer 
+	 * @param {string} strRootPath 
+	 */
+	detachFromHTTPServer(httpServer, strRootPath)
+	{
+		if(
+			this._mapHTTPServerToPathToCallbackMap.get(httpServer)
+			&& this._mapHTTPServerToPathToCallbackMap.get(httpServer).get(strRootPath)
+		)
+		{
+			httpServer.removeListener("request", this._mapHTTPServerToPathToCallbackMap.get(httpServer).get(strRootPath));
+			this._mapHTTPServerToPathToCallbackMap.get(httpServer).delete(strRootPath);
+
+			if(![...this._mapHTTPServerToPathToCallbackMap.get(httpServer).values()].length)
+			{
+				this._mapHTTPServerToPathToCallbackMap.delete(httpServer);
+			}
+		}
 	}
 
 
@@ -465,3 +562,5 @@ class Server extends EventEmitter
 		}
 	}
 };
+
+module.exports = Server;

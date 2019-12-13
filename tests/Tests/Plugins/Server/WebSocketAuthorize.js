@@ -17,6 +17,25 @@ class WebSocketAuthorize extends JSONRPC.ServerPluginBase
 
 
 	/**
+	 * @returns {null}
+	 */
+	dispose()
+	{
+		for(const nWebSocketConnectionID in this._objSessions)
+		{
+			this._objSessions[nWebSocketConnectionID].webSocket.close();
+		}
+
+		for(const strTeamMember in this._objATeamMemberToConnectionID)
+		{
+			delete this._objATeamMemberToConnectionID[strTeamMember];
+		}
+
+		super.dispose();
+	}
+
+
+	/**
 	 * Called after JSON parsing of the JSONRPC request.
 	 * 
 	 * @override
@@ -100,7 +119,8 @@ class WebSocketAuthorize extends JSONRPC.ServerPluginBase
 		this._objSessions[nWebSocketConnectionID] = {
 			partyMembership: null, 
 			authorized: false, 
-			connectionID: nWebSocketConnectionID
+			connectionID: nWebSocketConnectionID,
+			webSocket
 		};
 
 		webSocket.on(
