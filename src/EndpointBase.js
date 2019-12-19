@@ -87,10 +87,13 @@ class EndpointBase extends EventEmitter
 	 * 
 	 * @param {Array<*>} arrAPITraits 
 	 * @param {string} strClassName
+	 * @param {string|null} strTemplate = null
 	 */
-	static async _buildAPIClientSourceCode(arrAPITraits, strClassName)
+	static async _buildAPIClientSourceCode(arrAPITraits, strClassName, strTemplate = null)
 	{
+		assert(Array.isArray(arrAPITraits), "arrAPITraits needs to be an Array");
 		assert(typeof strClassName === "string", "strClassName was suposed to be of type string.");
+		assert(typeof strTemplate === "string", "strTemplate was suposed to be of type string.");
 
 		let strServerAPIClientMethods = "";
 		for(const classInstance of arrAPITraits)
@@ -145,14 +148,14 @@ class EndpointBase extends EventEmitter
 			}*/
 		}
 		
-		let strAPIClient = `
+		let strAPIClient = (strTemplate || `
 			const JSONRPC = require("jsonrpc-bidirectional");
 			class ${strClassName} extends JSONRPC.Client
 			{
 				_INSERT_METHODS_HERE_
 			};
 			module.exports = ${strClassName};
-		`.replace(/^\t{3}/gm, "").replace("_INSERT_METHODS_HERE_", strServerAPIClientMethods);
+		`).replace(/^\t{3}/gm, "").replace("_INSERT_METHODS_HERE_", strServerAPIClientMethods);
 		
 		return strAPIClient;
 	}
