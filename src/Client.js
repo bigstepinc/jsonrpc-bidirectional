@@ -29,8 +29,9 @@ class Client extends EventEmitter
 	/**
 	 * @param {string} strEndpointURL
 	 * @param {object|undefined} objFetchOptions
+	 * @param {JSONRPC.Exception} ExceptionClass = null
 	 */
-	constructor(strEndpointURL, objFetchOptions)
+	constructor(strEndpointURL, objFetchOptions, ExceptionClass = null)
 	{
 		super();
 
@@ -43,6 +44,19 @@ class Client extends EventEmitter
 		this._strBase64BasicAuthentication = null;
 
 		this._objFetchOptions = objFetchOptions;
+
+		if(ExceptionClass)
+		{
+			this.on("exceptionCatch", (jsonrpcRequest) => {
+				const error = jsonrpcRequest.callResult;
+
+				const strMessage = ExceptionClass.constructor.name + ": " + error.message + " (Code: " + error.code + ")";
+				console.error(strMessage);
+				jsonrpcRequest.callResult = new ExceptionClass(strMessage, parseInt(error.code));
+				jsonrpcRequest.callResult.stack = error.stack;
+				jsonrpcRequest.callResult.objData = error.objData;
+			});
+		}
 
 		/*const strProtocol = url.parse(strEndpointURL).protocol;
 
