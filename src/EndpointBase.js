@@ -109,7 +109,8 @@ class EndpointBase extends EventEmitter
 					if(objMethod.parameters[0].name !== "incomingRequest")
 					{
 						console.error(`Error. First parameter of ${classInstance.constructor.name}.${objMethod.name}() is not incomingRequest. That param is mandatory for API exported functions.`);
-						process.exit(1);
+						// process.exit(1);
+						continue;
 					}
 					
 					objMethod.parameters.splice(0, 1);
