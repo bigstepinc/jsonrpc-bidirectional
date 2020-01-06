@@ -1,6 +1,8 @@
 const path = require("path");
 const fs = require("fs");
 const webpack = require("webpack");
+const BundleAnalyzerPlugin = require("webpack-bundle-analyzer").BundleAnalyzerPlugin;
+const MinifyPlugin = require("babel-minify-webpack-plugin");
 const recursiveKeys = require("recursive-keys");
 
 const objPackageJSON = JSON.parse(fs.readFileSync("package.json"));
@@ -32,7 +34,8 @@ module.exports = [
 			filename: "jsonrpc.min.js",
 			libraryTarget: "umd"
 		},
-		devtool: "source-map",
+		// devtool: "source-map",
+		devtool: "",
 		module: {
 			loaders: [
 				{
@@ -57,40 +60,46 @@ module.exports = [
 			]
 		},
 		plugins: [
+			new BundleAnalyzerPlugin({
+				reportFilename: "./stats.html",
+				// generateStatsFile: true,
+				openAnalyzer: false,
+				analyzerMode: "static"
+			}),
 			new webpack.optimize.OccurrenceOrderPlugin(),
-			new webpack.optimize.DedupePlugin(),
 			new webpack.DefinePlugin({
 				"process.env": {
-					"NODE_ENV": JSON.stringify("production")
+					"NODE_ENV": "production"
 				}
 			}),
-			new webpack.optimize.UglifyJsPlugin({
-				minimize: true,
-				sourceMap: true,
-				compress: {
-					screw_ie8: true,
-					unused: true, 
-					dead_code: true
-				},
-				mangle: {
-					screw_ie8: true,
-					except: recursiveKeys.dumpKeysRecursively(require("./index_webpack")).map(
-						(strClassName) => {
-							return strClassName.split(".").pop();
-						}
-					)
-				},
-				output: { 
-					screw_ie8: true, 
-					comments: false,
-					preamble: `/**
-						${objPackageJSON.name} v${objPackageJSON.version}
-						${objPackageJSON.description}
-						${objPackageJSON.homepage}
-						\n\n${fs.readFileSync("./LICENSE")}
-					*/`.replace(/\t+/g, "")
-				}
-			})
+			new MinifyPlugin(/*minifyOpts*/ {}, /*pluginOpts*/ {})
+			// new webpack.optimize.UglifyJsPlugin({
+			// 	minimize: true,
+			// 	sourceMap: true,
+			// 	compress: {
+			// 		screw_ie8: true,
+			// 		unused: true, 
+			// 		dead_code: true
+			// 	},
+			// 	mangle: {
+			// 		screw_ie8: true,
+			// 		except: recursiveKeys.dumpKeysRecursively(require("./index_webpack")).map(
+			// 			(strClassName) => {
+			// 				return strClassName.split(".").pop();
+			// 			}
+			// 		)
+			// 	},
+			// 	output: { 
+			// 		screw_ie8: true, 
+			// 		comments: false,
+			// 		preamble: `/**
+			// 			${objPackageJSON.name} v${objPackageJSON.version}
+			// 			${objPackageJSON.description}
+			// 			${objPackageJSON.homepage}
+			// 			\n\n${fs.readFileSync("./LICENSE")}
+			// 		*/`.replace(/\t+/g, "")
+			// 	}
+			// })
 		]
 	},
 	{
@@ -118,7 +127,8 @@ module.exports = [
 			filename: "jsonrpc.min.js",
 			libraryTarget: "umd"
 		},
-		devtool: "source-map",
+		// devtool: "source-map",
+		devtool: "",
 		module: {
 			loaders: [
 				{
@@ -139,6 +149,19 @@ module.exports = [
 			]
 		},
 		plugins: [
+			new BundleAnalyzerPlugin({
+				reportFilename: "./stats.html",
+				// generateStatsFile: true,
+				openAnalyzer: false,
+				analyzerMode: "static"
+			}),
+			new webpack.optimize.OccurrenceOrderPlugin(),
+			new webpack.DefinePlugin({
+				"process.env": {
+					"NODE_ENV": "production"
+				}
+			}),
+			new MinifyPlugin(/*minifyOpts*/ {}, /*pluginOpts*/ {})
 		]
 	}
 ];

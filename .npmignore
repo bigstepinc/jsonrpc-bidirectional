@@ -4,3 +4,5 @@ node_modules/*
 tests/*
 .vscode/*
 npm.bat
+stats.json
+stats.html
