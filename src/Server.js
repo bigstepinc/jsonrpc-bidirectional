@@ -192,15 +192,31 @@ class Server extends EventEmitter
 				}
 				else
 				{
-					httpResponse.setHeader("Content-Type", "application/json");
-
 					// Some plugins may be disabling serialization, with a JSONRPC service shared for both HTTP and some other transport with serialization disabled.
 					if(typeof incomingRequest.callResultSerialized === "object")
 					{
+						httpResponse.setHeader("Content-Type", "application/json");
 						httpResponse.write(JSON.stringify(incomingRequest.callResultSerialized, undefined, "\t"));
 					}
 					else
 					{
+						if(!httpResponse.getHeader("Content-Type"))
+						{
+							if(typeof incomingRequest.callResultSerialized === "string")
+							{
+								httpResponse.setHeader("Content-Type", "text/plain; charset=utf-8");
+							}
+							else
+							{
+								httpResponse.setHeader("Content-Type", "application/octet-stream");
+							}
+						}
+						
+						if(!httpResponse.getHeader("Content-Length"))
+						{
+							httpResponse.setHeader("Content-Length", Buffer.byteLength(incomingRequest.callResultSerialized));
+						}
+
 						httpResponse.write(incomingRequest.callResultSerialized);
 					}
 					
