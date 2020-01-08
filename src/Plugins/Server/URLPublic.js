@@ -681,7 +681,7 @@ class URLPublic extends JSONRPC.ServerPluginBase
 			assert(typeof objKeys.keys[strIndex] === "object", "objKeys.keys[strIndex] needs to be of type Object.");
 			assert(typeof objKeys.keys[strIndex].aes_key === "string", "objKeys.keys[strIndex].aes_key needs to be of type string.");
 			assert(typeof objKeys.keys[strIndex].salt === "string", "objKeys.keys[strIndex].salt needs to be of type string.");
-			assert(objKeys.keys[strIndex].salt.length >= 30, "objKeys.keys[" + JSON.stringify(strIndex) + "].salt needs to have at least 30 characters.");
+			assert(objKeys.keys[strIndex].salt.length >= 10, "objKeys.keys[" + JSON.stringify(strIndex) + "].salt needs to have at least 10 characters.");
 			assert(typeof objKeys.keys[strIndex].created === "string", "objKeys.keys[strIndex].created needs to be of type string.");
 
 			// Validate key length
