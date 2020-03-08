@@ -93,7 +93,7 @@ class EndpointBase extends EventEmitter
 	{
 		assert(Array.isArray(arrAPITraits), "arrAPITraits needs to be an Array");
 		assert(typeof strClassName === "string", "strClassName was suposed to be of type string.");
-		assert(typeof strTemplate === "string", "strTemplate was suposed to be of type string.");
+		assert(typeof strTemplate === "string" || strTemplate === null, "strTemplate was suposed to be of type string or null.");
 
 		let strServerAPIClientMethods = "";
 		for(const classInstance of arrAPITraits)
