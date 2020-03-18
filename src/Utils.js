@@ -18,6 +18,11 @@ class Utils
 	 */
 	static jsonDecodeSafe(strJSON)
 	{
+		if(typeof strJSON !== "string")
+		{
+			throw new JSONRPC.Exception("JSON needs to be a string; Input: " + JSON.stringify(strJSON), JSONRPC.Exception.PARSE_ERROR);
+		}
+
 		try
 		{
 			return JSON.parse(strJSON);
@@ -26,7 +31,7 @@ class Utils
 		{
 			// V8 doesn't have a stacktrace for JSON.parse errors.
 			// A re-throw is absolutely necessary to enable debugging.
-			throw new JSONRPC.Exception(error.message + "; RAW JSON string: " + JSON.stringify(strJSON), JSONRPC.Exception.PARSE_ERROR);
+			throw new JSONRPC.Exception(error.message + "; RAW JSON string: " + strJSON, JSONRPC.Exception.PARSE_ERROR);
 		}
 	}
 };
