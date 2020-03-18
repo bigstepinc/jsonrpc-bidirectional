@@ -39,7 +39,7 @@ const Threads = require("worker_threads");
     await masterEndpoint.start();
     
     // Optional: 
-    await masterEndpoint.watchForUpgrades("/path/to/package.json");
+    await masterEndpoint.watchForUpgrade("/path/to/package.json");
   }
   else
   {
