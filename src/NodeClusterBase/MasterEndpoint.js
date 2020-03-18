@@ -22,8 +22,13 @@ const JSONRPC = {
  */
 class MasterEndpoint extends NodeMultiCoreCPUBase.MasterEndpoint
 {
-	constructor(classReverseCallsClient)
+	constructor(classReverseCallsClient = null)
 	{
+		if(classReverseCallsClient === null)
+		{
+			classReverseCallsClient = require("./WorkerClient");
+		}
+
 		console.log(`Fired up cluster ${cluster.isWorker ? "worker" : "master"} with PID ${process.pid}`);
 
 		if(!cluster.isMaster)
