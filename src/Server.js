@@ -486,11 +486,21 @@ class Server extends EventEmitter
 
 				if(!incomingRequest.isAuthenticated)
 				{
+					if(incomingRequest.httpServerResponse)
+					{
+						incomingRequest.httpServerResponse.statusCode = 403; //Forbidden.
+					}
+
 					throw new JSONRPC.Exception("Not authenticated; calling method name: " + incomingRequest.requestObject.method, JSONRPC.Exception.NOT_AUTHENTICATED);
 				}
 
 				if(!incomingRequest.isAuthorized)
 				{
+					if(incomingRequest.httpServerResponse)
+					{
+						incomingRequest.httpServerResponse.statusCode = 403; //Forbidden.
+					}
+
 					throw new JSONRPC.Exception("Not authorized; calling method name: " + incomingRequest.requestObject.method, JSONRPC.Exception.NOT_AUTHORIZED);
 				}
 
