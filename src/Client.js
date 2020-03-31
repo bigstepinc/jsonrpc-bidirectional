@@ -28,10 +28,10 @@ class Client extends EventEmitter
 {
 	/**
 	 * @param {string} strEndpointURL
-	 * @param {object|undefined} objFetchOptions
+	 * @param {object|undefined} objFetchOptions = {}
 	 * @param {JSONRPC.Exception} ExceptionClass = null
 	 */
-	constructor(strEndpointURL, objFetchOptions, ExceptionClass = null)
+	constructor(strEndpointURL, objFetchOptions = {}, ExceptionClass = null)
 	{
 		super();
 
@@ -194,21 +194,39 @@ class Client extends EventEmitter
 			let bHTTPErrorMode = false;
 			if(!outgoingRequest.isMethodCalled)
 			{
-				/* eslint-disable*/ 
-				const request = new (fetch.Request ? fetch.Request : Request)(
-					outgoingRequest.endpointURL,
+				let headers;
+				
+				// Browser mode. If no headers defined, then an empty Headers instance silently causes the browser to not send CORS headers, not even Origin:
+				if(fetch.Headers === undefined || Object.values(outgoingRequest.headers).length === 0)
+				{
+					headers = undefined;
+				}
+				else
+				{
+					headers = new (fetch.Headers ? fetch.Headers : Headers)(outgoingRequest.headers);
+				}
+
+				const objFetchOptions = Object.assign(
+					{}, 
 					{
 						method: "POST",
 						mode: "cors",
-						headers: new (fetch.Headers ? fetch.Headers : Headers)(outgoingRequest.headers),
+						headers,
 						body: outgoingRequest.requestBody,
 						cache: "no-cache",
 						credentials: "include"
-					}
+					},
+					this._objFetchOptions
+				);
+
+				/* eslint-disable*/ 
+				const request = new (fetch.Request ? fetch.Request : Request)(
+					outgoingRequest.endpointURL,
+					objFetchOptions
 				);
 				/* eslint-enable*/ 
 
-				response = await fetch(request, this._objFetchOptions);
+				response = await fetch(request, objFetchOptions);
 
 				bHTTPErrorMode = !response.ok; 
 
