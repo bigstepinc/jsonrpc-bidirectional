@@ -7,6 +7,21 @@ const EventEmitter = require("events");
 class ClientPluginBase extends EventEmitter
 {
 	/**
+	 * This can be used to have Client.rpc() wait for a plugin's various initialization or re-initialization, or trigger lazy initialization or re-initialization.
+	 * 
+	 * For example, Client.rpc() could wait for the authorization of a WebSocket to finish,
+	 * or the reinitialization of a WebSocket (new WebSocket and problably login API calls before the transport can be used for API calls).
+	 * 
+	 * This function is allowed to throw as if .rpc() threw an error.
+	 * 
+	 * Wether a timeout is implemented to eventually throw and not block .rpc() forever is left to be decided on a per plugin basis.
+	 */
+	async waitReady()
+	{
+	}
+
+
+	/**
 	 * Gives a chance to modify the client request object before sending it out.
 	 * 
 	 * Normally, this allows extending the protocol.

@@ -123,20 +123,36 @@ class Client extends EventEmitter
 	 * https://nodejs.org/dist/latest-v10.x/docs/api/worker_threads.html#worker_threads_worker_postmessage_value_transferlist
 	 * https://developer.mozilla.org/en-US/docs/Web/API/Worker/postMessage
 	 * 
+	 * bSkipWaitReady = true is used internally by plugins when making extra initialization calls during the ClientPluginBase.waitReady() API call.
+	 * It can also be set to true in various APIs which call .rpc() to allow them to bypass the ClientPluginBase.waitReady() initialization phase.
+	 * 
 	 * @param {string} strFunctionName
 	 * @param {Array} arrParams = []
 	 * @param {boolean} bNotification = false
 	 * @param {ArrayBuffer[]|Transferable[]} arrTransferList = []
+	 * @param {boolean} bSkipWaitReady = false
 	 * 
 	 * @returns {*}
 	 */
-	async rpc(strFunctionName, arrParams = [], bNotification = false, arrTransferList = [])
+	async rpc(strFunctionName, arrParams = [], bNotification = false, arrTransferList = [], bSkipWaitReady = false)
 	{
 		assert(typeof bNotification === "boolean", "bNotification must be of type boolean.");
 		assert(Array.isArray(arrParams), "arrParams must be an Array.");
 		assert(Array.isArray(arrTransferList), "arrTransferList must be an Array.");
 
-		const outgoingRequest = new JSONRPC.OutgoingRequest(strFunctionName, arrParams, bNotification ? undefined : this._nCallID, arrTransferList);
+
+		if(!bSkipWaitReady)
+		{
+			const arrPluginReadyPromises = [];
+			for(let plugin of this._arrPlugins)
+			{
+				arrPluginReadyPromises.push(plugin.waitReady());
+			}
+			await Promise.all(arrPluginReadyPromises);
+		}
+
+
+		const outgoingRequest = new JSONRPC.OutgoingRequest(strFunctionName, arrParams, bNotification ? undefined : this._nCallID, arrTransferList, bSkipWaitReady);
 		
 		// Increment even for notification requests, just in case it is referenced somehow elsewhere for other purposes.
 		this._nCallID++;
@@ -341,6 +357,19 @@ class Client extends EventEmitter
 
 
 		return outgoingRequest.callResult;
+	}
+
+
+	/**
+	 * Same as .rpc() but with destructuring params.
+	 * 
+	 * @param {{method: string, params: Array, isNotification: boolean, transferList: ArrayBuffer[]|Transferable[], skipWaitReady: boolean}} objDestructuringParam
+	 * 
+	 * @returns {*}
+	 */
+	async rpcX({method, params = [], isNotification = false, transferList = [], skipWaitReady = false} = {})
+	{
+		return await this.rpc(method, params, isNotification, transferList, skipWaitReady);
 	}
 
 

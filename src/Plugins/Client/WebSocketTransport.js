@@ -7,33 +7,247 @@ JSONRPC.WebSocketAdapters.WebSocketWrapperBase = require("../../WebSocketAdapter
 
 const assert = require("assert");
 
+const sleep = require("sleep-promise");
+const WebSocket = require("ws");
+
 
 module.exports =
 class WebSocketTransport extends JSONRPC.ClientPluginBase
 {
 	/**
-	 * @param {WebSocket} webSocket
-	 * @param {boolean|undefined} bBidirectionalWebSocketMode
+	 * If bAutoReconnect is false then waitReady() has no effect and the provided webSocket is expected to be connected when passed to the constructor.
+	 * If the webSocket becomes disconnected it will not be reconnected.
+	 * strWebSocketURL can be null as it will be copied from webSocket.url.
+	 * 
+	 * If bAutoReconnect is true then waitReady() is used in .rpc() and .makeRequest().
+	 * If the webSocket becomes disconnected it will be reconnected.
+	 * The webSocket needs to passed as null when bAutoReconnect is true as it will be created automatically.
+	 * strWebSocketURL must be non-null.
+	 * 
+	 * strWebSocketURL is extracted automatically from webSocket if a webSocket is provided, otherwise it is mandatory to be set.
+	 * 
+	 * 
+	 * fnWaitReadyOnConnected gives a chance to make extra API calls, like authentication calls, right after the websocket becomes connected.
+	 * .waitReady() will not resolve until fnWaitReadyOnConnected also resolves.
+	 * 
+	 * fnWaitReadyOnConnected is called by .waitReady() after the webSocket becomes connected when this._bAutoReconnect is true.
+	 * .waitReady() is not used at all if this._bAutoReconnect is false.
+	 * 
+	 * Subclasses should implement fnWaitReadyOnConnected to add .readyWait() functionality before .readyWait() returns.
+	 * 
+	 * fnWaitReadyOnConnected is expected to return a Promise (async function).
+	 * 
+	 * All API calls on the JSONRPC.Client instance which has this transport added 
+	 * MUST set the .rpc() bSkipWaitReady param to true or else will hang forever.
+	 * 
+	 * @param {WebSocket|null} webSocket = null
+	 * @param {boolean|undefined} bBidirectionalWebSocketMode = false
+	 * @param {{strWebSocketURL: string|null, bAutoReconnect: boolean, fnWaitReadyOnConnected: Function|null, jsonrpcBidirectionalRouter: JSONRPC.RouterBase|null, jsonrpcClient: JSONRPC.Client|null}} objDestructuringParam
 	 */
-	constructor(webSocket, bBidirectionalWebSocketMode)
+	constructor(
+		webSocket = null, 
+		bBidirectionalWebSocketMode = false, 
+		{
+			bAutoReconnect = false, 
+
+			// Auto reconnect params.
+			strWebSocketURL = null, 
+			fnWaitReadyOnConnected = null, 
+
+			// Auto reconnect params when bBidirectionalWebSocketMode = true.
+			jsonrpcBidirectionalRouter = null, 
+			jsonrpcClient = null
+		} = {}
+	)
 	{
+		assert(fnWaitReadyOnConnected === null || typeof fnWaitReadyOnConnected === "function");
+		assert(typeof bAutoReconnect === "boolean");
+		assert(strWebSocketURL === null || typeof strWebSocketURL === "string");
+		assert(typeof bBidirectionalWebSocketMode === "boolean");
+		// assert((typeof webSocket === "object" && webSocket.url) || webSocket === null);
+
 		super();
 		
 
 		// JSONRPC call ID as key, {promise: {Promise}, fnResolve: {Function}, fnReject: {Function}, outgoingRequest: {OutgoingRequest}} as values.
-		this._objWebSocketRequestsPromises = {};
+		this._mapCallIDToWebSocketRequestsPromises = new Map();
 
 
 		this._bBidirectionalWebSocketMode = !!bBidirectionalWebSocketMode;
 		this._webSocket = webSocket;
+		this._bAutoReconnect = bAutoReconnect;
+		this._fnWaitReadyOnConnected = fnWaitReadyOnConnected;
+		this._jsonrpcBidirectionalRouter = jsonrpcBidirectionalRouter;
+		this._jsonrpcClient = jsonrpcClient;
 
+
+		if(bAutoReconnect && !this._jsonrpcBidirectionalRouter && bBidirectionalWebSocketMode)
+		{
+			throw new Error("jsonrpcBidirectionalRouter is mandatory when bAutoReconnect = true and bBidirectionalWebSocketMode = true.");
+		}
+
+		if(bAutoReconnect && !this._jsonrpcClient && bBidirectionalWebSocketMode)
+		{
+			throw new Error("jsonrpcClient param is mandatory when bAutoReconnect = true and bBidirectionalWebSocketMode = true.");
+		}
+
+		if(!strWebSocketURL)
+		{
+			if(webSocket)
+			{
+				strWebSocketURL = webSocket.url;
+			}
+			else
+			{
+				throw new Error("strWebSocketURL must be provided when passing a null webSocket");
+			}
+		}
+
+		this._strWebSocketURL = strWebSocketURL;
+
+
+		if(webSocket)
+		{
+			this._setupWebSocket();
+		}
 		
-		this._setupWebSocket();
+		if(!webSocket && !strWebSocketURL)
+		{
+			throw new Error("At least one of webSocket or strWebSocketURL need to be provided.");
+		}
+
+		if(bAutoReconnect && webSocket)
+		{
+			throw new Error("webSocket needs to be passed as null when bAutoReconnect is true.");
+		}
 	}
 
 
 	/**
-	 * @returns {null}
+	 * Returns a ws compatible WebSocket class reference.
+	 * If not overriden it returns ws.
+	 * 
+	 * Allows for swapping out ws with something else.
+	 * 
+	 * @returns {Class}
+	 */
+	webSocketClass()
+	{
+		return WebSocket;
+	}
+
+
+	/**
+	 * @override
+	 */
+	async waitReady()
+	{
+		if(!this._bAutoReconnect)
+		{
+			return;
+		}
+
+		if(this._waitReadyPromise)
+		{
+			return this._waitReadyPromise;
+		}
+
+		this._waitReadyPromise = new Promise(async(fnResolve, fnReject) => {
+			try
+			{
+				if(
+					this._webSocket
+					&& [WebSocket.CLOSED, WebSocket.CLOSING].includes(this._webSocket.readyState)
+				)
+				{
+					try
+					{
+						this._webSocket.close();
+					}
+					catch(error)
+					{
+						console.error(error);
+					}
+					finally
+					{
+						this._webSocket = null;
+					}
+
+					// Preventing flooding backend with reconnects.
+					await sleep(2000);
+				}
+		
+		
+				if(!this._webSocket)
+				{
+					const WebSocketClass = this.webSocketClass();
+					this._webSocket = new WebSocketClass(this._strWebSocketURL);
+					this._setupWebSocket();
+
+					await new Promise((__fnResolve, __fnReject) => {
+						// Promise callback may execute on the next VM pass or even much later together with CPU exhaustion.
+						// Testing state because of small chance of race condition until adding listeners
+
+						if([WebSocket.CLOSED, WebSocket.CLOSING].includes(this._webSocket.readyState))
+						{
+							__fnReject(new Error("WebSocket closed immediately and unexpectedly."));
+						}
+
+						// Most likely WebSocket.CONNECTING, there isn't any other lifecyle state at the time of implementing this.
+						else if(![WebSocket.OPEN].includes(this._webSocket.readyState))
+						{
+							if(this._webSocket.on && this._webSocket.removeListener && process && process.release)
+							{
+								this._webSocket.on("open", __fnResolve);
+								this._webSocket.on("error", __fnReject);
+							}
+							else if(this._webSocket.addEventListener && this._webSocket.removeEventListener)
+							{
+								this._webSocket.addEventListener("open", __fnResolve);
+								this._webSocket.addEventListener("error", __fnReject);
+							}
+							else
+							{
+								throw new Error("Failed to detect runtime or websocket interface type (browser, nodejs, websockets/ws npm package compatible interface, etc.");
+							}
+						}
+					});
+
+					if(![WebSocket.OPEN].includes(this._webSocket.readyState))
+					{
+						throw new Error("Was expecting WebSocket to be open at this stage.");
+					}
+
+					if(this._bBidirectionalWebSocketMode)
+					{
+						const nWebSocketConnectionID = this._jsonrpcBidirectionalRouter.addWebSocketSync(this._webSocket);
+						
+						// Store this client as reverse calls client.
+						this._jsonrpcBidirectionalRouter.connectionIDToSingletonClient(nWebSocketConnectionID, /*client class reference*/ null, this._jsonrpcClient);
+					}
+
+					if(this._fnWaitReadyOnConnected)
+					{
+						await this._fnWaitReadyOnConnected();
+					}
+				}
+
+				fnResolve();
+			}
+			catch(error)
+			{
+				console.error(error);
+				
+				await sleep(5000);
+				fnReject(error);
+				this._waitReadyPromise = null;
+			}
+		});
+	}
+
+
+	/**
+	 * @returns {undefined}
 	 */
 	dispose()
 	{
@@ -56,6 +270,15 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 	get webSocket()
 	{
 		return this._webSocket;
+	}
+
+
+	/**
+	 * @returns {string}
+	 */
+	get webSocketURL()
+	{
+		return this._strWebSocketURL;
 	}
 
 
@@ -96,7 +319,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 				typeof objResponse.id !== "number"
 				&& typeof objResponse.id !== "string"
 			)
-			|| !this._objWebSocketRequestsPromises[objResponse.id]
+			|| !this._mapCallIDToWebSocketRequestsPromises.has(objResponse.id)
 		)
 		{
 			console.error(objResponse);
@@ -115,13 +338,17 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 			return;
 		}
 
-		this._objWebSocketRequestsPromises[objResponse.id].outgoingRequest.responseBody = strResponse;
-		this._objWebSocketRequestsPromises[objResponse.id].outgoingRequest.responseObject = objResponse;
+		const objWebSocketRequest = this._mapCallIDToWebSocketRequestsPromises.get(objResponse.id);
+		if(objWebSocketRequest)
+		{
+			objWebSocketRequest.outgoingRequest.responseBody = strResponse;
+			objWebSocketRequest.outgoingRequest.responseObject = objResponse;
+	
+			objWebSocketRequest.fnResolve(null);
+			// Sorrounding code will parse the result and throw if necessary. fnReject is not going to be used in this function.
 
-		this._objWebSocketRequestsPromises[objResponse.id].fnResolve(null);
-		// Sorrounding code will parse the result and throw if necessary. fnReject is not going to be used in this function.
-
-		delete this._objWebSocketRequestsPromises[objResponse.id];
+			this._mapCallIDToWebSocketRequestsPromises.delete(objResponse.id);
+		}
 	}
 
 
@@ -139,12 +366,20 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 			return;
 		}
 
+		if(!outgoingRequest.skipWaitReady)
+		{
+			await this.waitReady();
+		}
+
 		if(this.webSocket.readyState !== JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN)
 		{
 			throw new Error("WebSocket not connected. Current WebSocket readyState: " + JSON.stringify(this.webSocket.readyState));
 		}
 
 		outgoingRequest.isMethodCalled = true;
+
+
+		let objWebSocketRequest;
 
 
 		if(outgoingRequest.isNotification)
@@ -173,20 +408,39 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 				typeof outgoingRequest.requestObject.id === "number" || typeof outgoingRequest.requestObject.id === "string", 
 				"outgoingRequest.requestObject.id must be of type number or string."
 			);
+
+			if(this._mapCallIDToWebSocketRequestsPromises.has(outgoingRequest.requestObject.id))
+			{
+				throw new Error(`JSONRPC client request ID ${JSON.stringify(outgoingRequest.requestObject.id)} already used.`);
+			}
 			
-			this._objWebSocketRequestsPromises[outgoingRequest.requestObject.id] = {
+			objWebSocketRequest = {
 				// unixtimeMilliseconds: (new Date()).getTime(),
 				outgoingRequest: outgoingRequest,
-				promise: null
+				promise: null,
+				fnReject: undefined,
+				fnResolve: undefined
 			};
 
-			this._objWebSocketRequestsPromises[outgoingRequest.requestObject.id].promise = new Promise((fnResolve, fnReject) => {
-				this._objWebSocketRequestsPromises[outgoingRequest.requestObject.id].fnResolve = fnResolve;
-				this._objWebSocketRequestsPromises[outgoingRequest.requestObject.id].fnReject = fnReject;
+			objWebSocketRequest.promise = new Promise((fnResolve, fnReject) => {
+				objWebSocketRequest.fnResolve = fnResolve;
+				objWebSocketRequest.fnReject = fnReject;
 			});
+
+			// Promise callback might not get called in VM when CPU exhausted.
+			while(!objWebSocketRequest.fnReject)
+			{
+				await sleep(5);
+			}
+
+			this._mapCallIDToWebSocketRequestsPromises.set(outgoingRequest.requestObject.id, objWebSocketRequest);
 		}
 
 
+		if(!outgoingRequest.skipWaitReady)
+		{
+			await this.waitReady();
+		}
 		this.webSocket.send(outgoingRequest.requestBody);
 
 
@@ -196,7 +450,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 		}
 		else
 		{
-			return this._objWebSocketRequestsPromises[outgoingRequest.requestObject.id].promise;
+			return objWebSocketRequest.promise;
 		}
 	}
 
@@ -206,26 +460,18 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 	 */
 	rejectAllPromises(error)
 	{
-		//console.error(error);
+		// console.error(error);
 
-		if(Object.values(this._objWebSocketRequestsPromises).length)
+		if(this._mapCallIDToWebSocketRequestsPromises.size)
 		{
-			console.log("Rejecting all Promise instances in WebSocketTransport.");
-		}
+			console.log(`Rejecting ${this._mapCallIDToWebSocketRequestsPromises.size} Promise instances in WebSocketTransport.`);
 
-		let nCount = 0;
-
-		for(let nCallID in this._objWebSocketRequestsPromises)
-		{
-			this._objWebSocketRequestsPromises[nCallID].fnReject(error);
-			delete this._objWebSocketRequestsPromises[nCallID];
-
-			nCount++;
-		}
-
-		if(nCount)
-		{
-			console.error("Rejected " + nCount + " Promise instances in WebSocketTransport.");
+			for(let objWebSocketRequest of this._mapCallIDToWebSocketRequestsPromises.values())
+			{
+				objWebSocketRequest.fnReject(error);
+			}
+	
+			this._mapCallIDToWebSocketRequestsPromises.clear();
 		}
 	}
 
@@ -235,67 +481,125 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 	 */
 	_setupWebSocket()
 	{
-		if(this._webSocket.on && this._webSocket.removeListener && process && process.release)
+		// Reference held in local context variable because it can change in an event processing race.
+		const webSocket = this._webSocket;
+
+		if(webSocket.on && webSocket.removeListener && process && process.release)
 		{
 			const fnOnError = (error) => {
+				if(webSocket === this._webSocket)
+				{
+					this._waitReadyPromise = null;
+				}
+
 				this.rejectAllPromises(error);
 			};
-			const fnOnMessage = async(mxData, objFlags) => {
-				await this.processResponse(mxData);
-			};
 			const fnOnClose = (nCode, strReason, bWasClean) => {
+				if(webSocket === this._webSocket)
+				{
+					this._waitReadyPromise = null;
+				}
+
 				this.rejectAllPromises(new Error("WebSocket closed. Code: " + JSON.stringify(nCode) + ". Message: " + JSON.stringify(strReason)));
 
 				if(!this._bBidirectionalWebSocketMode)
 				{
-					this._webSocket.removeListener("message", fnOnMessage);
+					webSocket.removeListener("message", fnOnMessage);
 				}
 	
-				this._webSocket.removeListener("close", fnOnClose);
-				this._webSocket.removeListener("error", fnOnError);
+				webSocket.removeListener("close", fnOnClose);
+				webSocket.removeListener("error", fnOnError);
 			};
+			const fnOnMessage = async(mxData, objFlags) => {
+				try
+				{
+					await this.processResponse(mxData);
+				}
+				catch(error)
+				{
+					console.error(error);
 
+					// If processResponse throws then trigger cleanup and start over to avoid any leaks like unresolved .rpc() promises.
+					if(webSocket.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN)
+					{
+						webSocket.close(
+							/*CLOSE_NORMAL*/ 1000, // Chrome only supports 1000 or the 3000-3999 range ///* CloseEvent.Internal Error */ 1011
+							`${error.message}`
+						);
+					}
+				}
+			};
 			
-			this._webSocket.on("error", fnOnError);
-			this._webSocket.on("close", fnOnClose);
+			webSocket.on("error", fnOnError);
+			webSocket.on("close", fnOnClose);
+
+			this.on("dispose", fnOnClose);
 
 			if(!this._bBidirectionalWebSocketMode)
 			{
-				this._webSocket.on("message", fnOnMessage);
+				webSocket.on("message", fnOnMessage);
 			}
 		}
-		else if(this._webSocket.addEventListener && this._webSocket.removeEventListener)
+		else if(webSocket.addEventListener && webSocket.removeEventListener)
 		{
-			const fnOnMessage = async(messageEvent) => {
-				await this.processResponse(messageEvent.data);
-			};
 			const fnOnError = (error) => {
+				if(webSocket === this._webSocket)
+				{
+					this._waitReadyPromise = null;
+				}
+
 				this.rejectAllPromises(error);
 			};
 
 			const fnOnClose = (closeEvent) => {
+				if(webSocket === this._webSocket)
+				{
+					this._waitReadyPromise = null;
+				}
+
 				this.rejectAllPromises(new Error("WebSocket closed. Code: " + JSON.stringify(closeEvent.code) + ". Message: " + JSON.stringify(closeEvent.reason) + ". wasClean: " + JSON.stringify(closeEvent.wasClean)));
 
 				if(!this._bBidirectionalWebSocketMode)
 				{
-					this._webSocket.removeEventListener("message", fnOnMessage);
+					webSocket.removeEventListener("message", fnOnMessage);
 				}
 
-				this._webSocket.removeEventListener("close", fnOnClose);
-				this._webSocket.removeEventListener("error", fnOnError);
+				webSocket.removeEventListener("close", fnOnClose);
+				webSocket.removeEventListener("error", fnOnError);
 			};
+			const fnOnMessage = async(messageEvent) => {
+				try
+				{
+					await this.processResponse(messageEvent.data);
+				}
+				catch(error)
+				{
+					console.error(error);
+
+					// If processResponse throws then trigger cleanup and start over to avoid any leaks like unresolved .rpc() promises.
+					if(webSocket.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN)
+					{
+						webSocket.close(
+							/*CLOSE_NORMAL*/ 1000, // Chrome only supports 1000 or the 3000-3999 range ///* CloseEvent.Internal Error */ 1011
+							`${error.message}`
+						);
+					}
+				}
+			};
+
+			this.on("dispose", fnOnClose);
 
 			if(!this._bBidirectionalWebSocketMode)
 			{
-				this._webSocket.addEventListener("message", fnOnMessage);
+				webSocket.addEventListener("message", fnOnMessage);
 			}
 
-			this._webSocket.addEventListener("close", fnOnClose);
-			this._webSocket.addEventListener("error", fnOnError);
+			webSocket.addEventListener("close", fnOnClose);
+			webSocket.addEventListener("error", fnOnError);
 		}
 		else
 		{
-			throw new Error("Failed to detect runtime or websocket interface not support (browser, nodejs, websockets/ws npm package compatible interface, etc.");
+			throw new Error("Failed to detect runtime or websocket interface type (browser, nodejs, websockets/ws npm package compatible interface, etc.");
 		}
 	}
 };

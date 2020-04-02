@@ -52,15 +52,23 @@ class RouterBase extends EventEmitter
 	 * If the client does not exist, it will be generated and saved on the session.
 	 * Another client will not be generated automatically, regardless of the accessed endpoint's defined client class for reverse calls.
 	 * 
+	 * If client is provided it will be saved and used, while ClientClass will be ignored.
+	 * 
 	 * @param {number} nConnectionID
-	 * @param {Class} ClientClass
+	 * @param {Class|null} ClientClass = null
+	 * @param {JSONRPC.Client|null} client = null
 	 * 
 	 * @returns {JSONRPC.Client}
 	 */
-	connectionIDToSingletonClient(nConnectionID, ClientClass)
+	connectionIDToSingletonClient(nConnectionID, ClientClass = null, client = null)
 	{
 		assert(typeof nConnectionID === "number", "nConnectionID must be a number. Received this: " + JSON.stringify(nConnectionID));
-		assert(typeof ClientClass === "function", "Invalid ClientClass value: " + (typeof ClientClass));
+		assert(ClientClass === null || typeof ClientClass === "function", "Invalid ClientClass value: " + (typeof ClientClass));
+
+		if(!client && !ClientClass)
+		{
+			throw new Error("At least one of client or ClientClass must be non-null.");
+		}
 
 		if(!this._objSessions.hasOwnProperty(nConnectionID))
 		{
@@ -69,7 +77,7 @@ class RouterBase extends EventEmitter
 
 		if(this._objSessions[nConnectionID].clientReverseCalls === null)
 		{
-			this._objSessions[nConnectionID].clientReverseCalls = this._makeReverseCallsClient(
+			this._objSessions[nConnectionID].clientReverseCalls = client || this._makeReverseCallsClient(
 				ClientClass,
 				this._objSessions[nConnectionID]
 			);
@@ -77,7 +85,7 @@ class RouterBase extends EventEmitter
 		else
 		{
 			assert(
-				this._objSessions[nConnectionID].clientReverseCalls instanceof ClientClass, 
+				ClientClass === null || this._objSessions[nConnectionID].clientReverseCalls instanceof ClientClass, 
 				"clientReverseCalls already initialized with a different JSONRPC.Client subclass."
 			);
 		}

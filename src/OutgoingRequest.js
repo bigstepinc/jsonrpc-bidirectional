@@ -21,12 +21,15 @@ class OutgoingRequest
 	 * @param {string} strMethod
 	 * @param {Array} arrParams
 	 * @param {number|string|undefined} mxCallID
-	 * @param {ArrayBuffer[]|Transferable[]} arrTransferList
+	 * @param {ArrayBuffer[]|Transferable[]} arrTransferList = []
+	 * @param {boolean} bSkipWaitReady = false
 	 */
-	constructor(strMethod, arrParams, mxCallID, arrTransferList = [])
+	constructor(strMethod, arrParams, mxCallID, arrTransferList = [], bSkipWaitReady = false)
 	{
 		this._strMethod = strMethod;
 		this._arrParams = arrParams;
+
+		this._bSkipWaitReady = bSkipWaitReady;
 
 		this._requestObject = null;
 		this._mxRequestBody = null;
@@ -121,6 +124,15 @@ class OutgoingRequest
 		assert(typeof strMethod === "string", "strMethod must be of type string.");
 
 		this._strMethod = strMethod;
+	}
+
+
+	/**
+	 * @returns {boolean}
+	 */
+	get skipWaitReady()
+	{
+		return this._bSkipWaitReady;
 	}
 
 
