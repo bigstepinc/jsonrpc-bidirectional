@@ -95,7 +95,7 @@ class WebRTCTransport extends JSONRPC.ClientPluginBase
 		{
 			console.error(new Error("Couldn't find JSONRPC response call ID in this._objRTCDataChannelRequestsPromises. RAW response: " + strResponse));
 			console.error(new Error("RAW remote message: " + strResponse));
-			console.log("[" + process.pid + "] Unclean state. Unable to match WebRTC message to an existing Promise or qualify it as a request.");
+			console.log("Unclean state. Unable to match WebRTC message to an existing Promise or qualify it as a request.");
 
 			if(this._dataChannel.readyState === "open")
 			{
@@ -200,7 +200,7 @@ class WebRTCTransport extends JSONRPC.ClientPluginBase
 	rejectAllPromises(error)
 	{
 		//console.error(error);
-		console.log("[" + process.pid + "] Rejecting all Promise instances in WebRTCTransport.");
+		console.log("Rejecting all Promise instances in WebRTCTransport.");
 
 		let nCount = 0;
 
@@ -214,7 +214,7 @@ class WebRTCTransport extends JSONRPC.ClientPluginBase
 
 		if(nCount)
 		{
-			console.error("[" + process.pid + "] Rejected " + nCount + " Promise instances in WebRTCTransport.");
+			console.error("Rejected " + nCount + " Promise instances in WebRTCTransport.");
 		}
 	}
 

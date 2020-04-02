@@ -102,7 +102,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 			console.error(objResponse);
 			console.error(new Error("Couldn't find JSONRPC response call ID in this._objWebSocketRequestsPromises. RAW response: " + strResponse));
 			console.error(new Error("RAW remote message: " + strResponse));
-			console.log("[" + process.pid + "] Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request.");
+			console.log("Unclean state. Unable to match WebSocket message to an existing Promise or qualify it as a request.");
 
 			if(this._webSocket.readyState === JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN)
 			{
@@ -210,7 +210,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 
 		if(Object.values(this._objWebSocketRequestsPromises).length)
 		{
-			console.log("[" + process.pid + "] Rejecting all Promise instances in WebSocketTransport.");
+			console.log("Rejecting all Promise instances in WebSocketTransport.");
 		}
 
 		let nCount = 0;
@@ -225,7 +225,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 
 		if(nCount)
 		{
-			console.error("[" + process.pid + "] Rejected " + nCount + " Promise instances in WebSocketTransport.");
+			console.error("Rejected " + nCount + " Promise instances in WebSocketTransport.");
 		}
 	}
 

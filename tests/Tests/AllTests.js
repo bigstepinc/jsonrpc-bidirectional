@@ -424,7 +424,7 @@ class AllTests
 		const workerJSONRPCRouter = new JSONRPC.BidirectionalWorkerRouter(jsonrpcServer);
 
 		workerJSONRPCRouter.on("madeReverseCallsClient", (clientReverseCalls) => {
-			clientReverseCalls.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
+			clientReverseCalls.addPlugin(new JSONRPC.Plugins.Client.DebugLogger(/*nMaxMessagesCount*/ 6));
 			clientReverseCalls.addPlugin(new Tests.Plugins.Client.DebugMarker((cluster.isMaster ? "Master" : "Worker") + "; reverse calls;"));
 		});
 
@@ -526,7 +526,7 @@ class AllTests
 		const workerJSONRPCRouter = new JSONRPC.BidirectionalWorkerThreadRouter(jsonrpcServer);
 
 		workerJSONRPCRouter.on("madeReverseCallsClient", (clientReverseCalls) => {
-			clientReverseCalls.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
+			clientReverseCalls.addPlugin(new JSONRPC.Plugins.Client.DebugLogger(/*nMaxMessagesCount*/ 6));
 			clientReverseCalls.addPlugin(new Tests.Plugins.Client.DebugMarker((Threads.isMainThread ? "MainThread" : "WorkerThread") + "; reverse calls;"));
 		});
 
@@ -955,7 +955,7 @@ class AllTests
 		wsJSONRPCRouter.on(
 			"madeReverseCallsClient",
 			(clientReverseCalls) => {
-				clientReverseCalls.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
+				clientReverseCalls.addPlugin(new JSONRPC.Plugins.Client.DebugLogger(/*nMaxMessagesCount*/ 6));
 				clientReverseCalls.addPlugin(new Tests.Plugins.Client.DebugMarker("SiteA; reverse calls;"));
 			}
 		);
@@ -1045,13 +1045,13 @@ class AllTests
 			// In this case however, only a single client is suposed to exist.
 			this._jsonrpcClientSiteB = wsJSONRPCRouter.connectionIDToSingletonClient(nWebSocketConnectionID, TestClient);
 			this._jsonrpcClientSiteB.addPlugin(new Tests.Plugins.Client.DebugMarker("SiteB"));
-			this._jsonrpcClientSiteB.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
+			this._jsonrpcClientSiteB.addPlugin(new JSONRPC.Plugins.Client.DebugLogger(/*nMaxMessagesCount*/ 6));
 		}
 		else
 		{
 			this._jsonrpcClientSiteB = new TestClient("http://" + this._strBindIPAddress + ":" + this._nHTTPPort + "/api");
 			this._jsonrpcClientSiteB.addPlugin(new Tests.Plugins.Client.DebugMarker("SiteB"));
-			this._jsonrpcClientSiteB.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
+			this._jsonrpcClientSiteB.addPlugin(new JSONRPC.Plugins.Client.DebugLogger(/*nMaxMessagesCount*/ 6));
 		}
 	}
 
@@ -1098,13 +1098,13 @@ class AllTests
 			// In this case however, only a single client is suposed to exist.
 			this._jsonrpcClientSiteC = wsJSONRPCRouter.connectionIDToSingletonClient(nWebSocketConnectionID, TestClient);
 			this._jsonrpcClientSiteC.addPlugin(new Tests.Plugins.Client.DebugMarker("SiteC"));
-			this._jsonrpcClientSiteC.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
+			this._jsonrpcClientSiteC.addPlugin(new JSONRPC.Plugins.Client.DebugLogger(/*nMaxMessagesCount*/ 6));
 		}
 		else
 		{
 			this._jsonrpcClientSiteC = new TestClient("http://" + this._strBindIPAddress + ":" + this._nHTTPPort + "/api");
 			this._jsonrpcClientSiteC.addPlugin(new Tests.Plugins.Client.DebugMarker("SiteC"));
-			this._jsonrpcClientSiteC.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
+			this._jsonrpcClientSiteC.addPlugin(new JSONRPC.Plugins.Client.DebugLogger(/*nMaxMessagesCount*/ 6));
 		}
 	}
 
@@ -1151,13 +1151,13 @@ class AllTests
 			// In this case however, only a single client is suposed to exist.
 			this._jsonrpcClientSiteDisconnecter = wsJSONRPCRouter.connectionIDToSingletonClient(nWebSocketConnectionID, TestClient);
 			this._jsonrpcClientSiteDisconnecter.addPlugin(new Tests.Plugins.Client.DebugMarker("SiteDisconnecter"));
-			this._jsonrpcClientSiteDisconnecter.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
+			this._jsonrpcClientSiteDisconnecter.addPlugin(new JSONRPC.Plugins.Client.DebugLogger(/*nMaxMessagesCount*/ 6));
 		}
 		else
 		{
 			this._jsonrpcClientSiteDisconnecter = new TestClient("http://" + this._strBindIPAddress + ":" + this._nHTTPPort + "/api");
 			this._jsonrpcClientSiteDisconnecter.addPlugin(new Tests.Plugins.Client.DebugMarker("SiteDisconnecter"));
-			this._jsonrpcClientSiteDisconnecter.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
+			this._jsonrpcClientSiteDisconnecter.addPlugin(new JSONRPC.Plugins.Client.DebugLogger(/*nMaxMessagesCount*/ 6));
 		}
 	}
 
@@ -1212,7 +1212,7 @@ class AllTests
 
 		const client = new TestClient("http://" + this._strBindIPAddress + ":" + this._nHTTPPort + "/api/bad-endpoint-path");
 		client.addPlugin(new Tests.Plugins.Client.DebugMarker("SiteB"));
-		client.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
+		client.addPlugin(new JSONRPC.Plugins.Client.DebugLogger(/*nMaxMessagesCount*/ 6));
 
 		try
 		{
@@ -1247,7 +1247,7 @@ class AllTests
 
 		const client = new TestClient("http://" + this._strBindIPAddress + ":" + this._nHTTPPort + "/unhandled-path");
 		client.addPlugin(new Tests.Plugins.Client.DebugMarker("SiteB"));
-		client.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
+		client.addPlugin(new JSONRPC.Plugins.Client.DebugLogger(/*nMaxMessagesCount*/ 6));
 
 		try
 		{
@@ -1536,7 +1536,7 @@ class AllTests
 
 			this._jsonrpcClientNonBidirectional = new TestClient(this.localEndpointWebSocket);
 			this._jsonrpcClientNonBidirectional.addPlugin(new Tests.Plugins.Client.DebugMarker("NonBidirectionalClient"));
-			this._jsonrpcClientNonBidirectional.addPlugin(new JSONRPC.Plugins.Client.DebugLogger());
+			this._jsonrpcClientNonBidirectional.addPlugin(new JSONRPC.Plugins.Client.DebugLogger(/*nMaxMessagesCount*/ 6));
 
 			const webSocketTransport = new JSONRPC.Plugins.Client.WebSocketTransport(webSocket);
 			this._jsonrpcClientNonBidirectional.addPlugin(webSocketTransport);
