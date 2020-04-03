@@ -1,6 +1,7 @@
 const JSONRPC = {};
 JSONRPC.ClientPluginBase = require("../../ClientPluginBase");
 JSONRPC.Utils = require("../../Utils");
+JSONRPC.Exception = require("../../Exception");
 
 JSONRPC.WebSocketAdapters = {};
 JSONRPC.WebSocketAdapters.WebSocketWrapperBase = require("../../WebSocketAdapters/WebSocketWrapperBase");
@@ -37,8 +38,8 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 	 * 
 	 * fnWaitReadyOnConnected is expected to return a Promise (async function).
 	 * 
-	 * All API calls on the JSONRPC.Client instance which has this transport added 
-	 * MUST set the .rpc() bSkipWaitReady param to true or else will hang forever.
+	 * Inside fnWaitReadyOnConnected, all API calls made through the JSONRPC.Client instance which has this transport added 
+	 * MUST set the .rpc() bSkipWaitReadyOnConnect param (or .rpcX({skipWaitReadyOnConnect})) to true or else will hang forever.
 	 * 
 	 * @param {WebSocket|null} webSocket = null
 	 * @param {boolean|undefined} bBidirectionalWebSocketMode = false
@@ -53,6 +54,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 			// Auto reconnect params.
 			strWebSocketURL = null, 
 			fnWaitReadyOnConnected = null, 
+			nWaitReadyTimeoutSeconds = 20, 
 
 			// Auto reconnect params when bBidirectionalWebSocketMode = true.
 			jsonrpcBidirectionalRouter = null, 
@@ -77,6 +79,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 		this._webSocket = webSocket;
 		this._bAutoReconnect = bAutoReconnect;
 		this._fnWaitReadyOnConnected = fnWaitReadyOnConnected;
+		this._nWaitReadyTimeoutSeconds = nWaitReadyTimeoutSeconds;
 		this._jsonrpcBidirectionalRouter = jsonrpcBidirectionalRouter;
 		this._jsonrpcClient = jsonrpcClient;
 
@@ -137,10 +140,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 	}
 
 
-	/**
-	 * @override
-	 */
-	async waitReady()
+	async _initWebSocket()
 	{
 		if(!this._bAutoReconnect)
 		{
@@ -151,8 +151,28 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 		{
 			return this._waitReadyPromise;
 		}
+	}
 
-		this._waitReadyPromise = new Promise(async(fnResolve, fnReject) => {
+
+	/**
+	 * @override
+	 */
+	async waitReady({bSkipWaitReadyOnConnect = false})
+	{
+		if(!this._bAutoReconnect)
+		{
+			return;
+		}
+
+		if(this._waitReadyPromise && !bSkipWaitReadyOnConnect)
+		{
+			return this._waitReadyPromise;
+		}
+
+		const promise = new Promise(async(fnResolve, fnReject) => {
+			let nTimeoutID;
+			let webSocket = this._webSocket;
+
 			try
 			{
 				if(
@@ -182,29 +202,45 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 				{
 					const WebSocketClass = this.webSocketClass();
 					this._webSocket = new WebSocketClass(this._strWebSocketURL);
+					webSocket = this._webSocket;
 					this._setupWebSocket();
+
+					nTimeoutID = setTimeout(
+						() => {
+							const error = new JSONRPC.Exception(
+								`Timeout connecting to server. waitReady() in JSONRPC WebSocketTransport timed out after ${this._nWaitReadyTimeoutSeconds} seconds.`, 
+								JSONRPC.Exception.REQUEST_EXPIRED
+							);
+							fnReject(error);
+							webSocket.close(
+								/*CLOSE_NORMAL*/ 1000, // Chrome only supports 1000 or the 3000-3999 range ///* CloseEvent.Internal Error */ 1011, 
+								error.message
+							);
+						},
+						this._nWaitReadyTimeoutSeconds * 1000
+					);
 
 					await new Promise((__fnResolve, __fnReject) => {
 						// Promise callback may execute on the next VM pass or even much later together with CPU exhaustion.
 						// Testing state because of small chance of race condition until adding listeners
 
-						if([WebSocket.CLOSED, WebSocket.CLOSING].includes(this._webSocket.readyState))
+						if([WebSocket.CLOSED, WebSocket.CLOSING].includes(webSocket.readyState))
 						{
 							__fnReject(new Error("WebSocket closed immediately and unexpectedly."));
 						}
 
 						// Most likely WebSocket.CONNECTING, there isn't any other lifecyle state at the time of implementing this.
-						else if(![WebSocket.OPEN].includes(this._webSocket.readyState))
+						else if(![WebSocket.OPEN].includes(webSocket.readyState))
 						{
-							if(this._webSocket.on && this._webSocket.removeListener && process && process.release)
+							if(webSocket.on && webSocket.removeListener && process && process.release)
 							{
-								this._webSocket.on("open", __fnResolve);
-								this._webSocket.on("error", __fnReject);
+								webSocket.on("open", __fnResolve);
+								webSocket.on("error", __fnReject);
 							}
-							else if(this._webSocket.addEventListener && this._webSocket.removeEventListener)
+							else if(webSocket.addEventListener && webSocket.removeEventListener)
 							{
-								this._webSocket.addEventListener("open", __fnResolve);
-								this._webSocket.addEventListener("error", __fnReject);
+								webSocket.addEventListener("open", __fnResolve);
+								webSocket.addEventListener("error", __fnReject);
 							}
 							else
 							{
@@ -213,23 +249,23 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 						}
 					});
 
-					if(![WebSocket.OPEN].includes(this._webSocket.readyState))
+					if(![WebSocket.OPEN].includes(webSocket.readyState))
 					{
 						throw new Error("Was expecting WebSocket to be open at this stage.");
 					}
 
 					if(this._bBidirectionalWebSocketMode)
 					{
-						const nWebSocketConnectionID = this._jsonrpcBidirectionalRouter.addWebSocketSync(this._webSocket);
+						const nWebSocketConnectionID = this._jsonrpcBidirectionalRouter.addWebSocketSync(webSocket);
 						
 						// Store this client as reverse calls client.
 						this._jsonrpcBidirectionalRouter.connectionIDToSingletonClient(nWebSocketConnectionID, /*client class reference*/ null, this._jsonrpcClient);
 					}
+				}
 
-					if(this._fnWaitReadyOnConnected)
-					{
-						await this._fnWaitReadyOnConnected();
-					}
+				if(this._fnWaitReadyOnConnected && !bSkipWaitReadyOnConnect)
+				{
+					await this._fnWaitReadyOnConnected();
 				}
 
 				fnResolve();
@@ -242,7 +278,21 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 				fnReject(error);
 				this._waitReadyPromise = null;
 			}
+			finally
+			{
+				if(nTimeoutID !== undefined)
+				{
+					clearTimeout(nTimeoutID);
+				}
+			}
 		});
+
+		if(!bSkipWaitReadyOnConnect)
+		{
+			this._waitReadyPromise = promise;
+		}
+
+		return promise;
 	}
 
 
@@ -366,10 +416,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 			return;
 		}
 
-		if(!outgoingRequest.skipWaitReady)
-		{
-			await this.waitReady();
-		}
+		await this.waitReady({bSkipWaitReadyOnConnect: outgoingRequest.skipWaitReadyOnConnect});
 
 		if(this.webSocket.readyState !== JSONRPC.WebSocketAdapters.WebSocketWrapperBase.OPEN)
 		{
@@ -437,10 +484,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 		}
 
 
-		if(!outgoingRequest.skipWaitReady)
-		{
-			await this.waitReady();
-		}
+		await this.waitReady({bSkipWaitReadyOnConnect: outgoingRequest.skipWaitReadyOnConnect});
 		this.webSocket.send(outgoingRequest.requestBody);
 
 

@@ -123,253 +123,283 @@ class Client extends EventEmitter
 	 * https://nodejs.org/dist/latest-v10.x/docs/api/worker_threads.html#worker_threads_worker_postmessage_value_transferlist
 	 * https://developer.mozilla.org/en-US/docs/Web/API/Worker/postMessage
 	 * 
-	 * bSkipWaitReady = true is used internally by plugins when making extra initialization calls during the ClientPluginBase.waitReady() API call.
-	 * It can also be set to true in various APIs which call .rpc() to allow them to bypass the ClientPluginBase.waitReady() initialization phase.
+	 * Plugins may be making extra initialization calls during the ClientPluginBase.waitReady() API call.
+	 * bSkipWaitReadyOnConnect = true is used to bypass calling the on connect callback inside waitReady().
+	 * 
+	 * If nTimeoutSeconds is provided and is > 0 then the call will throw JSONRPC.Exception("Request expired", JSONRPC.Exception.REQUEST_EXPIRED) even if the call is still ongoing.
 	 * 
 	 * @param {string} strFunctionName
 	 * @param {Array} arrParams = []
 	 * @param {boolean} bNotification = false
 	 * @param {ArrayBuffer[]|Transferable[]} arrTransferList = []
-	 * @param {boolean} bSkipWaitReady = false
+	 * @param {{bSkipWaitReadyOnConnect: boolean, nTimeoutSeconds: number|null}} objDestructuringParam
 	 * 
 	 * @returns {*}
 	 */
-	async rpc(strFunctionName, arrParams = [], bNotification = false, arrTransferList = [], bSkipWaitReady = false)
+	async rpc(strFunctionName, arrParams = [], bNotification = false, arrTransferList = [], {bSkipWaitReadyOnConnect = false, nTimeoutSeconds = null} = {})
 	{
-		assert(typeof bNotification === "boolean", "bNotification must be of type boolean.");
-		assert(Array.isArray(arrParams), "arrParams must be an Array.");
-		assert(Array.isArray(arrTransferList), "arrTransferList must be an Array.");
+		const promise = new Promise(async(fnResolve, fnReject) => {
+			let nTimeoutID;
 
-
-		if(!bSkipWaitReady)
-		{
-			const arrPluginReadyPromises = [];
-			for(let plugin of this._arrPlugins)
+			if(nTimeoutSeconds > 0)
 			{
-				arrPluginReadyPromises.push(plugin.waitReady());
+				nTimeoutID = setTimeout(
+					() => {
+						fnReject(new Error(`JSONRPC call timeout after ${nTimeoutSeconds} seconds`));
+					}, 
+					nTimeoutSeconds * 1000
+				);
 			}
-			await Promise.all(arrPluginReadyPromises);
-		}
 
 
-		const outgoingRequest = new JSONRPC.OutgoingRequest(strFunctionName, arrParams, bNotification ? undefined : this._nCallID, arrTransferList, bSkipWaitReady);
+			try
+			{
+				assert(typeof bNotification === "boolean", "bNotification must be of type boolean.");
+				assert(Array.isArray(arrParams), "arrParams must be an Array.");
+				assert(Array.isArray(arrTransferList), "arrTransferList must be an Array.");
 		
-		// Increment even for notification requests, just in case it is referenced somehow elsewhere for other purposes.
-		this._nCallID++;
-
-		try
-		{
-			outgoingRequest.endpointURL = this.endpointURL;
-			outgoingRequest.headers["Content-Type"] = "application/json";
-
-			if(this.httpUser !== null && this.httpPassword !== null)
-			{
-				outgoingRequest.headers["Authorization"] = "Basic " + this._strBase64BasicAuthentication;
-			}
-
-
-			outgoingRequest.requestObject = outgoingRequest.toRequestObject();
-
-			this.emit("beforeJSONEncode", outgoingRequest);
-			for(let plugin of this._arrPlugins)
-			{
-				await plugin.beforeJSONEncode(outgoingRequest);
-			}
-
-
-			if(outgoingRequest.requestBody === null)
-			{
-				outgoingRequest.requestBody = JSON.stringify(outgoingRequest.requestObject, null, "\t");
-			}
-			// console.log(outgoingRequest.requestObject);
-			// console.log(outgoingRequest.requestBody);
-
-			this.emit("afterJSONEncode", outgoingRequest);
-			for(let plugin of this._arrPlugins)
-			{
-				await plugin.afterJSONEncode(outgoingRequest);
-			}
-
-
-			if(!outgoingRequest.isMethodCalled)
-			{
-				this.emit("makeRequest", outgoingRequest);
-			}
-			for(let plugin of this._arrPlugins)
-			{
-				if(outgoingRequest.isMethodCalled)
+		
+				const arrPluginReadyPromises = [];
+				for(let plugin of this._arrPlugins)
 				{
-					break;
+					arrPluginReadyPromises.push(plugin.waitReady({bSkipWaitReadyOnConnect}));
 				}
-
-				await plugin.makeRequest(outgoingRequest);
-			}
-
-
-			let response = null;
-			let bHTTPErrorMode = false;
-			if(!outgoingRequest.isMethodCalled)
-			{
-				let headers;
+				await Promise.all(arrPluginReadyPromises);
+		
+		
+				const outgoingRequest = new JSONRPC.OutgoingRequest(strFunctionName, arrParams, bNotification ? undefined : this._nCallID, arrTransferList, {bSkipWaitReadyOnConnect, nTimeoutSeconds});
 				
-				// Browser mode. If no headers defined, then an empty Headers instance silently causes the browser to not send CORS headers, not even Origin:
-				if(fetch.Headers === undefined || Object.values(outgoingRequest.headers).length === 0)
+				// Increment even for notification requests, just in case it is referenced somehow elsewhere for other purposes.
+				this._nCallID++;
+		
+				try
 				{
-					headers = undefined;
-				}
-				else
-				{
-					headers = new (fetch.Headers ? fetch.Headers : Headers)(outgoingRequest.headers);
-				}
-
-				const objFetchOptions = Object.assign(
-					{}, 
+					outgoingRequest.endpointURL = this.endpointURL;
+					outgoingRequest.headers["Content-Type"] = "application/json";
+		
+					if(this.httpUser !== null && this.httpPassword !== null)
 					{
-						method: "POST",
-						mode: "cors",
-						headers,
-						body: outgoingRequest.requestBody,
-						cache: "no-cache",
-						credentials: "include"
-					},
-					this._objFetchOptions
-				);
-
-				/* eslint-disable*/ 
-				const request = new (fetch.Request ? fetch.Request : Request)(
-					outgoingRequest.endpointURL,
-					objFetchOptions
-				);
-				/* eslint-enable*/ 
-
-				response = await fetch(request, objFetchOptions);
-
-				bHTTPErrorMode = !response.ok; 
-
-				if(
-					!response.ok
-					&& parseInt(response.status, 10) === 0
-				)
-				{
-					outgoingRequest.responseObject = {
-						"jsonrpc": Client.JSONRPC_VERSION,
-						"error": {
-							"code": JSONRPC.Exception.NETWORK_ERROR,
-							"message": "Network error. The internet connection may have failed."
-						},
-						"id": outgoingRequest.callID
-					}; 
-					outgoingRequest.responseBody = JSON.stringify(outgoingRequest.responseObject, undefined, "\t");
+						outgoingRequest.headers["Authorization"] = "Basic " + this._strBase64BasicAuthentication;
+					}
+		
+		
+					outgoingRequest.requestObject = outgoingRequest.toRequestObject();
+		
+					this.emit("beforeJSONEncode", outgoingRequest);
+					for(let plugin of this._arrPlugins)
+					{
+						await plugin.beforeJSONEncode(outgoingRequest);
+					}
+		
+		
+					if(outgoingRequest.requestBody === null)
+					{
+						outgoingRequest.requestBody = JSON.stringify(outgoingRequest.requestObject, null, "\t");
+					}
+					// console.log(outgoingRequest.requestObject);
+					// console.log(outgoingRequest.requestBody);
+		
+					this.emit("afterJSONEncode", outgoingRequest);
+					for(let plugin of this._arrPlugins)
+					{
+						await plugin.afterJSONEncode(outgoingRequest);
+					}
+		
+		
+					if(!outgoingRequest.isMethodCalled)
+					{
+						this.emit("makeRequest", outgoingRequest);
+					}
+					for(let plugin of this._arrPlugins)
+					{
+						if(outgoingRequest.isMethodCalled)
+						{
+							break;
+						}
+		
+						await plugin.makeRequest(outgoingRequest);
+					}
+		
+		
+					let response = null;
+					let bHTTPErrorMode = false;
+					if(!outgoingRequest.isMethodCalled)
+					{
+						let headers;
+						
+						// Browser mode. If no headers defined, then an empty Headers instance silently causes the browser to not send CORS headers, not even Origin:
+						if(fetch.Headers === undefined || Object.values(outgoingRequest.headers).length === 0)
+						{
+							headers = undefined;
+						}
+						else
+						{
+							headers = new (fetch.Headers ? fetch.Headers : Headers)(outgoingRequest.headers);
+						}
+		
+						const objFetchOptions = Object.assign(
+							{}, 
+							{
+								method: "POST",
+								mode: "cors",
+								headers,
+								body: outgoingRequest.requestBody,
+								cache: "no-cache",
+								credentials: "include"
+							},
+							this._objFetchOptions
+						);
+		
+						/* eslint-disable*/ 
+						const request = new (fetch.Request ? fetch.Request : Request)(
+							outgoingRequest.endpointURL,
+							objFetchOptions
+						);
+						/* eslint-enable*/ 
+		
+						response = await fetch(request, objFetchOptions);
+		
+						bHTTPErrorMode = !response.ok; 
+		
+						if(
+							!response.ok
+							&& parseInt(response.status, 10) === 0
+						)
+						{
+							outgoingRequest.responseObject = {
+								"jsonrpc": Client.JSONRPC_VERSION,
+								"error": {
+									"code": JSONRPC.Exception.NETWORK_ERROR,
+									"message": "Network error. The internet connection may have failed."
+								},
+								"id": outgoingRequest.callID
+							}; 
+							outgoingRequest.responseBody = JSON.stringify(outgoingRequest.responseObject, undefined, "\t");
+						}
+						else
+						{
+							outgoingRequest.responseBody = await response.text();
+						}
+					}
+		
+		
+					if(bNotification)
+					{
+						outgoingRequest.responseObject = {
+							"jsonrpc": Client.JSONRPC_VERSION,
+							"result": null
+							// Notifications don't even have responses. The response object is faked to make it easier for plugins and this class as well.
+							// Notifications must not have an id property.
+						}; 
+						outgoingRequest.responseBody = JSON.stringify(outgoingRequest.responseObject, undefined, "\t");
+					}
+		
+		
+					this.emit("beforeJSONDecode", outgoingRequest);
+					for(let plugin of this._arrPlugins)
+					{
+						await plugin.beforeJSONDecode(outgoingRequest);
+					}
+		
+		
+					if(outgoingRequest.responseObject === null || outgoingRequest.responseObject === undefined)
+					{
+						outgoingRequest.responseObject = JSONRPC.Utils.jsonDecodeSafe(outgoingRequest.responseBody);
+					}
+					
+		
+					this.emit("afterJSONDecode", outgoingRequest);
+					for(let plugin of this._arrPlugins)
+					{
+						await plugin.afterJSONDecode(outgoingRequest);
+					}
+		
+		
+					if(outgoingRequest.responseObject.hasOwnProperty("error"))
+					{
+						if(
+							!outgoingRequest.responseObject.error.hasOwnProperty("message")
+							|| typeof outgoingRequest.responseObject.error.message !== "string"
+							|| !outgoingRequest.responseObject.error.hasOwnProperty("code")
+							|| typeof outgoingRequest.responseObject.error.code !== "number"
+						)
+						{
+							outgoingRequest.callResult = new JSONRPC.Exception("Invalid error object on JSONRPC protocol response. Response: " + JSON.stringify(outgoingRequest.responseObject), JSONRPC.Exception.INTERNAL_ERROR);
+						}
+						else
+						{
+							outgoingRequest.callResult = new JSONRPC.Exception(outgoingRequest.responseObject.error.message, outgoingRequest.responseObject.error.code, outgoingRequest.responseObject.error.data ? outgoingRequest.responseObject.error.data : {});
+						}
+					}
+					else if(outgoingRequest.responseObject.hasOwnProperty("result"))
+					{
+						outgoingRequest.callResult = outgoingRequest.responseObject.result; 
+					}
+					else
+					{
+						bHTTPErrorMode = true;
+					}
+		
+		
+					if(
+						bHTTPErrorMode
+						&& !(outgoingRequest.callResult instanceof Error)
+					)
+					{
+						outgoingRequest.callResult = new JSONRPC.Exception(
+							"Invalid error object on JSONRPC protocol response. Response object: " + JSON.stringify(outgoingRequest.responseObject) + ". HTTP response class instance: " + JSON.stringify(response) + ".", 
+							JSONRPC.Exception.INTERNAL_ERROR
+						);
+					}
 				}
-				else
+				catch(error)
 				{
-					outgoingRequest.responseBody = await response.text();
+					outgoingRequest.callResult = error;
+				}
+		
+		
+				if(outgoingRequest.callResult instanceof Error)
+				{
+					this.emit("exceptionCatch", outgoingRequest);
+					for(let plugin of this._arrPlugins)
+					{
+						await plugin.exceptionCatch(outgoingRequest);
+					}
+					//assert(outgoingRequest.callResult instanceof Error, " A plugin has reset the outgoingRequest.callResult to a non-error.");
+		
+					throw outgoingRequest.callResult;
+				}
+		
+		
+				fnResolve(outgoingRequest.callResult);
+			}
+			catch(error)
+			{
+				fnReject(error);
+			}
+			finally
+			{
+				if(nTimeoutID !== undefined)
+				{
+					clearTimeout(nTimeoutID);
 				}
 			}
+		});
 
-
-			if(bNotification)
-			{
-				outgoingRequest.responseObject = {
-					"jsonrpc": Client.JSONRPC_VERSION,
-					"result": null
-					// Notifications don't even have responses. The response object is faked to make it easier for plugins and this class as well.
-					// Notifications must not have an id property.
-				}; 
-				outgoingRequest.responseBody = JSON.stringify(outgoingRequest.responseObject, undefined, "\t");
-			}
-
-
-			this.emit("beforeJSONDecode", outgoingRequest);
-			for(let plugin of this._arrPlugins)
-			{
-				await plugin.beforeJSONDecode(outgoingRequest);
-			}
-
-
-			if(outgoingRequest.responseObject === null || outgoingRequest.responseObject === undefined)
-			{
-				outgoingRequest.responseObject = JSONRPC.Utils.jsonDecodeSafe(outgoingRequest.responseBody);
-			}
-			
-
-			this.emit("afterJSONDecode", outgoingRequest);
-			for(let plugin of this._arrPlugins)
-			{
-				await plugin.afterJSONDecode(outgoingRequest);
-			}
-
-
-			if(outgoingRequest.responseObject.hasOwnProperty("error"))
-			{
-				if(
-					!outgoingRequest.responseObject.error.hasOwnProperty("message")
-					|| typeof outgoingRequest.responseObject.error.message !== "string"
-					|| !outgoingRequest.responseObject.error.hasOwnProperty("code")
-					|| typeof outgoingRequest.responseObject.error.code !== "number"
-				)
-				{
-					outgoingRequest.callResult = new JSONRPC.Exception("Invalid error object on JSONRPC protocol response. Response: " + JSON.stringify(outgoingRequest.responseObject), JSONRPC.Exception.INTERNAL_ERROR);
-				}
-				else
-				{
-					outgoingRequest.callResult = new JSONRPC.Exception(outgoingRequest.responseObject.error.message, outgoingRequest.responseObject.error.code, outgoingRequest.responseObject.error.data ? outgoingRequest.responseObject.error.data : {});
-				}
-			}
-			else if(outgoingRequest.responseObject.hasOwnProperty("result"))
-			{
-				outgoingRequest.callResult = outgoingRequest.responseObject.result; 
-			}
-			else
-			{
-				bHTTPErrorMode = true;
-			}
-
-
-			if(
-				bHTTPErrorMode
-				&& !(outgoingRequest.callResult instanceof Error)
-			)
-			{
-				outgoingRequest.callResult = new JSONRPC.Exception(
-					"Invalid error object on JSONRPC protocol response. Response object: " + JSON.stringify(outgoingRequest.responseObject) + ". HTTP response class instance: " + JSON.stringify(response) + ".", 
-					JSONRPC.Exception.INTERNAL_ERROR
-				);
-			}
-		}
-		catch(error)
-		{
-			outgoingRequest.callResult = error;
-		}
-
-
-		if(outgoingRequest.callResult instanceof Error)
-		{
-			this.emit("exceptionCatch", outgoingRequest);
-			for(let plugin of this._arrPlugins)
-			{
-				await plugin.exceptionCatch(outgoingRequest);
-			}
-			//assert(outgoingRequest.callResult instanceof Error, " A plugin has reset the outgoingRequest.callResult to a non-error.");
-
-			throw outgoingRequest.callResult;
-		}
-
-
-		return outgoingRequest.callResult;
+		return promise;
 	}
 
 
 	/**
 	 * Same as .rpc() but with destructuring params.
 	 * 
-	 * @param {{method: string, params: Array, isNotification: boolean, transferList: ArrayBuffer[]|Transferable[], skipWaitReady: boolean}} objDestructuringParam
+	 * @param {{method: string, params: Array, isNotification: boolean, transferList: ArrayBuffer[]|Transferable[], skipWaitReadyOnConnect: boolean}} objDestructuringParam
 	 * 
 	 * @returns {*}
 	 */
-	async rpcX({method, params = [], isNotification = false, transferList = [], skipWaitReady = false} = {})
+	async rpcX({method, params = [], isNotification = false, transferList = [], skipWaitReadyOnConnect = false, timeoutSeconds = 20} = {})
 	{
-		return await this.rpc(method, params, isNotification, transferList, skipWaitReady);
+		return await this.rpc(method, params, isNotification, transferList, {bSkipWaitReadyOnConnect: skipWaitReadyOnConnect, nTimeoutSeconds: timeoutSeconds});
 	}
 
 

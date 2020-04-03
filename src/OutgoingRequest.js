@@ -22,14 +22,15 @@ class OutgoingRequest
 	 * @param {Array} arrParams
 	 * @param {number|string|undefined} mxCallID
 	 * @param {ArrayBuffer[]|Transferable[]} arrTransferList = []
-	 * @param {boolean} bSkipWaitReady = false
+	 * @param {{bSkipWaitReadyOnConnect: boolean}} objDestructuringParam
 	 */
-	constructor(strMethod, arrParams, mxCallID, arrTransferList = [], bSkipWaitReady = false)
+	constructor(strMethod, arrParams, mxCallID, arrTransferList = [], {bSkipWaitReadyOnConnect = false, nTimeoutSeconds = null} = {})
 	{
 		this._strMethod = strMethod;
 		this._arrParams = arrParams;
 
-		this._bSkipWaitReady = bSkipWaitReady;
+		this._bSkipWaitReadyOnConnect = bSkipWaitReadyOnConnect;
+		this._nTimeoutSeconds = nTimeoutSeconds;
 
 		this._requestObject = null;
 		this._mxRequestBody = null;
@@ -130,9 +131,18 @@ class OutgoingRequest
 	/**
 	 * @returns {boolean}
 	 */
-	get skipWaitReady()
+	get skipWaitReadyOnConnect()
 	{
-		return this._bSkipWaitReady;
+		return this._bSkipWaitReadyOnConnect;
+	}
+
+
+	/**
+	 * @returns {number|null}
+	 */
+	get timeoutSeconds()
+	{
+		return this._nTimeoutSeconds;
 	}
 
 
