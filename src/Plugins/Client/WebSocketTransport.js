@@ -23,6 +23,10 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 	 * strWebSocketURL can be null as it will be copied from webSocket.url.
 	 * waitReady() is not used.
 	 * fnWaitReadyOnConnected is ignored if provided.
+	 * Example: 
+	 * const webSocket = new WebSocket("wss://yourdomain.com/api/ws");
+	 * const bBidirectionalMode = false;
+	 * new WebSocketTransport(webSocket, bBidirectionalMode);
 	 * 
 	 * ***** bAutoReconnect = true *****
 	 * If bAutoReconnect is true then waitReady() is used in .rpc() and .makeRequest().
@@ -30,7 +34,26 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 	 * The webSocket needs to passed as null when bAutoReconnect is true as it will be created automatically.
 	 * strWebSocketURL must be non-null.
 	 * fnWaitReadyOnConnected is expected to return a Promise (async function).
+	 *
+	 * Auto-reconnecting client example: 
+	 *
+	 * const client = new JSONRPC.Client("https://yourdomain.com/api");
 	 * 
+	 * const bBidirectionalMode = false;
+	 * const webSocketTransport = new JSONRPC.Plugins.Client.WebSocketTransport(
+	 *     null, 
+	 *     bBidirectionalMode, 
+	 *     {
+	 *         bAutoReconnect: true,
+	 *         strWebSocketURL: "wss://yourdomain.com/api",
+	 *         fnWaitReadyOnConnected: async() => {
+         *             await client.rpcX({method: "login", params: ["admin", "password"], skipWaitReadyOnConnect: true});
+	 *         }
+	 *     }
+	 * );
+	 * client.addPlugin(webSocketTransport);
+	 * 
+	 *
 	 * strWebSocketURL is extracted automatically from webSocket if a webSocket is provided, otherwise it is mandatory to be set.
 	 * 
 	 * fnWaitReadyOnConnected gives a chance to make extra API calls, like authentication calls, right after the websocket becomes connected.
