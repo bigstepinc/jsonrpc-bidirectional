@@ -223,6 +223,8 @@ const fDivisionResult = await testClient.divide(2, 1);
 ## Simple JSONRPC.Client over WebSocket
 Non-bidirectional JSONRPC.Client over a WebSocket client connection.
 
+The client automatically reconnects in case of a connection drop.
+
 ```JavaScript
 const JSONRPC = require("jsonrpc-bidirectional");
 const WebSocket = require("ws");
@@ -232,17 +234,23 @@ const WebSocket = require("ws");
 // If not using `websockets/ws`, the WebSocketTransport plugin may be extended to override WebSocketTransport._setupWebSocket().
 
 
-const ws = new WebSocket("ws://localhost/api");
-await new Promise((fnResolve, fnReject) => {
-	ws.on("open", fnResolve);
-	ws.on("error", fnReject);
-});
+const testClient = new TestClient("http://localhost/api");
 
-
-const testClient = new TestClient("ws://localhost/api");
-
-
-const webSocketTransport = new JSONRPC.Plugins.Client.WebSocketTransport(ws);
+// Reconnecting websocket transport.
+const webSocketTransport = new JSONRPC.Plugins.Client.WebSocketTransport(
+	/*ws*/ null, 
+	/*bBidirectionalMode*/ false,
+	{
+		bAutoReconnect: true,
+		strWebSocketURL: "ws://localhost/api"", 
+		
+		// Optional WebSocket extra-initialization after the WebSocket becomes "open" (connected).
+		fnWaitReadyOnConnected: async() => {
+		        // Optional to authenticate the connection.
+			await testClient.rpcX({method: "login", params: ["admin", "password"], skipWaitReadyOnConnect: true});
+		}
+	}
+);
 testClient.addPlugin(webSocketTransport);
 
 
