@@ -16,30 +16,30 @@ module.exports =
 class WebSocketTransport extends JSONRPC.ClientPluginBase
 {
 	/**
+	 * ***** bAutoReconnect = false *****
 	 * If bAutoReconnect is false then waitReady() has no effect and the provided webSocket is expected to be connected when passed to the constructor.
 	 * If the webSocket becomes disconnected it will not be reconnected.
 	 * strWebSocketURL can be null as it will be copied from webSocket.url.
+	 * waitReady() is not used.
+	 * fnWaitReadyOnConnected is ignored if provided.
 	 * 
+	 * ***** bAutoReconnect = true *****
 	 * If bAutoReconnect is true then waitReady() is used in .rpc() and .makeRequest().
 	 * If the webSocket becomes disconnected it will be reconnected.
 	 * The webSocket needs to passed as null when bAutoReconnect is true as it will be created automatically.
 	 * strWebSocketURL must be non-null.
+	 * fnWaitReadyOnConnected is expected to return a Promise (async function).
 	 * 
 	 * strWebSocketURL is extracted automatically from webSocket if a webSocket is provided, otherwise it is mandatory to be set.
-	 * 
 	 * 
 	 * fnWaitReadyOnConnected gives a chance to make extra API calls, like authentication calls, right after the websocket becomes connected.
 	 * .waitReady() will not resolve until fnWaitReadyOnConnected also resolves.
 	 * 
 	 * fnWaitReadyOnConnected is called by .waitReady() after the webSocket becomes connected when this._bAutoReconnect is true.
-	 * .waitReady() is not used at all if this._bAutoReconnect is false.
-	 * 
-	 * Subclasses should implement fnWaitReadyOnConnected to add .readyWait() functionality before .readyWait() returns.
-	 * 
-	 * fnWaitReadyOnConnected is expected to return a Promise (async function).
+	 * . at all if this._bAutoReconnect is false.
 	 * 
 	 * Inside fnWaitReadyOnConnected, all API calls made through the JSONRPC.Client instance which has this transport added 
-	 * MUST set the .rpc() bSkipWaitReadyOnConnect param (or .rpcX({skipWaitReadyOnConnect})) to true or else will hang forever.
+	 * MUST set the .rpc() bSkipWaitReadyOnConnect param (or .rpcX({skipWaitReadyOnConnect})) to true or else the call will hang forever.
 	 * 
 	 * @param {WebSocket|null} webSocket = null
 	 * @param {boolean|undefined} bBidirectionalWebSocketMode = false
