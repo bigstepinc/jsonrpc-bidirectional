@@ -18,6 +18,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 	/**
 	 * ***** bAutoReconnect = false *****
 	 * If bAutoReconnect is false then waitReady() has no effect and the provided webSocket is expected to be connected when passed to the constructor.
+	 * The webSocket param cannot be null.
 	 * If the webSocket becomes disconnected it will not be reconnected.
 	 * strWebSocketURL can be null as it will be copied from webSocket.url.
 	 * waitReady() is not used.
