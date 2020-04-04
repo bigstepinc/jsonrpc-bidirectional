@@ -327,6 +327,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 	{
 		try
 		{
+			this._bAutoReconnect = false;
 			this._webSocket.close();
 		}
 		catch(error)
