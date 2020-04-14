@@ -144,7 +144,7 @@ class BidirectionalWebsocketRouter extends JSONRPC.RouterBase
 	{
 		const clientReverseCalls = new ClientClass(objSession.strEndpointPath);
 		
-		objSession.clientWebSocketTransportPlugin = new JSONRPC.Plugins.Client.WebSocketTransport(objSession.webSocket, /*bBidirectionalWebSocketMode*/ true);
+		objSession.clientWebSocketTransportPlugin = new JSONRPC.Plugins.Client.WebSocketTransport(objSession.webSocket, /*bBidirectionalWebSocketMode*/ true, this._objTransportOptions);
 		clientReverseCalls.addPlugin(objSession.clientWebSocketTransportPlugin);
 
 		this.emit("madeReverseCallsClient", clientReverseCalls);

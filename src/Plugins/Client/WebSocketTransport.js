@@ -11,6 +11,8 @@ const assert = require("assert");
 const sleep = require("sleep-promise");
 const WebSocket = require("ws");
 
+const fnNoop = () => {};
+
 
 module.exports =
 class WebSocketTransport extends JSONRPC.ClientPluginBase
@@ -41,14 +43,25 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 	 * Inside fnWaitReadyOnConnected, all API calls made through the JSONRPC.Client instance which has this transport added 
 	 * MUST set the .rpc() bSkipWaitReadyOnConnect param (or .rpcX({skipWaitReadyOnConnect})) to true or else will hang forever.
 	 * 
+	 * 
+	 * A WebSocket ping control frame (most efficient way to ping for a WebSocket) is sent at an interval (nKeepAliveTimeoutMilliseconds / 2) by the server side (if configured to do so using a non-null nKeepAliveTimeoutMilliseconds). 
+	 * The client checks (if configured to do so using a non-null nKeepAliveTimeoutMilliseconds) if a ping was received since connecting or since the last ping (whichever came last).
+	 * If the ping (or pong for compatibility with other keep alive systems in other libraries) control frame is not seen by the client for nKeepAliveTimeoutMilliseconds then the client will close its WebSocket.
+	 * If the pong (or ping for compatibility with other keep alive systems in other libraries) control frame is not seen by the server for nKeepAliveTimeoutMilliseconds then the server will close its WebSocket.
+	 * 
+	 * nKeepAliveTimeoutMilliseconds can to be configured on both the server and the client. When configuring nKeepAliveTimeoutMilliseconds on a client which doesn't support the WebSocket.ping() API (like some browsers), 
+	 * then nKeepAliveTimeoutMilliseconds MUST be configured on the server as well.
+	 * 
 	 * @param {WebSocket|null} webSocket = null
 	 * @param {boolean|undefined} bBidirectionalWebSocketMode = false
-	 * @param {{strWebSocketURL: string|null, bAutoReconnect: boolean, fnWaitReadyOnConnected: Function|null, jsonrpcBidirectionalRouter: JSONRPC.RouterBase|null, jsonrpcClient: JSONRPC.Client|null}} objDestructuringParam
+	 * @param {{strWebSocketURL: string|null, bAutoReconnect: boolean, fnWaitReadyOnConnected: Function|null, jsonrpcBidirectionalRouter: JSONRPC.RouterBase|null, jsonrpcClient: JSONRPC.Client|null, nKeepAliveTimeoutMilliseconds: number|null}} objDestructuringParam
 	 */
 	constructor(
 		webSocket = null, 
 		bBidirectionalWebSocketMode = false, 
 		{
+			nKeepAliveTimeoutMilliseconds = null, 
+
 			bAutoReconnect = false, 
 
 			// Auto reconnect params.
@@ -82,6 +95,11 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 		this._nWaitReadyTimeoutSeconds = nWaitReadyTimeoutSeconds;
 		this._jsonrpcBidirectionalRouter = jsonrpcBidirectionalRouter;
 		this._jsonrpcClient = jsonrpcClient;
+		
+		this._nKeepAliveTimeoutMilliseconds = nKeepAliveTimeoutMilliseconds;
+		this._nIntervalIDSendKeepAlivePing = null;
+		this._nTimeoutIDCheckKeepAliveReceived = null;
+		this._bKeepAliveSeen = false;
 
 
 		if(bAutoReconnect && !this._jsonrpcBidirectionalRouter && bBidirectionalWebSocketMode)
@@ -112,6 +130,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 		if(webSocket)
 		{
 			this._setupWebSocket();
+			this._setupKeepAlive(webSocket);
 		}
 		
 		if(!webSocket && !strWebSocketURL)
@@ -150,6 +169,110 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 		if(this._waitReadyPromise)
 		{
 			return this._waitReadyPromise;
+		}
+	}
+
+
+	_setupKeepAlive(webSocket)
+	{
+		if(this._nKeepAliveTimeoutMilliseconds !== null)
+		{
+			if(webSocket.readyState === WebSocket.OPEN)
+			{
+				this._bKeepAliveSeen = false;
+
+				if(webSocket.ping)
+				{
+					this._nIntervalIDSendKeepAlivePing = setInterval(() => {
+						webSocket.ping(fnNoop);
+					}, Math.max(1, Math.floor(this._nKeepAliveTimeoutMilliseconds / 2)));
+				}
+
+				const fnOnKeepAlive = (() => {
+					this._bKeepAliveSeen = true;
+
+					if(this._nTimeoutIDCheckKeepAliveReceived !== null)
+					{
+						clearTimeout(this._nTimeoutIDCheckKeepAliveReceived);
+					}
+
+					this._nTimeoutIDCheckKeepAliveReceived = setTimeout(() => {
+						if(this._bKeepAliveSeen)
+						{
+							this._bKeepAliveSeen = false;
+						}
+						else
+						{
+							if([WebSocket.CLOSING, WebSocket.OPEN].includes(webSocket.readyState))
+							{
+								console.error(`Closing WebSocket because timed out after ${this._nKeepAliveTimeoutMilliseconds} milliseconds waiting for ping/pong keep alive control frame.`);
+
+								webSocket.close(
+									/*CLOSE_NORMAL*/ 1000, // Chrome only supports 1000 or the 3000-3999 range ///* CloseEvent.Internal Error */ 1011, 
+									`Closing WebSocket because timed out after ${this._nKeepAliveTimeoutMilliseconds} milliseconds waiting for ping/pong keep alive control frame.`
+								);
+							}
+						}
+					}, this._nKeepAliveTimeoutMilliseconds);
+				}).bind(this);
+				
+				
+				fnOnKeepAlive();
+
+
+				const fnOnClose = (nCode, strReason, bWasClean) => {
+					if(this._nIntervalIDSendKeepAlivePing !== null)
+					{
+						clearInterval(this._nIntervalIDSendKeepAlivePing);
+						this._nIntervalIDSendKeepAlivePing = null;
+					}
+
+					if(this._nTimeoutIDCheckKeepAliveReceived !== null)
+					{
+						clearTimeout(this._nTimeoutIDCheckKeepAliveReceived);
+						this._nTimeoutIDCheckKeepAliveReceived = null;
+					}
+
+					if(webSocket.on && webSocket.removeListener && process && process.release)
+					{
+						webSocket.removeListener("pong", fnOnKeepAlive);
+						webSocket.removeListener("ping", fnOnKeepAlive);
+						webSocket.removeListener("close", fnOnClose);
+					}
+					else if(webSocket.addEventListener && webSocket.removeEventListener)
+					{
+						webSocket.removeEventListener("pong", fnOnKeepAlive);
+						webSocket.removeEventListener("ping", fnOnKeepAlive);
+						webSocket.removeEventListener("close", fnOnClose);
+					}
+					else
+					{
+						throw new Error("Failed to detect runtime or websocket interface type (browser, nodejs, websockets/ws npm package compatible interface, etc.");
+					}
+				};
+
+
+				if(webSocket.on && webSocket.removeListener && process && process.release)
+				{
+					webSocket.on("pong", fnOnKeepAlive);
+					webSocket.on("ping", fnOnKeepAlive);
+					webSocket.on("close", fnOnClose);
+				}
+				else if(webSocket.addEventListener && webSocket.removeEventListener)
+				{
+					webSocket.addEventListener("pong", fnOnKeepAlive);
+					webSocket.addEventListener("ping", fnOnKeepAlive);
+					webSocket.addEventListener("close", fnOnClose);
+				}
+				else
+				{
+					throw new Error("Failed to detect runtime or websocket interface type (browser, nodejs, websockets/ws npm package compatible interface, etc.");
+				}
+			}
+			else
+			{
+				throw new Error(`Was expecting WebSocket passed to ._setupKeepAlive() to to be in WebSocket.OPEN readyState. Found readyState ${webSocket.readyState}`);
+			}
 		}
 	}
 
@@ -254,6 +377,8 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 						throw new Error("Was expecting WebSocket to be open at this stage.");
 					}
 
+					this._setupKeepAlive(webSocket);
+
 					if(this._bBidirectionalWebSocketMode)
 					{
 						const nWebSocketConnectionID = this._jsonrpcBidirectionalRouter.addWebSocketSync(webSocket);
@@ -262,6 +387,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 						this._jsonrpcBidirectionalRouter.connectionIDToSingletonClient(nWebSocketConnectionID, /*client class reference*/ null, this._jsonrpcClient);
 					}
 				}
+
 
 				if(this._fnWaitReadyOnConnected && !bSkipWaitReadyOnConnect)
 				{

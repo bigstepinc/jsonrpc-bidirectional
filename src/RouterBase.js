@@ -19,8 +19,9 @@ class RouterBase extends EventEmitter
 	 * If jsonrpcServer is non-null and classReverseCallsClient is set on at least one endpoint, then bi-directional JSONRPC over the same websocket is enabled.
 	 * 
 	 * @param {JSONRPC.Server|null} jsonrpcServer
+	 * @param {object} objTransportOptions = {}
 	 */
-	constructor(jsonrpcServer)
+	constructor(jsonrpcServer, objTransportOptions = {})
 	{
 		super();
 
@@ -31,6 +32,7 @@ class RouterBase extends EventEmitter
 		this._nConnectionIDCounter = 0;
 
 		this._objSessions = {};
+		this._objTransportOptions = objTransportOptions;
 	}
 
 

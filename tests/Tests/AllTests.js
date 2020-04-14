@@ -950,7 +950,7 @@ class AllTests
 
 
 		console.log("[" + process.pid + "] Instantiating JSONRPC.BidirectionalWebsocketRouter on SiteA.");
-		const wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(this._jsonrpcServerSiteA);
+		const wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(this._jsonrpcServerSiteA, {nKeepAliveTimeoutMilliseconds: 1000});
 
 		wsJSONRPCRouter.on(
 			"madeReverseCallsClient",
