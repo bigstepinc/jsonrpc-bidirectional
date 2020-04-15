@@ -224,6 +224,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 						if(this._bKeepAliveSeen)
 						{
 							this._bKeepAliveSeen = false;
+							fnOnKeepAlive();
 						}
 						else
 						{
