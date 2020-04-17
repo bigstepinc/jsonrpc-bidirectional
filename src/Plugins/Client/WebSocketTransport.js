@@ -123,7 +123,6 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 		this._nKeepAliveTimeoutMilliseconds = nKeepAliveTimeoutMilliseconds;
 		this._nIntervalIDSendKeepAlivePing = null;
 		this._nTimeoutIDCheckKeepAliveReceived = null;
-		this._bKeepAliveSeen = false;
 
 
 		if(bAutoReconnect && !this._jsonrpcBidirectionalRouter && bBidirectionalWebSocketMode)
@@ -203,8 +202,6 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 		{
 			if(webSocket.readyState === WebSocket.OPEN)
 			{
-				this._bKeepAliveSeen = false;
-
 				if(webSocket.ping)
 				{
 					this._nIntervalIDSendKeepAlivePing = setInterval(() => {
@@ -213,30 +210,20 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 				}
 
 				const fnOnKeepAlive = (() => {
-					this._bKeepAliveSeen = true;
-
 					if(this._nTimeoutIDCheckKeepAliveReceived !== null)
 					{
 						clearTimeout(this._nTimeoutIDCheckKeepAliveReceived);
 					}
 
 					this._nTimeoutIDCheckKeepAliveReceived = setTimeout(() => {
-						if(this._bKeepAliveSeen)
+						if([WebSocket.CLOSING, WebSocket.OPEN].includes(webSocket.readyState))
 						{
-							this._bKeepAliveSeen = false;
-							fnOnKeepAlive();
-						}
-						else
-						{
-							if([WebSocket.CLOSING, WebSocket.OPEN].includes(webSocket.readyState))
-							{
-								console.error(`Closing WebSocket because timed out after ${this._nKeepAliveTimeoutMilliseconds} milliseconds waiting for ping/pong keep alive control frame.`);
+							console.error(`Closing WebSocket because timed out after ${this._nKeepAliveTimeoutMilliseconds} milliseconds waiting for ping/pong keep alive control frame.`);
 
-								webSocket.close(
-									/*CLOSE_NORMAL*/ 1000, // Chrome only supports 1000 or the 3000-3999 range ///* CloseEvent.Internal Error */ 1011, 
-									`Closing WebSocket because timed out after ${this._nKeepAliveTimeoutMilliseconds} milliseconds waiting for ping/pong keep alive control frame.`
-								);
-							}
+							webSocket.close(
+								/*CLOSE_NORMAL*/ 1000, // Chrome only supports 1000 or the 3000-3999 range ///* CloseEvent.Internal Error */ 1011, 
+								`Closing WebSocket because timed out after ${this._nKeepAliveTimeoutMilliseconds} milliseconds waiting for ping/pong keep alive control frame.`
+							);
 						}
 					}, this._nKeepAliveTimeoutMilliseconds);
 				}).bind(this);
