@@ -49,8 +49,25 @@ class MasterEndpoint extends NodeMultiCoreCPUBase.MasterEndpoint
 	}
 
 
-	async _addWorker()
+	async _addWorker(nPersistentWorkerID=null)
 	{
+		if(nPersistentWorkerID !== undefined && nPersistentWorkerID !== null)
+		{
+			const nExistingThreadID = this.objPersistentWorkerIDToWorkerID[nPersistentWorkerID];
+			if(nExistingThreadID !== undefined)
+			{
+				if(this.objWorkerIDToState[nExistingThreadID].exited !== true)
+				{
+					console.log(`Worker with threadId ${nExistingThreadID} that hasn't exited yet already has persistentId ${nPersistentWorkerID}.`);
+					return;
+				}
+			}
+		}
+		else
+		{
+			nPersistentWorkerID = this._nNextAvailablePersistentWorkerID++;
+		}
+
 		const workerThread = new Threads.Worker(process.mainModule.filename);
 		await new Promise((fnResolve, fnReject) => {
 			workerThread.on("online", fnResolve);
@@ -61,8 +78,12 @@ class MasterEndpoint extends NodeMultiCoreCPUBase.MasterEndpoint
 
 		this.objWorkerIDToState[nThreadID] = {
 			client: null,
-			ready: false
+			ready: false,
+			exited: false,
+			persistendID: nPersistentWorkerID
 		};
+
+		this.objPersistentWorkerIDToWorkerID[nPersistentWorkerID] = nThreadID;
 
 		console.log("Adding worker thread ID " + nThreadID + " to BidirectionalWorkerThreadRouter.");
 
@@ -71,7 +92,8 @@ class MasterEndpoint extends NodeMultiCoreCPUBase.MasterEndpoint
 			async(nExitCode) => {
 				try
 				{
-					console.log(`Worker thread with threadId  ${nThreadID} died. Exit code: ${nExitCode}.`);
+					this.objWorkerIDToState[nThreadID].exited = true;
+					console.log(`Worker thread with threadId  ${nThreadID} and persistentId ${nPersistentWorkerID} died. Exit code: ${nExitCode}.`);
 					
 					this.arrFailureTimestamps.push(new Date().getTime());
 					this.arrFailureTimestamps = this.arrFailureTimestamps.filter((nMillisecondsUnixTime) => {
@@ -87,7 +109,7 @@ class MasterEndpoint extends NodeMultiCoreCPUBase.MasterEndpoint
 						if(!this.bShuttingDown)
 						{
 							await sleep(500);
-							this._addWorker();
+							this._addWorker(nPersistentWorkerID);
 						}
 					}
 				}
@@ -147,6 +169,20 @@ class MasterEndpoint extends NodeMultiCoreCPUBase.MasterEndpoint
 	async _makeBidirectionalRouter()
 	{
 		return new JSONRPC.BidirectionalWorkerThreadRouter(this._jsonrpcServer);
+	}
+
+	async getMyPersistentWorkerID(incomingRequest, nWorkerIDRequester)
+	{
+		const objWorkerState = this.objWorkerIDToState[nWorkerIDRequester];
+
+		if(objWorkerState !== undefined)
+		{
+			return objWorkerState.persistendID;
+		}
+		else
+		{
+			return undefined;
+		}
 	}
 };
 

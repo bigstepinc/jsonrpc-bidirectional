@@ -55,6 +55,11 @@ class MasterClient extends JSONRPC.Client
 	{
 		return this.rpc("rpcWorker", [...arguments]);
 	}
+
+	async getMyPersistentWorkerID()
+	{
+		throw new Error("Subclass must implement getMyPersistentWorkerID()");
+	}
 };
 
 module.exports = MasterClient;

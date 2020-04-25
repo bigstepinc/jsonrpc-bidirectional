@@ -36,6 +36,8 @@ class WorkerEndpoint extends JSONRPC.EndpointBase
 		this.bShuttingDown = false;
 
 		this._bWorkerStarted = false;
+
+		this._nPersistentWorkerID = null;
 	}
 
 
@@ -79,6 +81,11 @@ class WorkerEndpoint extends JSONRPC.EndpointBase
 		return this._masterClient;
 	}
 
+	get persistentWorkerID()
+	{
+		return this._nPersistentWorkerID;
+	}
+
 
 	/**
 	 * This overridable function is called and awaited inside startWorker().
@@ -95,6 +102,7 @@ class WorkerEndpoint extends JSONRPC.EndpointBase
 		}
 
 		// this.masterClient is available here.
+		this._nPersistentWorkerID = await this._masterClient.getMyPersistentWorkerID();
 	}
 
 
