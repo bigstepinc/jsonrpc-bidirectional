@@ -56,9 +56,9 @@ class MasterClient extends JSONRPC.Client
 		return this.rpc("rpcWorker", [...arguments]);
 	}
 
-	async getMyPersistentWorkerID()
+	async getPersistentIDForWorkerID(nWorkerIDRequester = null)
 	{
-		throw new Error("Subclass must implement getMyPersistentWorkerID()");
+		throw new Error("Subclass must implement getPersistentIDForWorkerID()");
 	}
 };
 

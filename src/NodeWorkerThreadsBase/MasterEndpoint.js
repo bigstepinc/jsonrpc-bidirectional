@@ -171,7 +171,7 @@ class MasterEndpoint extends NodeMultiCoreCPUBase.MasterEndpoint
 		return new JSONRPC.BidirectionalWorkerThreadRouter(this._jsonrpcServer);
 	}
 
-	async getMyPersistentWorkerID(incomingRequest, nWorkerIDRequester)
+	async getPersistentIDForWorkerID(incomingRequest, nWorkerIDRequester = null)
 	{
 		const objWorkerState = this.objWorkerIDToState[nWorkerIDRequester];
 

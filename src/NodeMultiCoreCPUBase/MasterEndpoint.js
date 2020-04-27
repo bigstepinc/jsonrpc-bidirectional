@@ -562,9 +562,9 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 		return objResponses;
 	}
 
-	async getMyPersistentWorkerID(incomingRequest, nWorkerIDRequester)
+	async getPersistentIDForWorkerID(incomingRequest, nWorkerIDRequester = null)
 	{
-		throw new Error("Subclass must implement getMyPersistentWorkerID()");
+		throw new Error("Subclass must implement getPersistentIDForWorkerID()");
 	}
 };
 

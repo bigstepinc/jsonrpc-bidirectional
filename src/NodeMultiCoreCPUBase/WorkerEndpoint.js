@@ -101,8 +101,7 @@ class WorkerEndpoint extends JSONRPC.EndpointBase
 			throw new Error("This mustn't be called through JSONRPC.");
 		}
 
-		// this.masterClient is available here.
-		this._nPersistentWorkerID = await this._masterClient.getMyPersistentWorkerID();
+		this._nPersistentWorkerID = await this._masterClient.getPersistentIDForWorkerID();
 	}
 
 

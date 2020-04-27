@@ -15,24 +15,14 @@ catch(error)
  */
 class MasterClient extends NodeMultiCoreCPUBase.MasterClient
 {
-    constructor()
+    async getPersistentIDForWorkerID(nWorkerIDRequester = null)
 	{
-		super(...arguments);
-
-		this._promiseGetMyPersistentWorkerID;
-    }
-    
-    async getMyPersistentWorkerID()
-	{
-		if(this._promiseGetMyPersistentWorkerID === undefined)
+		if(nWorkerIDRequester === null && !Threads.isMainThread)
 		{
-			this._promiseGetMyPersistentWorkerID = new Promise((fnResolve, fnReject) => {
-                const nWorkerIDRequester = Threads.threadId;
-				fnResolve(this.rpc("getMyPersistentWorkerID", [nWorkerIDRequester]));
-			});
+			nWorkerIDRequester = Threads.threadId;
 		}
 
-		return await this._promiseGetMyPersistentWorkerID;
+		return this.rpc("getPersistentIDForWorkerID", [nWorkerIDRequester]);
 	}
 };
 
