@@ -84,7 +84,7 @@ class MasterEndpoint extends NodeMultiCoreCPUBase.MasterEndpoint
 			client: null,
 			ready: false,
 			exited: false,
-			persistendID: nPersistentWorkerID
+			persistentID: nPersistentWorkerID
 		};
 
 		this.objPersistentWorkerIDToWorkerID[nPersistentWorkerID] = nThreadID;
@@ -181,7 +181,7 @@ class MasterEndpoint extends NodeMultiCoreCPUBase.MasterEndpoint
 
 		if(objWorkerState !== undefined)
 		{
-			return objWorkerState.persistendID;
+			return objWorkerState.persistentID;
 		}
 		else
 		{
