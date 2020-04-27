@@ -1,3 +1,5 @@
+const assert = require("assert")
+
 const NodeMultiCoreCPUBase = require("../NodeMultiCoreCPUBase");
 
 const JSONRPC = {
@@ -49,9 +51,11 @@ class MasterEndpoint extends NodeMultiCoreCPUBase.MasterEndpoint
 	}
 
 
-	async _addWorker(nPersistentWorkerID=null)
+	async _addWorker(nPersistentWorkerID = null)
 	{
-		if(nPersistentWorkerID !== undefined && nPersistentWorkerID !== null)
+		assert(nPersistentWorkerID === null || typeof nPersistentWorkerID === "number", `Invalid property type for nPersistentWorkerID in MasterEndpoint. Expected "number", but got ${typeof nPersistentWorkerId}.`);
+
+		if(nPersistentWorkerID !== null)
 		{
 			const nExistingThreadID = this.objPersistentWorkerIDToWorkerID[nPersistentWorkerID];
 			if(nExistingThreadID !== undefined)
