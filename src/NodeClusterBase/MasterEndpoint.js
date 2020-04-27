@@ -1,6 +1,6 @@
 const cluster = require("cluster");
 const os = require("os");
-// const assert = require("assert");
+const assert = require("assert");
 
 const sleep = require("sleep-promise");
 
@@ -47,12 +47,26 @@ class MasterEndpoint extends NodeMultiCoreCPUBase.MasterEndpoint
 			async(worker) => {
 				try
 				{
+					let nPersistentWorkerID;
+					for(let nPersistentWorkerIDIterator in this.objPersistentWorkerIDToWorkerID)
+					{
+						if(this.objPersistentWorkerIDToWorkerID[nPersistentWorkerIDIterator] === worker.id)
+						{
+							nPersistentWorkerID = Number(nPersistentWorkerIDIterator);
+							break;
+						}
+					}
+
+					assert(nPersistentWorkerID !== undefined, `Something went wrong, as worker with PID ${worker.id} wasn't assigned a persistentID before fork.`);
+
 					this.objWorkerIDToState[worker.id] = {
 						client: null,
-						ready: false
+						ready: false,
+						exited: false,
+						persistentID: nPersistentWorkerID
 					};
 
-					console.log("Adding worker ID " + worker.id + " to BidirectionalWorkerRouter.");
+					console.log("Adding worker ID " + worker.id + " and persistent ID " + nPersistentWorkerID + " to BidirectionalWorkerRouter.");
 					const nConnectionID = await this._bidirectionalWorkerRouter.addWorker(worker, /*strEndpointPath*/ this.path, 120 * 1000 /*Readiness timeout in milliseconds*/);
 
 					this.objWorkerIDToState[worker.id].client = this._bidirectionalWorkerRouter.connectionIDToSingletonClient(nConnectionID, this.ReverseCallsClientClass);
@@ -73,7 +87,11 @@ class MasterEndpoint extends NodeMultiCoreCPUBase.MasterEndpoint
 			async(worker, nExitCode, nKillSignal) => {
 				try
 				{
-					console.log(`Worker with PID  ${worker.process.pid} died. Exit code: ${nExitCode}. Signal: ${nKillSignal}.`);
+					this.objWorkerIDToState[worker.id].exited = true;
+					const nPersistentWorkerID = this.objWorkerIDToState[worker.id].persistentID;
+					this.objPersistentWorkerIDToWorkerID[worker.id] = null;
+
+					console.log(`Worker with PID  ${worker.process.pid} and persistentId ${nPersistentWorkerID} died. Exit code: ${nExitCode}. Signal: ${nKillSignal}.`);
 					
 					this.arrFailureTimestamps.push(new Date().getTime());
 					this.arrFailureTimestamps = this.arrFailureTimestamps.filter((nMillisecondsUnixTime) => {
@@ -89,7 +107,8 @@ class MasterEndpoint extends NodeMultiCoreCPUBase.MasterEndpoint
 						if(!this.bShuttingDown)
 						{
 							await sleep(500);
-							cluster.fork();
+							// cluster.fork();
+							this._addWorker(nPersistentWorkerID);
 						}
 					}
 				}
@@ -104,9 +123,32 @@ class MasterEndpoint extends NodeMultiCoreCPUBase.MasterEndpoint
 	}
 
 
-	async _addWorker()
+	async _addWorker(nPersistentWorkerID = null)
 	{
-		cluster.fork();
+		// First assign persistentId using objPersistentWorkerIDToWorkerID, which will be added to
+		// objWorkerIDToState in 'fork' event handler defined in _configureBeforeStart.
+		assert(nPersistentWorkerID === null || typeof nPersistentWorkerID === "number", `Invalid property type for nPersistentWorkerID in MasterEndpoint. Expected "number", but got ${typeof nPersistentWorkerID}.`);
+
+		if(nPersistentWorkerID !== null)
+		{
+			const nExistingWorkerID = this.objPersistentWorkerIDToWorkerID[nPersistentWorkerID];
+			if(nExistingWorkerID !== undefined && nExistingWorkerID !== null)
+			{
+				if(this.objWorkerIDToState[nExistingWorkerID].exited !== true)
+				{
+					console.log(`Worker with PID ${nExistingWorkerID} that hasn't exited yet already has persistentId ${nPersistentWorkerID}.`);
+					return;
+				}
+			}
+		}
+		else
+		{
+			nPersistentWorkerID = this._nNextAvailablePersistentWorkerID++;
+		}
+
+		const workerProcess = cluster.fork();
+
+		this.objPersistentWorkerIDToWorkerID[nPersistentWorkerID] = workerProcess.id;
 	}
 
 
@@ -144,6 +186,20 @@ class MasterEndpoint extends NodeMultiCoreCPUBase.MasterEndpoint
 	async _makeBidirectionalRouter(jsonrpcServer)
 	{
 		return new JSONRPC.BidirectionalWorkerRouter(this._jsonrpcServer);
+	}
+
+	async getPersistentIDForWorkerID(incomingRequest, nWorkerIDRequester = null)
+	{
+		const objWorkerState = this.objWorkerIDToState[nWorkerIDRequester];
+
+		if(objWorkerState !== undefined)
+		{
+			return objWorkerState.persistentID;
+		}
+		else
+		{
+			return undefined;
+		}
 	}
 };
 
