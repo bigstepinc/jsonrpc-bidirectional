@@ -87,9 +87,12 @@ class MasterEndpoint extends NodeMultiCoreCPUBase.MasterEndpoint
 			async(worker, nExitCode, nKillSignal) => {
 				try
 				{
-					this.objWorkerIDToState[worker.id].exited = true;
-					const nPersistentWorkerID = this.objWorkerIDToState[worker.id].persistentID;
-					this.objPersistentWorkerIDToWorkerID[worker.id] = null;
+					let nPersistentWorkerID;
+					if(this.objWorkerIDToState[worker.id] !== undefined)
+					{
+						this.objWorkerIDToState[worker.id].exited = true;
+						nPersistentWorkerID = this.objWorkerIDToState[worker.id].persistentID;
+					}
 
 					console.log(`Worker with PID  ${worker.process.pid} and persistentId ${nPersistentWorkerID} died. Exit code: ${nExitCode}. Signal: ${nKillSignal}.`);
 					

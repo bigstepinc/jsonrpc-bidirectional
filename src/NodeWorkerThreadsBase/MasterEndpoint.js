@@ -96,7 +96,10 @@ class MasterEndpoint extends NodeMultiCoreCPUBase.MasterEndpoint
 			async(nExitCode) => {
 				try
 				{
-					this.objWorkerIDToState[nThreadID].exited = true;
+					if(this.objWorkerIDToState[nThreadID] !== undefined)
+					{
+						this.objWorkerIDToState[nThreadID].exited = true;
+					}
 					console.log(`Worker thread with threadId  ${nThreadID} and persistentId ${nPersistentWorkerID} died. Exit code: ${nExitCode}.`);
 					
 					this.arrFailureTimestamps.push(new Date().getTime());
