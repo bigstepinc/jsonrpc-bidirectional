@@ -44,6 +44,9 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 		this.arrFailureTimestamps = [];
 
 		this.objWorkerIDToState = {};
+		this.objPersistentWorkerIDToWorkerID = {};
+
+		this._nNextAvailablePersistentWorkerID = 0;
 
 		this._bWorkersStarted = false;
 		this._bWatchingForUpgrade = false;
@@ -557,6 +560,11 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 		await Promise.all(arrPromises);
 
 		return objResponses;
+	}
+
+	async getPersistentIDForWorkerID(incomingRequest, nWorkerIDRequester = null)
+	{
+		throw new Error("Subclass must implement getPersistentIDForWorkerID()");
 	}
 };
 
