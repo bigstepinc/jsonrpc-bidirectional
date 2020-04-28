@@ -135,7 +135,7 @@ class MasterEndpoint extends NodeMultiCoreCPUBase.MasterEndpoint
 		if(nPersistentWorkerID !== null)
 		{
 			const nExistingWorkerID = this.objPersistentWorkerIDToWorkerID[nPersistentWorkerID];
-			if(nExistingWorkerID !== undefined && nExistingWorkerID !== null)
+			if(nExistingWorkerID !== undefined)
 			{
 				if(this.objWorkerIDToState[nExistingWorkerID].exited !== true)
 				{
