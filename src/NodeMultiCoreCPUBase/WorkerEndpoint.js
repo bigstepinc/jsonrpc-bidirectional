@@ -37,7 +37,7 @@ class WorkerEndpoint extends JSONRPC.EndpointBase
 
 		this._bWorkerStarted = false;
 
-		this._nPersistentWorkerID = null;
+		this._nPersistentWorkerID = undefined;
 	}
 
 
@@ -81,8 +81,13 @@ class WorkerEndpoint extends JSONRPC.EndpointBase
 		return this._masterClient;
 	}
 
-	get persistentWorkerID()
+	async getIfNotPresentPersistentWorkerID()
 	{
+		if(this._nPersistentWorkerID === undefined)
+		{
+			this._nPersistentWorkerID = await this._masterClient.getPersistentIDForWorkerID();
+		}
+
 		return this._nPersistentWorkerID;
 	}
 
@@ -100,8 +105,6 @@ class WorkerEndpoint extends JSONRPC.EndpointBase
 		{
 			throw new Error("This mustn't be called through JSONRPC.");
 		}
-
-		this._nPersistentWorkerID = await this._masterClient.getPersistentIDForWorkerID();
 	}
 
 
