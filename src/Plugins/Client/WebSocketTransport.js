@@ -68,7 +68,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 	 * MUST set the .rpc() bSkipWaitReadyOnConnect param (or .rpcX({skipWaitReadyOnConnect})) to true or else the call will hang forever.
 	 * 
 	 * 
-	 * A WebSocket ping control frame (most efficient way to ping for a WebSocket) is sent at an interval (nKeepAliveTimeoutMilliseconds / 2) by the server side (if configured to do so using a non-null nKeepAliveTimeoutMilliseconds). 
+	 * A WebSocket ping control frame (most efficient way to ping for a WebSocket) is sent at an interval (the smallest of nKeepAliveTimeoutMilliseconds / 2 or 4000 milliseconds) by the server side (if configured to do so using a non-null nKeepAliveTimeoutMilliseconds). 
 	 * The client checks (if configured to do so using a non-null nKeepAliveTimeoutMilliseconds) if a ping was received since connecting or since the last ping (whichever came last).
 	 * If the ping (or pong for compatibility with other keep alive systems in other libraries) control frame is not seen by the client for nKeepAliveTimeoutMilliseconds then the client will close its WebSocket.
 	 * If the pong (or ping for compatibility with other keep alive systems in other libraries) control frame is not seen by the server for nKeepAliveTimeoutMilliseconds then the server will close its WebSocket.
@@ -206,7 +206,7 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 				{
 					this._nIntervalIDSendKeepAlivePing = setInterval(() => {
 						webSocket.ping(fnNoop);
-					}, Math.max(1, Math.floor(this._nKeepAliveTimeoutMilliseconds / 2)));
+					}, Math.max(1, Math.min(4000, Math.floor(this._nKeepAliveTimeoutMilliseconds / 2))));
 				}
 
 				const fnOnKeepAlive = (() => {
