@@ -125,6 +125,10 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 		this._nKeepAliveIntervalMilliseconds = nKeepAliveIntervalMilliseconds;
 		this._nIntervalIDSendKeepAlivePing = null;
 		this._nTimeoutIDCheckKeepAliveReceived = null;
+		this._nTimeoutIDCheckKeepAliveReceived_ForPacketLossRetry = null;
+
+		// Both ping and pong *received* control frames, NOT sent (can receive pong as replied, or ping as requests).
+		this._nKeepAliveControlFramesReceived = 0;
 
 
 		if(bAutoReconnect && !this._jsonrpcBidirectionalRouter && bBidirectionalWebSocketMode)
@@ -207,7 +211,14 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 				if(webSocket.ping)
 				{
 					this._nIntervalIDSendKeepAlivePing = setInterval(() => {
-						webSocket.ping(fnNoop);
+						try
+						{
+							webSocket.ping(fnNoop);
+						}
+						catch(error)
+						{
+							console.error(error);
+						}
 					}, this._nKeepAliveIntervalMilliseconds || Math.max(1, Math.min(4000, Math.floor(this._nKeepAliveTimeoutMilliseconds / 2))));
 				}
 
@@ -217,17 +228,47 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 						clearTimeout(this._nTimeoutIDCheckKeepAliveReceived);
 					}
 
-					this._nTimeoutIDCheckKeepAliveReceived = setTimeout(() => {
-						if([WebSocket.CLOSING, WebSocket.OPEN].includes(webSocket.readyState))
-						{
-							console.error(`Closing WebSocket because timed out after ${this._nKeepAliveTimeoutMilliseconds} milliseconds waiting for ping/pong keep alive control frame.`);
+					if(this._nTimeoutIDCheckKeepAliveReceived_ForPacketLossRetry !== null)
+					{
+						clearTimeout(this._nTimeoutIDCheckKeepAliveReceived_ForPacketLossRetry);
+					}
 
-							webSocket.close(
-								/*CLOSE_NORMAL*/ 1000, // Chrome only supports 1000 or the 3000-3999 range ///* CloseEvent.Internal Error */ 1011, 
-								`Closing WebSocket because timed out after ${this._nKeepAliveTimeoutMilliseconds} milliseconds waiting for ping/pong keep alive control frame.`
-							);
+					this._nTimeoutIDCheckKeepAliveReceived = setTimeout(() => {
+						try
+						{
+							if([WebSocket.CLOSING, WebSocket.OPEN].includes(webSocket.readyState))
+							{
+								console.error(`Closing WebSocket because timed out after ${this._nKeepAliveTimeoutMilliseconds} milliseconds waiting for ping/pong keep alive control frame.`);
+
+								webSocket.close(
+									/*CLOSE_NORMAL*/ 1000, // Chrome only supports 1000 or the 3000-3999 range ///* CloseEvent.Internal Error */ 1011, 
+									`Closing WebSocket because timed out after ${this._nKeepAliveTimeoutMilliseconds} milliseconds waiting for ping/pong keep alive control frame.`
+								);
+							}
+						}
+						catch(error)
+						{
+							console.error(error);
 						}
 					}, this._nKeepAliveTimeoutMilliseconds);
+
+					const nCurrentReceivedPingPongControlFramesCount = this._nKeepAliveControlFramesReceived;
+					this._nTimeoutIDCheckKeepAliveReceived_ForPacketLossRetry = setTimeout(async() => {
+						try
+						{
+							let nRetryPacketsFloodCount = 10;
+							
+							while(--nRetryPacketsFloodCount >= 0 && nCurrentReceivedPingPongControlFramesCount === this._nKeepAliveControlFramesReceived)
+							{
+								webSocket.ping(fnNoop);
+								await sleep(500);
+							}
+						}
+						catch(error)
+						{
+							console.error(error);
+						}
+					}, this._nKeepAliveIntervalMilliseconds + /*Allow lots of latency*/ 5000);
 				}).bind(this);
 				
 				
@@ -245,6 +286,12 @@ class WebSocketTransport extends JSONRPC.ClientPluginBase
 					{
 						clearTimeout(this._nTimeoutIDCheckKeepAliveReceived);
 						this._nTimeoutIDCheckKeepAliveReceived = null;
+					}
+
+					if(this._nTimeoutIDCheckKeepAliveReceived_ForPacketLossRetry !== null)
+					{
+						clearTimeout(this._nTimeoutIDCheckKeepAliveReceived_ForPacketLossRetry);
+						this._nTimeoutIDCheckKeepAliveReceived_ForPacketLossRetry = null;
 					}
 
 					if(webSocket.on && webSocket.removeListener && process && process.release)
