@@ -4,6 +4,8 @@ const JSONRPC = {
 	BidirectionalWorkerThreadRouter: require("../BidirectionalWorkerThreadRouter")
 };
 
+const sleep = require("sleep-promise");
+
 let Threads;
 try
 {
@@ -41,6 +43,33 @@ class WorkerEndpoint extends NodeMultiCoreCPUBase.WorkerEndpoint
 	 */
 	async _currentWorkerID()
 	{
+		// https://github.com/nodejs/node/issues/1269
+		if(
+			!this._bAlreadyDelayedReadingWorkerID
+			&& (
+				!Threads
+				|| Threads.threadId === null 
+				|| Threads.threadId === undefined
+			)
+		)
+		{
+			await sleep(2000);
+			this._bAlreadyDelayedReadingWorkerID = true;
+		}
+
+
+		if(
+			!Threads
+			|| Threads.threadId === null 
+			|| Threads.threadId === undefined
+		)
+		{
+			console.error("Threads: ", Threads);
+			console.error("Threads.threadId: ", Threads ? Threads.threadId : "");
+			console.error(`Returning 0 as Threads.threadId.`);
+			return 0;
+		}
+
 		return Threads.threadId;
 	}
 

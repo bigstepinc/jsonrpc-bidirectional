@@ -49,6 +49,7 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 		this._nNextAvailablePersistentWorkerID = 0;
 
 		this._bWorkersStarted = false;
+		this._promiseStart = null;
 		this._bWatchingForUpgrade = false;
 
 		this._nMaxWorkersCount = Number.MAX_SAFE_INTEGER;
@@ -189,29 +190,51 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 	 */
 	async start()
 	{
-		if(this._bWorkersStarted)
+		if(this._promiseStart)
 		{
-			throw new Error("Workers have already been started.");
+			return this._promiseStart;
 		}
-		this._bWorkersStarted = true;
 
-		this._jsonrpcServer = new JSONRPC.Server();
+		this._promiseStart = new Promise(async(fnResolve, fnReject) => {
+			try
+			{
+				if(this._jsonrpcServer)
+				{
+					this._jsonrpcServer.dispose();
+				}
+				
 
-		// By default, JSONRPC.Server rejects all requests as not authenticated and not authorized.
-		this._jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthenticationSkip());
-		this._jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthorizeAll());
-		this._jsonrpcServer.registerEndpoint(this);
+				this._jsonrpcServer = new JSONRPC.Server();
+		
+				// By default, JSONRPC.Server rejects all requests as not authenticated and not authorized.
+				this._jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthenticationSkip());
+				this._jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthorizeAll());
+				this._jsonrpcServer.registerEndpoint(this);
+		
+				this._bidirectionalWorkerRouter = await this._makeBidirectionalRouter();
+		
+				await this._configureBeforeStart();
+		
+				await this._startServices();
+		
+				for (let i = 0; i < Math.min(Math.max(os.cpus().length, 1), this.maxWorkersCount); i++)
+				{
+					this._addWorker();
+				}
 
-		this._bidirectionalWorkerRouter = await this._makeBidirectionalRouter();
+				this._bWorkersStarted = true;
 
-		await this._configureBeforeStart();
+				fnResolve();
+			}
+			catch(error)
+			{
+				this._bWorkersStarted = false;
+				this._promiseStart = false;
+				fnReject(error);
+			}
+		});
 
-		await this._startServices();
-
-		for (let i = 0; i < Math.min(Math.max(os.cpus().length, 1), this.maxWorkersCount); i++)
-		{
-			this._addWorker();
-		}
+		return this._promiseStart;
 	}
 
 
@@ -283,6 +306,28 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 	 */
 	async workerServicesReady(incomingRequest, nWorkerID)
 	{
+		if(!this.objWorkerIDToState[nWorkerID])
+		{
+			console.error(`[Master] .workerServicesReady() Could not find worker ID ${nWorkerID} key in this.objWorkerIDToState to set the .ready=true. Retrying after 10 seconds sleep in case race condition.`);
+			await sleep(10 * 1000);
+
+			if(!this.objWorkerIDToState[nWorkerID])
+			{
+				console.error(`[Master] .workerServicesReady() Could not find worker ID ${nWorkerID} key in this.objWorkerIDToState to set the .ready=true. Going berserk and marking all as ready. this.objWorkerIDToState: ${JSON.stringify(this.objWorkerIDToState, undefined, "    ")}`);
+
+				for(const _nWorkerID in this.objWorkerIDToState)
+				{
+					this.objWorkerIDToState[_nWorkerID].ready = true;
+				}
+
+				return;
+			}
+			else
+			{
+				console.error(`[Master] .workerServicesReady() Found worker ID ${nWorkerID} key in this.objWorkerIDToState to set the .ready=true. This indicates a race condition exists somewhere.`);
+			}
+		}
+
 		this.objWorkerIDToState[nWorkerID].ready = true;
 	}
 

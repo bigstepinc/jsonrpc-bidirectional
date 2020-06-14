@@ -41,6 +41,8 @@ class WorkerEndpoint extends JSONRPC.EndpointBase
 		this._promiseStart = null;
 
 		this._nPersistentWorkerID = undefined;
+
+		this._bAlreadyDelayedReadingWorkerID = false;
 	}
 
 
@@ -72,7 +74,7 @@ class WorkerEndpoint extends JSONRPC.EndpointBase
 
 
 	/**
-	 * @returns {JSONRPC.Client}
+	 * @returns {JSONRPC.Client|null}
 	 */
 	get masterClient()
 	{
@@ -96,7 +98,8 @@ class WorkerEndpoint extends JSONRPC.EndpointBase
 				this.start().catch(console.error);
 			}
 
-			throw new Error("The .masterClient property was not initialized by .start().");
+			console.error("[jsornpc-bidirectional] [WorkerEndpoint] The .masterClient property was not initialized by .start(). Returning null.", new Error().stack);
+			return null;
 		}
 
 		return this._masterClient;
@@ -168,7 +171,13 @@ class WorkerEndpoint extends JSONRPC.EndpointBase
 					throw new Error("WorkerEndpoint.start() was already called.");
 				}
 				this._bWorkerStarted = true;
-				
+
+
+				if(this._jsonrpcServer)
+				{
+					this._jsonrpcServer.dispose();
+				}
+
 		
 				this._jsonrpcServer = new JSONRPC.Server();
 				this._bidirectionalWorkerRouter = await this._makeBidirectionalRouter();
@@ -194,6 +203,8 @@ class WorkerEndpoint extends JSONRPC.EndpointBase
 			}
 			catch(error)
 			{
+				this._bWorkerStarted = false;
+				this._promiseStart = false;
 				fnReject(error);
 			}
 		});
