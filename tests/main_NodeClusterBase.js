@@ -58,46 +58,59 @@ setInterval(() => {}, 10000);
 (
 	async() =>
 	{
-		if(cluster.isMaster)
+		try
 		{
-			const endpoint = new JSONRPC.NodeClusterBase.MasterEndpoint(JSONRPC.NodeClusterBase.WorkerClient);
-			await endpoint.start();
-			await endpoint.watchForUpgrade(path.join(path.dirname(__dirname), "package.json"));
-
-			let bNotReady;
-			console.log("Waiting for workers to all signal they are ready.");
-
-			do
+			if(cluster.isMaster)
 			{
-				bNotReady = false;
-				for(let nID in endpoint.workerClients)
-				{
-					bNotReady = bNotReady || !endpoint.workerClients[nID].ready;
-				}
+				const endpoint = new JSONRPC.NodeClusterBase.MasterEndpoint(JSONRPC.NodeClusterBase.WorkerClient);
+				await endpoint.start();
+				await endpoint.watchForUpgrade(path.join(path.dirname(__dirname), "package.json"));
 
-				if(bNotReady)
-				{
-					await sleep(1000);
-				}
-			} while(bNotReady);
+				let bNotReady;
+				console.log("Waiting for workers to all signal they are ready.");
 
-			console.log("All workers ready.");
-			await sleep(10000000);
+				do
+				{
+					bNotReady = false;
+					for(let nID in endpoint.workerClients)
+					{
+						bNotReady = bNotReady || !endpoint.workerClients[nID].ready;
+					}
+
+					if(bNotReady)
+					{
+						await sleep(1000);
+					}
+				} while(bNotReady);
+
+				console.log("All workers ready.");
+				await sleep(10000000);
+			}
+			else
+			{
+				const endpoint = new JSONRPC.NodeClusterBase.WorkerEndpoint(JSONRPC.NodeClusterBase.MasterClient);
+				await endpoint.start();
+
+				assert(await endpoint.masterClient.ping("Test") === "Test", "Calling MasterEndpoint.ping() returned the wrong thing.");
+				
+				console.log("Will call masterClient.gracefulExit() after sleeping for 10 seconds.");
+				await sleep(10 * 1000);
+				// This will call all worker's gracefulExit() methods.
+				await endpoint.masterClient.gracefulExit();
+			}
 		}
-		else
+		catch(error)
 		{
-			const endpoint = new JSONRPC.NodeClusterBase.WorkerEndpoint(JSONRPC.NodeClusterBase.MasterClient);
-			await endpoint.start();
+			console.error(error);
 
-			assert(await endpoint.masterClient.ping("Test") === "Test", "Calling MasterEndpoint.ping() returned the wrong thing.");
-			
-			console.log("Will call masterClient.gracefulExit() after sleeping for 10 seconds.");
-			await sleep(10 * 1000);
-			// This will call all worker's gracefulExit() methods.
-			await endpoint.masterClient.gracefulExit();
+			// Give time for child process (like workers) or worker threads stdout and stderr to flush before exiting current process.
+			await sleep(2000);
+
+			process.exit(1);
 		}
 
-		await sleep(1000);
+		// Give time for child process (like workers) or worker threads stdout and stderr to flush before exiting current process.
+		await sleep(2000);
 		process.exit(0);
 	}
 )();

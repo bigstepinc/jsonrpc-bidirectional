@@ -100,11 +100,32 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 	/**
 	 * The object has worker IDs as keys and object values like this: {client: JSONRPC.Client, ready: boolean}.
 	 * 
-	 * @returns {Object<workerID:number, {client:JSONRPC.Client, ready:boolean}>}
+	 * @returns {Object<workerID:number, {client:JSONRPC.Client, ready:boolean, exited:boolean}>}
 	 */
 	get workerClients()
 	{
 		return this.objWorkerIDToState;
+	}
+
+
+	/**
+	 * DO NOT use this count to determine if more workers need to be created,
+	 * because it *excludes* workers which are in the process of becoming ready.
+	 * 
+	 * @returns {integer}
+	 */
+	get readyWorkersCount()
+	{
+		let nCount = 0;
+		for(const objWorkerClient of Object.values(this.objWorkerIDToState))
+		{
+			if(objWorkerClient.ready)
+			{
+				++nCount;
+			}
+		}
+
+		return nCount;
 	}
 
 
@@ -415,7 +436,10 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 		
 		for(const nWorkerID in this.objWorkerIDToState)
 		{
-			if(this.objWorkerIDToState[nWorkerID].ready)
+			if(
+				this.objWorkerIDToState[nWorkerID].ready
+				&& !this.objWorkerIDToState[nWorkerID].exited
+			)
 			{
 				// Do not await, need these in parallel.
 				/*await*/ this.objWorkerIDToState[nWorkerID].client.gracefulExit()
@@ -440,7 +464,7 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 		{
 			nWorkersGracefulExitTimeoutID = setTimeout(
 				() => {
-					console.error("Timed out waiting for workers' gracefulExit() to complete.");
+					console.error("[Master] Timed out waiting for workers' gracefulExit() to complete.");
 					process.exit(1);
 				},
 				this._nGracefulExitTimeoutMilliseconds
@@ -448,12 +472,41 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 		}
 		
 
-		console.log("Waiting for workers to exit gracefully.");
-		while(!!Object.keys(this.objWorkerIDToState).length)
+		console.log("[Master] Waiting for workers to exit gracefully.");
+		await sleep(3000);
+
+		waitForAllWorkers:
+		while(Object.values(this.workerClients).length)
 		{
-			await sleep(1000);
+			let bLogDelimited = false;
+			let bWorkersStillAlive = false;
+			for(const strWorkerID of Object.keys(this.workerClients))
+			{
+				if(!this.workerClients[strWorkerID].exited)
+				{
+					if(!bLogDelimited)
+					{
+						console.error("------------------------------------------------------------------");
+						bLogDelimited = true;
+					}
+
+					console.error(`Worker with ID ${strWorkerID} has not yet exited. Waiting...`);
+					bWorkersStillAlive = true;
+				}
+			}
+
+			if(bWorkersStillAlive)
+			{
+				await sleep(2000);
+				continue waitForAllWorkers;
+			}
+
+			if(!bWorkersStillAlive)
+			{
+				break waitForAllWorkers;
+			}
 		}
-		console.log("All workers have exited.");
+		console.log("[Master] All workers have exited.");
 
 
 		if(nWorkersGracefulExitTimeoutID !== null)
@@ -466,7 +519,7 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 		await this._stopServices();
 
 
-		console.log("[" + process.pid + "] Master process exiting gracefully.");
+		console.log("Master process exiting gracefully.");
 		process.exit(0);
 	}
 
@@ -479,14 +532,15 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 	 */
 	async ping(incomingRequest, strReturn)
 	{
-		console.log("Worker said: " + JSON.stringify(strReturn));
+		console.log("[Master] [ping] Worker said: " + JSON.stringify(strReturn));
 		return strReturn;
 	}
 
 	async sendTransferListTest(incomingRequest, arrayBufferForTest)
 	{
-		console.log("Received buffer", arrayBufferForTest);
+		console.log("[sendTransferListTest] Received buffer: ", arrayBufferForTest);
 	}
+
 
 	/**
 	 * @param {JSONRPC.IncomingRequest} incomingRequest
@@ -499,18 +553,36 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 	 */
 	async rpcWorker(incomingRequest, nWorkerID, strFunctionName, arrParams, bNotification = false)
 	{
+		let nWaitForReadyTriesLeft = 10;
+		while(
+			this.workerClients[nWorkerID]
+			&& !this.workerClients[nWorkerID].ready
+			&& !this.workerClients[nWorkerID].exited
+			&& --nWaitForReadyTriesLeft >= 0
+		)
+		{
+			console.error(`[Master] Can't RPC into Cluster worker.id ${nWorkerID}, the RPC client has not signaled it is ready for cluster IPC RPC, yet. Sleeping 1 second before re-rechecking ready status. ${nWaitForReadyTriesLeft} future retries left. The RPC call to worker.${strFunctionName}() will be continue normally if the ready status becomes true.`);
+			await sleep(1000);
+		}
+	
 		if(!this.workerClients[nWorkerID])
 		{
-			throw new JSONRPC.Exception(`Cluster worker.id ${nWorkerID} is not alive.`);
+			throw new JSONRPC.Exception(`[Master] Can't RPC worker.${strFunctionName}() into Cluster worker.id ${nWorkerID}, it never existed (or is no longer alive and the master process is exiting).`);
+		}
+
+		if(this.workerClients[nWorkerID].exited)
+		{
+			throw new JSONRPC.Exception(`[Master] Can't RPC worker.${strFunctionName}() into cluster worker.id ${nWorkerID}, it has already exited.`);
 		}
 
 		if(!this.workerClients[nWorkerID].ready)
 		{
-			throw new JSONRPC.Exception(`Cluster worker.id ${nWorkerID} RPC client has not signaled it is ready for cluster IPC RPC, yet.`);
+			throw new JSONRPC.Exception(`[Master] Can't RPC worker.${strFunctionName}() into Cluster worker.id ${nWorkerID}, the RPC client has not signaled it is ready for cluster IPC RPC, yet.`);
 		}
 
 		return await this.workerClients[nWorkerID].client.rpc(strFunctionName, arrParams, bNotification);
 	}
+
 
 	/**
 	 * @typedef {{ message: string, stack: string=, code: number=, type: string=, errorClass: string }} ErrorObject
@@ -530,6 +602,16 @@ class MasterEndpoint extends JSONRPC.EndpointBase
 
 		for(const strWorkerID of Object.keys(this.workerClients))
 		{
+			if(!this.workerClients[strWorkerID].ready)
+			{
+				continue;
+			}
+
+			if(this.workerClients[strWorkerID].exited)
+			{
+				continue;
+			}
+
 			const nWorkerID = parseInt(strWorkerID, 10);
 			arrPromises.push(new Promise(async(fnResolve, fnReject) => {
 				try

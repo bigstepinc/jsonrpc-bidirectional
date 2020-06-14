@@ -10,6 +10,8 @@ const JSONRPC = {
 	}
 };
 
+const sleep = require("sleep-promise");
+
 
 /**
  * Extend this class to export extra worker RPC APIs.
@@ -36,6 +38,7 @@ class WorkerEndpoint extends JSONRPC.EndpointBase
 		this.bShuttingDown = false;
 
 		this._bWorkerStarted = false;
+		this._promiseStart = null;
 
 		this._nPersistentWorkerID = undefined;
 	}
@@ -75,11 +78,30 @@ class WorkerEndpoint extends JSONRPC.EndpointBase
 	{
 		if(!this._masterClient)
 		{
-			throw new Error("The master client is ready only after calling await .startWorker().");
+			if(!this._bWorkerStarted)
+			{
+				console.error(`
+					Premature access to the .masterClient property as it was not initialized by WorkerEndpoint.start(). 
+
+					[WorkerEndpoint] process.uptime(): ${process.uptime()} seconds.
+				
+					Desperatly calling .start() (possibly prematurely) inside the .masterClient getter to allow a future access to .masterClient to succeed and not throw. 
+					Services might not have been started yet, see .start(). 
+					As a result, this worker might yet be ready for receving workers IPC RPC. 
+					
+					Lazy or premature init. 
+					Normally, the application implementing this needs to to call .start() explicitly to signal it is ready to receive RPC calls over workers IPC. 
+				`);
+
+				this.start().catch(console.error);
+			}
+
+			throw new Error("The .masterClient property was not initialized by .start().");
 		}
 
 		return this._masterClient;
 	}
+
 
 	async getIfNotPresentPersistentWorkerID()
 	{
@@ -93,7 +115,7 @@ class WorkerEndpoint extends JSONRPC.EndpointBase
 
 
 	/**
-	 * This overridable function is called and awaited inside startWorker().
+	 * This overridable function is called and awaited inside start().
 	 * 
 	 * This mustn't be called through JSONRPC.
 	 * 
@@ -133,30 +155,50 @@ class WorkerEndpoint extends JSONRPC.EndpointBase
 	 */
 	async start()
 	{
-		if(this._bWorkerStarted)
+		if(this._promiseStart)
 		{
-			throw new Error("Worker is already started.");
+			return this._promiseStart;
 		}
-		this._bWorkerStarted = true;
+
+		this._promiseStart = new Promise(async(fnResolve, fnReject) => {
+			try
+			{
+				if(this._bWorkerStarted)
+				{
+					throw new Error("WorkerEndpoint.start() was already called.");
+				}
+				this._bWorkerStarted = true;
+				
 		
+				this._jsonrpcServer = new JSONRPC.Server();
+				this._bidirectionalWorkerRouter = await this._makeBidirectionalRouter();
+		
+				// By default, JSONRPC.Server rejects all requests as not authenticated and not authorized.
+				this._jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthenticationSkip());
+				this._jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthorizeAll());
+		
+				const nConnectionID = await this._bidirectionalWorkerRouter.addWorker(await this._currentWorker(), "/api-workers/IPC");
+				this._masterClient = this._bidirectionalWorkerRouter.connectionIDToSingletonClient(nConnectionID, this.ReverseCallsClientClass);
+		
+				this._jsonrpcServer.registerEndpoint(this);
+		
+				// BidirectionalWorkerRouter requires to know when JSONRPC has finished its setup to avoid very likely race conditions.
+				await this._masterClient.rpc("rpc.connectToEndpoint", ["/api-workers/IPC"]);
 
-		this._jsonrpcServer = new JSONRPC.Server();
-		this._bidirectionalWorkerRouter = await this._makeBidirectionalRouter();
+				
+				await this._startServices();
+				await this._masterClient.workerServicesReady(await this._currentWorkerID());
 
-		// By default, JSONRPC.Server rejects all requests as not authenticated and not authorized.
-		this._jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthenticationSkip());
-		this._jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthorizeAll());
 
-		const nConnectionID = await this._bidirectionalWorkerRouter.addWorker(await this._currentWorker(), "/api-workers/IPC");
-		this._masterClient = this._bidirectionalWorkerRouter.connectionIDToSingletonClient(nConnectionID, this.ReverseCallsClientClass);
+				fnResolve();
+			}
+			catch(error)
+			{
+				fnReject(error);
+			}
+		});
 
-		this._jsonrpcServer.registerEndpoint(this);
-
-		// BidirectionalWorkerRouter requires to know when JSONRPC has finished its setup to avoid very likely race conditions.
-		await this._masterClient.rpc("rpc.connectToEndpoint", ["/api-workers/IPC"]);
-
-		await this._startServices();
-		await this._masterClient.workerServicesReady(await this._currentWorkerID());
+		return this._promiseStart;
 	}
 
 

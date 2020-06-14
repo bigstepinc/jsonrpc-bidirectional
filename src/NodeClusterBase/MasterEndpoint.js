@@ -97,20 +97,25 @@ class MasterEndpoint extends NodeMultiCoreCPUBase.MasterEndpoint
 					console.log(`Worker with PID  ${worker.process.pid} and persistentId ${nPersistentWorkerID} died. Exit code: ${nExitCode}. Signal: ${nKillSignal}.`);
 					
 					this.arrFailureTimestamps.push(new Date().getTime());
-					this.arrFailureTimestamps = this.arrFailureTimestamps.filter((nMillisecondsUnixTime) => {
-						return nMillisecondsUnixTime >= new Date().getTime() - (60 * 2 * 1000);
+					this.arrFailureTimestamps = this.arrFailureTimestamps.filter((nMillisecondsUnixTimeOfFailure) => {
+						return nMillisecondsUnixTimeOfFailure >= new Date().getTime() - (60 * 2 * 1000);
 					});
 			
-					if(this.arrFailureTimestamps.length / Math.max(os.cpus().length, 1) > 4)
+					const nMaxFailuresPerMaxWorkers = process.uptime() < 15 /*seconds*/ ? Math.min(this.maxWorkersCount * 2, 20 /*times*/) : 20 /*times*/;
+					if(this.arrFailureTimestamps.length / Math.max(this.maxWorkersCount, 1) > nMaxFailuresPerMaxWorkers)
 					{
+						console.error(`[Master] *Not* adding a worker because another worker has died. Doing a .gracefulExit() instead because the number of worker failures divided by .maxWorkersCount is greater than ${nMaxFailuresPerMaxWorkers} over the last 2 minutes. ${this.arrFailureTimestamps.length / Math.max(this.maxWorkersCount, 1)} > ${nMaxFailuresPerMaxWorkers}. Process uptime is ${process.uptime()} seconds.`);
 						await this.gracefulExit(null);
 					}
 					else
 					{
 						if(!this.bShuttingDown)
 						{
-							await sleep(500);
+							const nSleepMilliSeconds = Math.max(800 + 1000 * this.readyWorkersCount, 3000);
+							await sleep(`Sleeping ${nSleepMilliSeconds} milliseconds before replacing exited worker.`);
 							// cluster.fork();
+
+							console.error("[Master] Adding a worker because another worker has exited.");
 							this._addWorker(nPersistentWorkerID);
 						}
 					}
