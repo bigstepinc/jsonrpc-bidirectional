@@ -101,7 +101,13 @@ class MasterEndpoint extends NodeMultiCoreCPUBase.MasterEndpoint
 						return nMillisecondsUnixTimeOfFailure >= new Date().getTime() - (60 * 2 * 1000);
 					});
 			
-					const nMaxFailuresPerMaxWorkers = process.uptime() < 15 /*seconds*/ ? Math.min(this.maxWorkersCount * 2, 20 /*times*/) : 20 /*times*/;
+					const nMaxFailuresPerMaxWorkers = 20 /*times*/;
+
+					if(process.uptime() < 20)
+					{
+						this.arrFailureTimestamps.splice(0);
+					}
+
 					if(this.arrFailureTimestamps.length / Math.max(this.maxWorkersCount, 1) > nMaxFailuresPerMaxWorkers)
 					{
 						console.error(`[Master] *Not* adding a worker because another worker has died. Doing a .gracefulExit() instead because the number of worker failures divided by .maxWorkersCount is greater than ${nMaxFailuresPerMaxWorkers} over the last 2 minutes. ${this.arrFailureTimestamps.length / Math.max(this.maxWorkersCount, 1)} > ${nMaxFailuresPerMaxWorkers}. Process uptime is ${process.uptime()} seconds.`);
