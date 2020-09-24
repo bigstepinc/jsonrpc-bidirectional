@@ -87,8 +87,6 @@ See the Transports section for additional RPC transports to export APIs for inte
 
 See [src/NodeClusterBase/README.MD](https://github.com/bigstepinc/jsonrpc-bidirectional/tree/master/src/NodeClusterBase) for additional comments.
 
-See the tests directory for additional usage hints as sample app (TODO: sample fully working app).
-
 ## Events and plugins
 
 Plugins are allowed to replace the JSON-RPC protocol altogether, extend the protocol or wrap it.
