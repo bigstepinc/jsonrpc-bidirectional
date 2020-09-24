@@ -81,9 +81,7 @@ The above is even true in browsers where only a single worker per CPU core (assu
 
 At server level, memory usage is kept as low as possible and can be constant as the number of busy threads is always equal to the number of cores. The memory usage because of the runtime overhead (nodejs + user code) does not grow with the number of requests.
 
-Build your application upon `src/NodeClusterBase` to automatically scale to all CPU cores using forked child processed.
-
-Build your application upon `src/NodeWorkerThreadsBase` to automatically scale to all CPU cores using worker threads.
+**It is dead simple to make use of this library to properly scale your application.** Just extend the existing base classes under `src/NodeClusterBase` (cluster workers aka forked child processes) or `src/NodeWorkerThreadsBase` (worker threads).
 
 See the Transports section for additional RPC transports to export APIs for inter-process communication when using cluster workers or worker threads.
 
