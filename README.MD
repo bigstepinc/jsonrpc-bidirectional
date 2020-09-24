@@ -63,11 +63,33 @@ The `JSONRPC.Plugins.Client.WebRTCTransport` and `JSONRPC.BidirectionalWebRTCRou
 
 See `tests/Tests/BrowserWebRTC/*` for a browser side example. See `tests/Tests/TestEndpoint` for the server side mediator.
 
-WebRTC is experimental technology with very little vendor support, and constantly changing. The WebRTC code in this library is tested to work in Chrome.
-
 #### Other
 
 It is easy to support other transports, see `JSONRPC.Plugins.Client.WebSocketTransport` for an example.
+
+## Scaling
+
+NodeJS is purpose build to allow scaling to all CPU cores and then on multiple machines (automatic round robin TCP connections to child workers, using automatically shared TCP sockets, see [https://nodejs.org/dist/latest-v12.x/docs/api/cluster.html#cluster_how_it_works](https://nodejs.org/dist/latest-v12.x/docs/api/cluster.html#cluster_how_it_works)). Virtually all programs built in NodeJS for networking purposes are always event based programming which best leverages the CPU time on each CPU core. When considering multiple servers this has a dramatic effect as hundreds of servers serving network requests can sometimes be reduced to tens or just a few servers.
+
+This library can serve as a foundation which automatically scales to all CPU cores using cluster workers or thread workers (interchangeably at any time as they have a common interface) using a single worker process per CPU core, thus satistfying the performance requirement to reduce kernel context (thread) switching overhead.
+
+All API interface functions exported for RPC are defined using async/await thus allowing automatic error handling (errors are catched and serialized via the RPC protocol to the caller) by this library. All function invocations thorugh a network transport (HTTP, WebSocket, raw sockets, workers IPC, etc.) are of course naturally event based.
+
+Scalability to all CPU cores and multiple servers is enabled automatically and without any effort on the programmer part because the **Actor pattern** is enabled from the get go: all exported functions invocations receive a private context in the `incomingRequest` param under `incomingRequest.session`.
+
+The above is even true in browsers where only a single worker per CPU core (assuming the no of CPU cores can be guessed somehow, as browsers hide that) can be kept alive indefinitely to receive asynchronous (independendly running API calls which basically return promises) invocations. There is no need to start a new worker for each workload, thus keeping the number of busy threads as low as possible.
+
+At server level, memory usage is kept as low as possible and can be constant as the number of busy threads is always equal to the number of cores. The memory usage because of the runtime overhead (nodejs + user code) does not grow with the number of requests.
+
+Build your application upon `src/NodeClusterBase` to automatically scale to all CPU cores using forked child processed.
+
+Build your application upon `src/NodeWorkerThreadsBase` to automatically scale to all CPU cores using worker threads.
+
+See the Transports section for additional RPC transports to export APIs for inter-process communication when using cluster workers or worker threads.
+
+See [src/NodeClusterBase/README.MD](https://github.com/bigstepinc/jsonrpc-bidirectional/tree/master/src/NodeClusterBase) for additional comments.
+
+See the tests directory for additional usage hints as sample app (TODO: sample fully working app).
 
 ## Events and plugins
 
